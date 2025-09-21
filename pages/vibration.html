@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIBELAND - String Vibration Simulator</title>
+    <style>
+        /* Simplified minimalistic styling */
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 2em;
+            letter-spacing: 2px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Simplified canvas styling */
+        canvas {
+            border: 1px solid #333;
+            background: #111;
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Simplified control panel styling */
+        .controls {
+            display: flex;
+            gap: 20px;
+            background: #111;
+            padding: 15px;
+            border: 1px solid #333;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 14px;
+        }
+
+        /* Simplified slider styling */
+        input[type="range"] {
+            width: 120px;
+            height: 20px;
+            background: #333;
+            outline: none;
+            border: 1px solid #666;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Simplified button styling */
+        .neon-btn {
+            background: #333;
+            border: 1px solid #666;
+            color: #fff;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 2px;
+        }
+
+        .neon-btn:hover {
+            background: #555;
+        }
+
+        .neon-btn:active {
+            background: #222;
+        }
+
+        .neon-btn.paused {
+            color: #ccc;
+            background: #444;
+        }
+
+        /* Simplified instructions */
+        .instructions {
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.6;
+            background: #111;
+            padding: 15px;
+            border: 1px solid #333;
+        }
+
+        .instructions h3 {
+            margin-top: 0;
+            color: #fff;
+        }
+
+        /* Simplified home link */
+        .home-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+        }
+
+        .home-link:hover {
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="home-link">← HOME</a>
+    
+    <div class="container">
+        <h1>STRING VIBRATION</h1>
+        
+        <canvas id="stringCanvas" width="800" height="400"></canvas>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="tension">TENSION</label>
+                <input type="range" id="tension" min="300" max="1200" value="900" step="50">
+            </div>
+            <div class="control-group">
+                <label for="damping">DAMPING</label>
+                <input type="range" id="damping" min="0.5" max="4" value="1.5" step="0.1">
+            </div>
+            <div class="control-group">
+                <label for="pluckRadius">PLUCK SIZE</label>
+                <input type="range" id="pluckRadius" min="6" max="20" value="12" step="1">
+            </div>
+            <div class="control-group">
+                <button id="resetBtn" class="neon-btn">RESET</button>
+                <button id="pauseBtn" class="neon-btn">PAUSE</button>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>HOW TO USE</h3>
+            <p>Click and drag anywhere on the string to pull it up or down, and move sideways to slide the pluck point. Release to watch the vibrations propagate along the string. Adjust the controls to change the string's physical properties:</p>
+            <p><strong>TENSION:</strong> Higher values create faster wave propagation<br>
+               <strong>DAMPING:</strong> Controls how quickly vibrations fade out<br>
+               <strong>PLUCK SIZE:</strong> Controls the width of your finger contact area</p>
+        </div>
+    </div>
+
+    <script>
+        // String vibration physics simulation
+        // Based on the 1D wave equation with damping: y_tt = c^2 y_xx - 2ζ y_t
+        
+        class StringSimulation {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Simulation parameters
+                this.N = 256; // Number of points along the string
+                this.margin = 40;
+                this.midlineY = this.canvas.height / 2;
+                this.L = this.canvas.width - 2 * this.margin; // String length in pixels
+                this.dx = this.L / (this.N - 1); // Spatial step size
+                
+                // Physics parameters
+                this.dt = 1 / 360; // Initial timestep (will be adaptive)
+                this.c = 900; // Wave speed (px/s) - tension parameter
+                this.zeta = 1.5; // Damping coefficient (s^-1)
+                this.R = 12; // Pluck radius in grid points
+                
+                // Compute derived parameters
+                this.updatePhysicsParameters();
+                
+                // State arrays - using Float32Array for performance
+                this.y = new Float32Array(this.N); // Current displacement
+                this.yPrev = new Float32Array(this.N); // Previous displacement
+                this.yNext = new Float32Array(this.N); // Next displacement (temp)
+                
+                // Precompute x positions for rendering
+                this.xPos = new Float32Array(this.N);
+                for (let i = 0; i < this.N; i++) {
+                    this.xPos[i] = this.margin + i * this.dx;
+                }
+                
+                // Interaction state
+                this.isDragging = false;
+                this.sGrab = -1;      // continuous index [0..N-1]
+                this.dragTarget = 0;  // apex displacement
+                
+                // Animation timing
+                this.accumulator = 0;
+                this.lastTime = performance.now();
+                this.isPaused = false;
+                
+                this.setupEventListeners();
+                this.setupControls();
+                this.start();
+            }
+            
+            // Update physics parameters when controls change
+            updatePhysicsParameters() {
+                // Keep Courant number close to 1 for better propagation, with a small safety margin
+                const safety = 0.98;
+                const newDt = safety * (this.dx / this.c);
+
+                // Rescale yPrev so velocities remain continuous when dt changes:
+                // v ≈ (y - yPrev)/dt should be preserved => yPrev' = y - v * newDt
+                if (this.dt && this.y && this.yPrev) {
+                    const scale = newDt / this.dt;
+                    for (let i = 0; i < this.N; i++) {
+                        this.yPrev[i] = this.y[i] - scale * (this.y[i] - this.yPrev[i]);
+                    }
+                }
+                this.dt = newDt;
+
+                // Courant term
+                this.r2 = (this.c * this.dt / this.dx) ** 2;
+
+                // Damping coefficients:
+                // Uniform (velocity) damping: γ0 = 2 ζ dt
+                this.g0 = 2 * this.zeta * this.dt;
+
+                // Frequency-dependent damping (Kelvin-Voigt style): γ1 = 2 σ1 dt / dx^2
+                // We map the single "damping" slider (ζ) to both components: small σ1 is enough.
+                // Tuned so HF dies quickly, LF sustains: tweak factor 0.02–0.06 for taste.
+                const alpha = 0.03; // tune 0.02–0.06
+                this.g1 = 2 * alpha * this.zeta * this.dt / (this.dx * this.dx);
+            }
+            
+            // Smooth weighting function for plucking interaction
+            weight(dIdx, R) {
+                const a = Math.abs(dIdx);
+                if (a > R) return 0;
+                // Cosine kernel for smooth transitions
+                return 0.5 * (1 + Math.cos(Math.PI * a / R));
+            }
+            
+            // Convert mouse coordinates to canvas coordinates
+            toLocal(event) {
+                const rect = this.canvas.getBoundingClientRect();
+                return {
+                    x: (event.clientX - rect.left) * (this.canvas.width / rect.width),
+                    y: (event.clientY - rect.top) * (this.canvas.height / rect.height)
+                };
+            }
+            
+            setupEventListeners() {
+                // Prevent scrolling on touch devices
+                this.canvas.style.touchAction = 'none';
+                
+                this.canvas.addEventListener('pointerdown', (ev) => {
+                    this.canvas.setPointerCapture(ev.pointerId);
+                    const p = this.toLocal(ev);
+                    const s = (p.x - this.margin) / this.dx;
+                    if (s > 0 && s < this.N - 1) {
+                        this.isDragging = true;
+                        // clamp to interior so denominators are safe
+                        this.sGrab = Math.max(1.000001, Math.min(this.N - 2.000001, s));
+
+                        const maxDisp = 0.45 * this.canvas.height;
+                        this.dragTarget = Math.max(-maxDisp, Math.min(maxDisp, this.midlineY - p.y));
+
+                        // Immediate visual feedback
+                        this.fillTrapezoidProfile(this.sGrab, this.dragTarget, this.R, this.y);
+                        this.yPrev.set(this.y);
+                    }
+                });
+                
+                this.canvas.addEventListener('pointermove', (ev) => {
+                    if (!this.isDragging) return;
+                    const p = this.toLocal(ev);
+                    const s = (p.x - this.margin) / this.dx;
+                    this.sGrab = Math.max(1.000001, Math.min(this.N - 2.000001, s));
+
+                    const maxDisp = 0.45 * this.canvas.height;
+                    this.dragTarget = Math.max(-maxDisp, Math.min(maxDisp, this.midlineY - p.y));
+
+                    // Keep the pinned trapezoidal shape while moving
+                    this.fillTrapezoidProfile(this.sGrab, this.dragTarget, this.R, this.y);
+                    this.yPrev.set(this.y);
+                });
+                
+                const endDrag = () => {
+                    if (this.isDragging && this.sGrab >= 0) {
+                        // Final projection so release starts from trapezoidal shape with zero velocity
+                        this.fillTrapezoidProfile(this.sGrab, this.dragTarget, this.R, this.y);
+                        this.yPrev.set(this.y);
+                    }
+                    this.isDragging = false;
+                    this.sGrab = -1;
+                };
+                
+                this.canvas.addEventListener('pointerup', endDrag);
+                this.canvas.addEventListener('pointercancel', endDrag);
+            }
+            
+            setupControls() {
+                const tensionSlider = document.getElementById('tension');
+                const dampingSlider = document.getElementById('damping');
+                const radiusSlider = document.getElementById('pluckRadius');
+                const resetBtn = document.getElementById('resetBtn');
+                const pauseBtn = document.getElementById('pauseBtn');
+                
+                tensionSlider.addEventListener('input', (e) => {
+                    this.c = parseFloat(e.target.value);
+                    this.updatePhysicsParameters();
+                });
+                
+                dampingSlider.addEventListener('input', (e) => {
+                    this.zeta = parseFloat(e.target.value);
+                    this.updatePhysicsParameters();
+                });
+                
+                radiusSlider.addEventListener('input', (e) => {
+                    this.R = parseInt(e.target.value);
+                });
+                
+                resetBtn.addEventListener('click', () => {
+                    this.reset();
+                });
+                
+                pauseBtn.addEventListener('click', () => {
+                    this.togglePause();
+                });
+            }
+            
+            // Reset the string to rest position
+            reset() {
+                this.y.fill(0);
+                this.yPrev.fill(0);
+                this.accumulator = 0;
+            }
+            
+            // Toggle pause/resume
+            togglePause() {
+                this.isPaused = !this.isPaused;
+                const pauseBtn = document.getElementById('pauseBtn');
+                
+                if (this.isPaused) {
+                    pauseBtn.textContent = 'RESUME';
+                    pauseBtn.classList.add('paused');
+                } else {
+                    pauseBtn.textContent = 'PAUSE';
+                    pauseBtn.classList.remove('paused');
+                    this.lastTime = performance.now(); // Reset timing to avoid large delta
+                }
+            }
+            
+            // Build the minimum-energy trapezoid profile for a pinned region
+            fillTrapezoidProfile(sApex, yApex, R, dest) {
+                const L = this.N - 1;
+                const eps = 1e-6;
+                const s = Math.max(1 + eps, Math.min(L - 1 - eps, sApex));
+                const w = Math.max(0, Math.min(R, Math.min(s - (1 + eps), (L - 1 - eps) - s)));
+                const left = s - w;
+                const right = s + w;
+
+                for (let i = 0; i <= L; i++) {
+                    let y;
+                    if (i <= left) {
+                        y = yApex * (i / left);
+                    } else if (i >= right) {
+                        y = yApex * ((L - i) / (L - right));
+                    } else {
+                        y = yApex; // plateau
+                    }
+                    dest[i] = y;
+                }
+                dest[0] = 0;
+                dest[L] = 0;
+            }
+
+            // Build the minimum-energy triangular profile for a pinned apex (wrapper for R=0)
+            fillTriangleProfile(sApex, yApex, dest) {
+                this.fillTrapezoidProfile(sApex, yApex, 0, dest);
+            }
+
+            // Apply drag constraint every substep
+            applyDragConstraint() {
+                if (!this.isDragging || this.sGrab < 0) return;
+                this.fillTrapezoidProfile(this.sGrab, this.dragTarget, this.R, this.y);
+                this.yPrev.set(this.y); // zero velocity while pinned
+            }
+            
+            // Single physics step using finite difference method
+            stepOnce() {
+                // Keep grabbed region pinned during physics substeps
+                this.applyDragConstraint();
+
+                // Core update: wave + uniform damping + frequency-dependent damping
+                // y_next = 2y - y_prev + r^2 Δy - g0*(y - y_prev) + g1*Δ(y - y_prev)
+                for (let i = 1; i < this.N - 1; i++) {
+                    const lap = this.y[i - 1] - 2 * this.y[i] + this.y[i + 1];
+                    const vel = this.y[i] - this.yPrev[i];
+                    const lapVel = (this.y[i - 1] - this.yPrev[i - 1])
+                                 - 2 * vel
+                                 + (this.y[i + 1] - this.yPrev[i + 1]);
+
+                    this.yNext[i] = 2 * this.y[i] - this.yPrev[i]
+                                  + this.r2 * lap
+                                  - this.g0 * vel
+                                  + this.g1 * lapVel;
+                }
+
+                // Fixed ends
+                this.yNext[0] = 0;
+                this.yNext[this.N - 1] = 0;
+
+                // Keep the constraint in the next state, too
+                if (this.isDragging && this.sGrab >= 0) {
+                    this.fillTrapezoidProfile(this.sGrab, this.dragTarget, this.R, this.yNext);
+                }
+
+                // Rotate buffers
+                const temp = this.yPrev;
+                this.yPrev = this.y;
+                this.y = this.yNext;
+                this.yNext = temp;
+            }
+            
+            // Render the string with retro styling
+            draw() {
+                // Clear canvas
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Set up simple white line
+                this.ctx.shadowColor = 'transparent';
+                this.ctx.shadowBlur = 0;
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.lineWidth = 2;
+                
+                // Draw the string as a smooth curve
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.xPos[0], this.midlineY - this.y[0]);
+                
+                for (let i = 1; i < this.N; i++) {
+                    this.ctx.lineTo(this.xPos[i], this.midlineY - this.y[i]);
+                }
+                
+                this.ctx.stroke();
+                
+                // Add endpoint markers to show fixed points
+                this.ctx.shadowBlur = 0;
+                this.ctx.fillStyle = '#666';
+                this.ctx.fillRect(this.xPos[0] - 3, this.midlineY - 3, 6, 6);
+                this.ctx.fillRect(this.xPos[this.N - 1] - 3, this.midlineY - 3, 6, 6);
+            }
+            
+            // Main animation loop with adaptive timestep
+            frame(currentTime) {
+                if (!this.isPaused) {
+                    const deltaTime = (currentTime - this.lastTime) / 1000;
+                    this.lastTime = currentTime;
+                    this.accumulator += deltaTime;
+                    
+                    // Prevent spiral of death after tab suspension
+                    const MAX_SUBSTEPS = 240;
+                    this.accumulator = Math.min(this.accumulator, MAX_SUBSTEPS * this.dt);
+                    
+                    // Fixed timestep physics updates with frame rate limiting
+                    let steps = 0;
+                    const maxSteps = 16; // Prevent long loops on slow machines
+                    while (this.accumulator >= this.dt && steps < maxSteps) {
+                        this.stepOnce();
+                        this.accumulator -= this.dt;
+                        steps++;
+                    }
+                } else {
+                    this.lastTime = currentTime; // Keep time current while paused
+                }
+                
+                this.draw();
+                requestAnimationFrame((time) => this.frame(time));
+            }
+            
+            start() {
+                requestAnimationFrame((time) => this.frame(time));
+            }
+        }
+        
+        // Initialize the simulation when the page loads
+        window.addEventListener('load', () => {
+            new StringSimulation('stringCanvas');
+        });
+    </script>
+</body>
+</html>

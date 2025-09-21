@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Particle Simulator</title>
+  <style>
+    /* CSS for the body and canvas */
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Style for the canvas */
+    canvas {
+      border: 2px solid #333;
+      background-color: #fff;
+      cursor: crosshair;
+    }
+
+    /* Container for controls */
+    .controls {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    /* Style for buttons */
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      border: 1px solid #333;
+      background-color: #ddd;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #ccc;
+    }
+
+    button.active {
+      background-color: #aaa;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Canvas element for rendering the simulation -->
+  <canvas id="canvas" width="800" height="600"></canvas>
+
+  <!-- Controls for selecting particle types -->
+  <div class="controls">
+    <button data-type="eraser">Eraser</button>
+    <button data-type="wall">Wall</button>
+    <button data-type="stone">Stone</button>
+    <button data-type="sand">Sand</button>
+    <button data-type="water">Water</button>
+  </div>
+
+  <script>
+    // Get the canvas and its 2D context
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define grid dimensions and cell size
+    const cellSize = 4; // Size of each grid cell in pixels
+    const gridWidth = canvas.width / cellSize; // Number of cells horizontally (200)
+    const gridHeight = canvas.height / cellSize; // Number of cells vertically (150)
+
+    // Initialize the grid as a 2D array with 'empty' cells
+    let grid = Array.from({length: gridHeight}, () => Array(gridWidth).fill('empty'));
+
+    // Define particle properties (colors and behaviors are handled in logic)
+    const particles = {
+      empty: {color: '#fff'}, // White (background)
+      wall: {color: '#333'},  // Dark gray, static barrier
+      stone: {color: '#888'}, // Gray, falls straight down
+      sand: {color: '#ffd700'}, // Gold, falls down or diagonally
+      water: {color: '#00bfff'} // Blue, falls and spreads sideways
+    };
+
+    // Current selected tool (particle type or eraser)
+    let selectedType = 'sand'; // Default to sand
+
+    // Mouse state for drawing
+    let isMouseDown = false;
+
+    // Function to get grid coordinates from mouse position
+    function getGridPos(x, y) {
+      return {
+        gx: Math.floor(x / cellSize),
+        gy: Math.floor(y / cellSize)
+      };
+    }
+
+    // Function to place a particle at a grid position
+    function placeParticle(gx, gy, type) {
+      if (gx >= 0 && gx < gridWidth && gy >= 0 && gy < gridHeight) {
+        grid[gy][gx] = type === 'eraser' ? 'empty' : type;
+      }
+    }
+
+    // Handle mouse down event (start drawing)
+    canvas.addEventListener('mousedown', (e) => {
+      isMouseDown = true;
+      const rect = canvas.getBoundingClientRect();
+      const {gx, gy} = getGridPos(e.clientX - rect.left, e.clientY - rect.top);
+      placeParticle(gx, gy, selectedType);
+    });
+
+    // Handle mouse up event (stop drawing)
+    canvas.addEventListener('mouseup', () => {
+      isMouseDown = false;
+    });
+
+    // Handle mouse move event (draw while dragging)
+    canvas.addEventListener('mousemove', (e) => {
+      if (isMouseDown) {
+        const rect = canvas.getBoundingClientRect();
+        const {gx, gy} = getGridPos(e.clientX - rect.left, e.clientY - rect.top);
+        placeParticle(gx, gy, selectedType);
+      }
+    });
+
+    // Handle button clicks for selecting particle type
+    document.querySelectorAll('button').forEach(button => {
+      button.addEventListener('click', () => {
+        // Remove active class from all buttons
+        document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        // Add active to selected
+        button.classList.add('active');
+        // Set selected type
+        selectedType = button.dataset.type;
+      });
+    });
+
+    // Mark default button as active
+    document.querySelector('button[data-type="sand"]').classList.add('active');
+
+    // Function to simulate particle physics
+    function simulate() {
+      // Create a copy of the grid to avoid modifying while iterating
+      let newGrid = grid.map(row => row.slice());
+
+      // Iterate from bottom to top to simulate gravity properly
+      for (let y = gridHeight - 1; y >= 0; y--) {
+        for (let x = 0; x < gridWidth; x++) {
+          const type = grid[y][x];
+          if (type === 'empty' || type === 'wall') continue; // Skip empty or static walls
+
+          // Check if can move down
+          const below = y + 1 < gridHeight ? grid[y + 1][x] : null;
+          const belowLeft = y + 1 < gridHeight && x - 1 >= 0 ? grid[y + 1][x - 1] : null;
+          const belowRight = y + 1 < gridHeight && x + 1 < gridWidth ? grid[y + 1][x + 1] : null;
+          const left = x - 1 >= 0 ? grid[y][x - 1] : null;
+          const right = x + 1 < gridWidth ? grid[y][x + 1] : null;
+
+          if (type === 'stone') {
+            // Stone falls straight down if possible, no diagonal or side movement
+            if (below === 'empty') {
+              newGrid[y][x] = 'empty';
+              newGrid[y + 1][x] = 'stone';
+            }
+          } else if (type === 'sand') {
+            // Sand falls down, or diagonally if blocked
+            if (below === 'empty') {
+              newGrid[y][x] = 'empty';
+              newGrid[y + 1][x] = 'sand';
+            } else if (belowLeft === 'empty') {
+              newGrid[y][x] = 'empty';
+              newGrid[y + 1][x - 1] = 'sand';
+            } else if (belowRight === 'empty') {
+              newGrid[y][x] = 'empty';
+              newGrid[y + 1][x + 1] = 'sand';
+            }
+          } else if (type === 'water') {
+            // Water falls down or diagonally, and spreads sideways if at rest
+            if (below === 'empty') {
+              newGrid[y][x] = 'empty';
+              newGrid[y + 1][x] = 'water';
+            } else if (belowLeft === 'empty') {
+              newGrid[y][x] = 'empty';
+              newGrid[y + 1][x - 1] = 'water';
+            } else if (belowRight === 'empty') {
+              newGrid[y][x] = 'empty';
+              newGrid[y + 1][x + 1] = 'water';
+            } else {
+              // Spread sideways if can't fall
+              const dir = Math.random() < 0.5 ? -1 : 1; // Random direction to avoid bias
+              const sideX = x + dir;
+              const side = dir === -1 ? left : right;
+              if (side === 'empty') {
+                newGrid[y][x] = 'empty';
+                newGrid[y][sideX] = 'water';
+              }
+            }
+          }
+        }
+      }
+
+      // Update the grid
+      grid = newGrid;
+    }
+
+    // Function to render the grid on the canvas
+    function render() {
+      for (let y = 0; y < gridHeight; y++) {
+        for (let x = 0; x < gridWidth; x++) {
+          const type = grid[y][x];
+          ctx.fillStyle = particles[type].color;
+          ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    // Main animation loop
+    function loop() {
+      simulate(); // Update physics
+      render();   // Draw the grid
+      requestAnimationFrame(loop); // Schedule next frame
+    }
+
+    // Start the simulation loop
+    loop();
+  </script>
+</body>
+
+</html>

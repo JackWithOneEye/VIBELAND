@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instrument Tuner</title>
+  <style>
+    /* CSS for styling the tuner interface */
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+
+    #tuner-container {
+      text-align: center;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #note {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    #cents {
+      font-size: 24px;
+      color: #555;
+      margin: 10px 0;
+    }
+
+    #meter {
+      width: 300px;
+      height: 50px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin: 20px auto;
+    }
+
+    #controls {
+      margin-top: 20px;
+    }
+
+    label {
+      margin-right: 10px;
+    }
+
+    input[type="number"] {
+      width: 60px;
+      padding: 5px;
+      text-align: center;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button.stop {
+      background-color: #dc3545;
+    }
+
+    button.stop:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="tuner-container">
+    <div id="note">--</div>
+    <div id="cents">0 cents</div>
+    <canvas id="meter" width="300" height="50"></canvas>
+    <div id="controls">
+      <label for="a4-freq">A4 Frequency (Hz):</label>
+      <input type="number" id="a4-freq" value="440" min="400" max="500" step="1">
+      <button id="toggle-btn">Start Tuner</button>
+    </div>
+  </div>
+
+  <script>
+    // JavaScript for the instrument tuner functionality
+
+    // Global variables
+    let audioContext;
+    let analyser;
+    let microphone;
+    let stream;
+    let a4Freq = 440; // Default A4 frequency
+    let isRunning = false;
+    let animationId;
+    let lastFreq = -1;
+    let holdFrames = 0;
+    const HOLD_FRAMES = 12; // Hold for ~200ms at 60fps
+
+    // Note names array (starting from C)
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+    // Function to toggle tuner start/stop
+    async function toggleTuner() {
+      if (!isRunning) {
+        await startTuner();
+      } else {
+        stopTuner();
+      }
+    }
+
+    // Function to start the tuner
+    async function startTuner() {
+      try {
+        // Request microphone access
+        stream = await navigator.mediaDevices.getUserMedia({audio: true});
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 2048;
+        analyser.minDecibels = -100;
+        analyser.maxDecibels = -10;
+        analyser.smoothingTimeConstant = 0.85;
+
+        microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+
+        isRunning = true;
+        lastFreq = -1;
+        holdFrames = 0;
+        document.getElementById('toggle-btn').textContent = 'Stop Tuner';
+        document.getElementById('toggle-btn').classList.add('stop');
+
+        // Start the update loop
+        updatePitch();
+      } catch (err) {
+        console.error('Error accessing microphone:', err);
+        alert('Unable to access microphone. Please check permissions.');
+      }
+    }
+
+    // Function to stop the tuner
+    function stopTuner() {
+      isRunning = false;
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      if (audioContext) {
+        audioContext.close();
+      }
+      document.getElementById('toggle-btn').textContent = 'Start Tuner';
+      document.getElementById('toggle-btn').classList.remove('stop');
+      // Reset display
+      document.getElementById('note').textContent = '--';
+      document.getElementById('cents').textContent = '0 cents';
+      drawMeter(0);
+      lastFreq = -1;
+      holdFrames = 0;
+    }
+
+    // Function to update pitch using requestAnimationFrame
+    function updatePitch() {
+      if (!isRunning) return;
+
+      const bufferLength = analyser.fftSize;
+      const buffer = new Float32Array(bufferLength);
+      analyser.getFloatTimeDomainData(buffer);
+
+      // Use autocorrelation to find the pitch
+      const pitch = autoCorrelate(buffer, audioContext.sampleRate);
+
+      if (pitch > 0) {
+        lastFreq = pitch;
+        holdFrames = HOLD_FRAMES;
+        updateDisplay(pitch);
+      } else {
+        if (holdFrames > 0) {
+          holdFrames--;
+          updateDisplay(lastFreq);
+        } else {
+          // Show no signal
+          document.getElementById('note').textContent = '--';
+          document.getElementById('cents').textContent = 'No signal';
+          drawMeter(0);
+        }
+      }
+
+      animationId = requestAnimationFrame(updatePitch);
+    }
+
+    // Improved autocorrelation function for pitch detection with mean subtraction
+    function autoCorrelate(buffer, sampleRate) {
+      const SIZE = buffer.length;
+      let sum = 0;
+      let rms = 0;
+      for (let i = 0; i < SIZE; i++) {
+        sum += buffer[i];
+        rms += buffer[i] * buffer[i];
+      }
+      const mean = sum / SIZE;
+      rms = Math.sqrt(rms / SIZE);
+      if (rms < 0.001) return -1; // Lowered threshold for quieter signals
+
+      // Subtract mean to remove DC bias
+      for (let i = 0; i < SIZE; i++) {
+        buffer[i] -= mean;
+      }
+
+      const MIN_PERIOD = Math.floor(sampleRate / 2000); // Max freq 2000 Hz
+      const MAX_PERIOD = Math.floor(sampleRate / 50); // Min freq 50 Hz
+      let bestOffset = -1;
+      let bestCorrelation = 0;
+      const threshold = 0.01; // Lowered threshold
+
+      for (let offset = MIN_PERIOD; offset < Math.min(MAX_PERIOD, SIZE / 2); offset++) {
+        let correlation = 0;
+        for (let i = 0; i < SIZE - offset; i++) {
+          correlation += buffer[i] * buffer[i + offset];
+        }
+        correlation /= (SIZE - offset);
+
+        if (correlation > bestCorrelation) {
+          bestCorrelation = correlation;
+          bestOffset = offset;
+        }
+      }
+
+      if (bestCorrelation > threshold && bestOffset > 0) {
+        const freq = sampleRate / bestOffset;
+        if (freq > 50 && freq < 2000) { // Valid range for instruments
+          return freq;
+        }
+      }
+      return -1;
+    }
+
+    // Function to update the display with detected pitch
+    function updateDisplay(freq) {
+      const {note, cents} = getNoteAndCents(freq);
+
+      // Update note and cents display
+      document.getElementById('note').textContent = note;
+      document.getElementById('cents').textContent = `${cents.toFixed(0)} cents`;
+
+      // Draw meter
+      drawMeter(cents);
+    }
+
+    // Function to calculate nearest note and cents deviation
+    function getNoteAndCents(freq) {
+      // Calculate the MIDI note number relative to A4 (MIDI 69)
+      const noteNum = 69 + 12 * Math.log2(freq / a4Freq);
+      const roundedNote = Math.round(noteNum);
+      const noteIndex = roundedNote % 12;
+      const octave = Math.floor(roundedNote / 12) - 1;
+      const noteName = noteNames[noteIndex] + octave;
+
+      // Calculate exact frequency of the nearest note
+      const noteFreq = a4Freq * Math.pow(2, (roundedNote - 69) / 12);
+
+      // Calculate cents deviation
+      const cents = 1200 * Math.log2(freq / noteFreq);
+
+      return {note: noteName, cents};
+    }
+
+    // Function to draw the linear tuner meter on canvas
+    function drawMeter(cents) {
+      const canvas = document.getElementById('meter');
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      const centerX = width / 2;
+      const scale = 3; // pixels per cent
+
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height);
+
+      // Draw center line
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, height / 2);
+      ctx.lineTo(width, height / 2);
+      ctx.stroke();
+
+      // Draw ticks for -50 to +50 cents
+      for (let i = -50; i <= 50; i += 10) {
+        const x = centerX + i * scale;
+        ctx.beginPath();
+        ctx.moveTo(x, height / 2 - 5);
+        ctx.lineTo(x, height / 2 + 5);
+        ctx.strokeStyle = i === 0 ? '#00ff00' : '#000';
+        ctx.lineWidth = i === 0 ? 3 : 1;
+        ctx.stroke();
+      }
+
+      // Draw needle
+      const clampedCents = Math.max(-50, Math.min(50, cents));
+      const needleX = centerX + clampedCents * scale;
+      ctx.beginPath();
+      ctx.moveTo(needleX, 0);
+      ctx.lineTo(needleX, height);
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    // Event listeners
+    document.getElementById('toggle-btn').addEventListener('click', toggleTuner);
+
+    document.getElementById('a4-freq').addEventListener('input', (e) => {
+      a4Freq = parseFloat(e.target.value) || 440;
+    });
+  </script>
+</body>
+
+</html>
