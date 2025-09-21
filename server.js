@@ -1,19 +1,9 @@
 import { serve } from "bun";
 import { file } from "bun";
-import { Database } from "bun:sqlite";
+import { runMigrations } from "./migration/migrate.js";
 
-// Initialize SQLite database
-const db = new Database("guestbook.db", { create: true });
-
-// Create guest book table if it doesn't exist
-db.run(`
-  CREATE TABLE IF NOT EXISTS entries (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    message TEXT NOT NULL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+// Initialize database with migrations
+const db = await runMigrations();
 
 function generateGuestbookHTML(entries, hasError, hasSuccess, locale = 'en-US', timezone = 'UTC') {
   const entriesHTML = entries.length === 0
@@ -221,6 +211,21 @@ serve({
     const url = new URL(req.url);
     let pathname = url.pathname;
 
+    // Whitelist allowed paths
+    const allowedPaths = [
+      "/", // root redirects to index.html
+      "/index.html",
+      "/guestbook.html"
+    ];
+
+    const isInPages = pathname.startsWith("/pages/");
+    const isInAssets = pathname.startsWith("/assets/");
+    const isWhitelisted = allowedPaths.includes(pathname) || isInPages || isInAssets;
+
+    if (!isWhitelisted) {
+      return new Response("Not Found", { status: 404 });
+    }
+
     // Handle guest book routes
     if (pathname === "/guestbook.html") {
       if (req.method === "POST") {
@@ -233,11 +238,11 @@ serve({
           return Response.redirect(url.origin + "/guestbook.html?error=missing", 302);
         }
 
-        db.prepare("INSERT INTO entries (name, message) VALUES (?, ?)").run(name, message);
+        db.prepare("INSERT INTO guestbook (name, message) VALUES (?, ?)").run(name, message);
         return Response.redirect(url.origin + "/guestbook.html?success=1", 302);
       } else {
         // Serve dynamic guestbook page
-        const entries = db.prepare("SELECT * FROM entries ORDER BY timestamp DESC").all();
+        const entries = db.prepare("SELECT * FROM guestbook ORDER BY timestamp DESC").all();
         const hasError = url.searchParams.has("error");
         const hasSuccess = url.searchParams.has("success");
 
