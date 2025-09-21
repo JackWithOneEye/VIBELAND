@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VIBELAND World Clock</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+  <style>
+    .clock-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .city-clock {
+      background-color: #ffffff;
+      border: 2px inset #c0c0c0;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .city-name {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #000080;
+      margin-bottom: 10px;
+    }
+
+    .city-time {
+      font-size: 1.5em;
+      font-family: "Courier New", monospace;
+      color: #000000;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .city-date {
+      font-size: 0.9em;
+      color: #000080;
+    }
+
+    @media (max-width: 600px) {
+      .clock-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container extra-wide">
+    <h1>VIBELAND WORLD CLOCK</h1>
+    <div class="clock-grid" id="city-clocks">
+      <!-- Clocks will be rendered here -->
+    </div>
+
+    <div class="footer">
+      <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
+      <p>© 1999 VIBELAND - All Rights Reserved</p>
+    </div>
+  </div>
+  <script>
+    // List of featured cities with IANA time zones
+    const featuredCities = [
+      {name: "New York", tz: "America/New_York"},
+      {name: "Los Angeles", tz: "America/Los_Angeles"},
+      {name: "London", tz: "Europe/London"},
+      {name: "Berlin", tz: "Europe/Berlin"},
+      {name: "Sydney", tz: "Australia/Sydney"},
+      {name: "Tokyo", tz: "Asia/Tokyo"},
+      {name: "Rio de Janeiro", tz: "America/Sao_Paulo"},
+      {name: "Beijing", tz: "Asia/Shanghai"},
+      {name: "New Delhi", tz: "Asia/Kolkata"},
+      {name: "Mexico City", tz: "America/Mexico_City"}
+    ];
+
+    function padZero(num) {
+      return num < 10 ? "0" + num : num;
+    }
+
+    function getCityTime(tz) {
+      const now = new Date();
+      const options = {hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: tz};
+      const time = now.toLocaleTimeString([], options);
+
+      const dateOptions = {year: "numeric", month: "short", day: "numeric", weekday: "short", timeZone: tz};
+      const date = now.toLocaleDateString([], dateOptions);
+
+      return {time, date};
+    }
+
+    function renderClocks() {
+      const container = document.getElementById('city-clocks');
+      container.innerHTML = '';
+      featuredCities.forEach(city => {
+        const {time, date} = getCityTime(city.tz);
+        const clockDiv = document.createElement("div");
+        clockDiv.className = "city-clock";
+        clockDiv.innerHTML = `
+          <div class="city-name">${city.name}</div>
+          <div class="city-time">${time}</div>
+          <div class="city-date">${date}</div>
+        `;
+        container.appendChild(clockDiv);
+      });
+    }
+
+    renderClocks();
+    setInterval(renderClocks, 1000);
+  </script>
+</body>
+
+</html>
