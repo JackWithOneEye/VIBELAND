@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>VIBELAND - Unix Timestamp</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style type="text/css">
+    .unix-timestamp-main {
+      width: 390px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .timestamp-label {
+      font-size: 1.15rem;
+      margin-bottom: 1rem;
+    }
+
+    .timestamp-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .timestamp-desc {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>VIBELAND UNIX TIMESTAMP</h1>
+
+    <div class="unix-timestamp-main">
+      <div class="timestamp-label">Current UTC time as a Unix timestamp</div>
+      <div class="timestamp-value" id="timestamp"></div>
+      <div class="timestamp-desc">
+        <span id="readable"></span>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
+      <p>© 1999 VIBELAND - All Rights Reserved</p>
+    </div>
+  </div>
+  <script>
+    function updateTimestamp() {
+      const now = new Date();
+      const unix = Math.floor(now.getTime() / 1000);
+      document.getElementById('timestamp').textContent = unix;
+      document.getElementById('readable').textContent = now.toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC');
+    }
+    updateTimestamp();
+    setInterval(updateTimestamp, 1000);
+  </script>
+</body>
+
+</html>
