@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>VIBELAND - SOLITAIRE</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style type="text/css">
+    .solitaire {
+      max-width: 100%;
+      width: 650px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .top-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .stock,
+    .waste {
+      width: 70px;
+      height: 100px;
+      border: 2px solid #333;
+      position: relative;
+      margin-right: 10px;
+      background: #f8f8f8;
+    }
+
+    .foundations {
+      display: flex;
+      gap: 3px;
+    }
+
+    .foundation {
+      width: 70px;
+      height: 100px;
+      border: 2px solid #333;
+      position: relative;
+      background: #f8f8f8;
+      transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+    }
+
+    /* Highlight possible foundation targets while dragging */
+    .foundation.valid {
+      box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.85);
+      transform: scale(1.03);
+      border-color: #b8860b;
+    }
+
+    /* Stronger highlight when the dragged card is over the foundation */
+    .foundation.over {
+      box-shadow: 0 0 0 6px rgba(255, 180, 0, 1);
+      transform: scale(1.06);
+      border-color: #ffb300;
+    }
+
+    .tableau-row {
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+    }
+
+    .tableau {
+      width: 70px;
+      min-height: 350px;
+      border: 2px solid #333;
+      position: relative;
+      background: #0a5a0a;
+    }
+
+    .card {
+      width: 70px;
+      height: 100px;
+      position: absolute;
+      left: 0;
+      border: 1px solid #000;
+      border-radius: 8px;
+      cursor: grab;
+      box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+      user-select: none;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card:not(.face-down) {
+      background: white;
+    }
+
+    .card:active {
+      cursor: grabbing;
+    }
+
+    .face-down {
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+    }
+
+    .corner {
+      position: absolute;
+      font-family: 'Times New Roman', serif;
+      font-weight: bold;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .top-left {
+      top: 3px;
+      left: 3px;
+    }
+
+    .bottom-right {
+      bottom: 3px;
+      right: 3px;
+      transform: rotate(180deg);
+    }
+
+    .red {
+      color: #d32f2f;
+    }
+
+    .black {
+      color: #212121;
+    }
+
+    button {
+      padding: 10px 0;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>VIBELAND SOLITAIRE</h1>
+
+    <div class="solitaire">
+      <div class="top-row">
+        <div class="stock" id="stock"></div>
+        <div class="waste" id="waste"></div>
+        <div class="foundations">
+          <div class="foundation" id="foundation0"></div> <!-- Clubs -->
+          <div class="foundation" id="foundation1"></div> <!-- Diamonds -->
+          <div class="foundation" id="foundation2"></div> <!-- Hearts -->
+          <div class="foundation" id="foundation3"></div> <!-- Spades -->
+        </div>
+      </div>
+      <div class="tableau-row">
+        <div class="tableau" id="tableau0"></div>
+        <div class="tableau" id="tableau1"></div>
+        <div class="tableau" id="tableau2"></div>
+        <div class="tableau" id="tableau3"></div>
+        <div class="tableau" id="tableau4"></div>
+        <div class="tableau" id="tableau5"></div>
+        <div class="tableau" id="tableau6"></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
+      <p>© 1999 VIBELAND - All Rights Reserved</p>
+    </div>
+  </div>
+
+  <script>
+    const suits = ['♣', '♦', '♥', '♠'];
+    const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+    let deck = [];
+    let stock = [];
+    let waste = [];
+    let foundations = [[], [], [], []];
+    let tableau = [[], [], [], [], [], [], []];
+
+    // Current drag payload (kept global to help highlighting and dragend cleanup)
+    let currentDragPayload = null;
+
+    function getRankValue(rank) {
+      if (rank === 'A') return 1;
+      if (rank === 'J') return 11;
+      if (rank === 'Q') return 12;
+      if (rank === 'K') return 13;
+      return parseInt(rank, 10);
+    }
+
+    function getColor(color) {
+      return color; // 'red' or 'black'
+    }
+
+    // Validate descending alternating color sequence
+    function isValidSequence(substack) {
+      if (!Array.isArray(substack) || substack.length === 0) return false;
+      for (let i = 1; i < substack.length; i++) {
+        const prev = substack[i - 1];
+        const cur = substack[i];
+        if (getRankValue(cur.rank) !== getRankValue(prev.rank) - 1) return false;
+        if (getColor(cur.color) === getColor(prev.color)) return false;
+      }
+      return true;
+    }
+
+    function createDeck() {
+      deck = [];
+      for (let s = 0; s < 4; s++) {
+        for (let r = 0; r < 13; r++) {
+          const color = (s === 0 || s === 3) ? 'black' : 'red';
+          deck.push({
+            suit: suits[s],
+            rank: ranks[r],
+            color: color,
+            faceUp: false
+          });
+        }
+      }
+      // Fisher-Yates shuffle
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+    }
+
+    function deal() {
+      createDeck();
+      stock = [...deck];
+      waste = [];
+      foundations = [[], [], [], []];
+      tableau = [[], [], [], [], [], [], []];
+      // Deal to tableau (classic Klondike layout)
+      for (let col = 0; col < 7; col++) {
+        for (let row = 0; row <= col; row++) {
+          const card = stock.pop();
+          tableau[col].push(card);
+          if (row === col) card.faceUp = true;
+        }
+      }
+      render();
+    }
+
+    function createCardElement(card) {
+      const el = document.createElement('div');
+      el.className = `card ${card.faceUp ? '' : 'face-down'} ${card.color}`;
+      if (card.faceUp) {
+        const rankSuit = `${card.rank}<br>${card.suit}`;
+        el.innerHTML = `
+                    <span class="corner top-left">${rankSuit}</span>
+                    <span class="corner bottom-right">${rankSuit}</span>
+                `;
+      } else {
+        el.innerHTML = '';
+      }
+      el.dataset.suit = card.suit;
+      el.dataset.rank = card.rank;
+      el.dataset.color = card.color;
+      el.dataset.faceUp = card.faceUp ? 'true' : 'false';
+      return el;
+    }
+
+    function render() {
+      // Clear piles
+      document.querySelectorAll('#stock, #waste, .foundation, .tableau').forEach(p => p.innerHTML = '');
+
+      // Stock
+      const stockEl = document.getElementById('stock');
+      if (stock.length > 0) {
+        const back = document.createElement('div');
+        back.className = 'card face-down';
+        back.style.top = '0';
+        back.style.left = '0';
+        stockEl.appendChild(back);
+      }
+
+      // Waste (top card only)
+      const wasteEl = document.getElementById('waste');
+      if (waste.length > 0) {
+        const topCard = waste[waste.length - 1];
+        const cardEl = createCardElement(topCard);
+        cardEl.style.top = '0';
+        cardEl.style.left = '0';
+        cardEl.draggable = true;
+        cardEl.addEventListener('dragstart', dragStart);
+        cardEl.addEventListener('dragend', dragEnd);
+        wasteEl.appendChild(cardEl);
+      }
+
+      // Foundations
+      for (let i = 0; i < 4; i++) {
+        const fEl = document.getElementById(`foundation${i}`);
+        if (foundations[i].length > 0) {
+          const topCard = foundations[i][foundations[i].length - 1];
+          const cardEl = createCardElement(topCard);
+          cardEl.style.top = '0';
+          cardEl.style.left = '0';
+          fEl.appendChild(cardEl);
+        }
+      }
+
+      // Tableau
+      for (let col = 0; col < 7; col++) {
+        const tEl = document.getElementById(`tableau${col}`);
+        tableau[col].forEach((card, index) => {
+          const cardEl = createCardElement(card);
+          cardEl.style.top = `${index * 20}px`;
+          cardEl.style.left = '0';
+          if (card.faceUp) {
+            cardEl.draggable = true;
+            cardEl.addEventListener('dragstart', dragStart);
+            cardEl.addEventListener('dragend', dragEnd);
+          }
+          tEl.appendChild(cardEl);
+        });
+      }
+    }
+
+    // Mark which foundations are valid targets for the current payload
+    function markValidFoundations(payload) {
+      // Clear any previous valid/over classes
+      document.querySelectorAll('.foundation').forEach(f => {
+        f.classList.remove('valid', 'over');
+      });
+      if (!payload) return;
+
+      // Only single-card moves can go to foundations
+      let candidateCard = null;
+      if (payload.type === 'waste') {
+        if (waste.length === 0) return;
+        const card = waste[waste.length - 1];
+        candidateCard = card;
+      } else if (payload.type === 'tableau') {
+        // If moving multiple cards, no foundation is valid
+        if (payload.numCards > 1) return;
+        const srcCol = payload.col;
+        candidateCard = tableau[srcCol][payload.startIndex];
+        if (!candidateCard) return;
+      } else {
+        return;
+      }
+
+      // Which foundations are valid?
+      document.querySelectorAll('.foundation').forEach((fEl, idx) => {
+        const top = foundations[idx].length > 0 ? foundations[idx][foundations[idx].length - 1] : null;
+        let valid = false;
+        if (top === null) {
+          // empty foundation — allow any Ace
+          if (candidateCard.rank === 'A') valid = true;
+        } else {
+          // must match suit and be next rank
+          if (candidateCard.suit === top.suit &&
+            getRankValue(candidateCard.rank) === getRankValue(top.rank) + 1) {
+            valid = true;
+          }
+        }
+        if (valid) fEl.classList.add('valid');
+      });
+    }
+
+    function clearFoundationHighlights() {
+      document.querySelectorAll('.foundation').forEach(f => {
+        f.classList.remove('valid', 'over');
+      });
+    }
+
+    function dragStart(e) {
+      e.stopPropagation();
+      const cardEl = e.target.closest('.card');
+      if (!cardEl) return;
+
+      const parentPile = cardEl.parentElement;
+      if (!parentPile) return;
+
+      let payload = null;
+
+      if (parentPile.id === 'waste') {
+        if (waste.length === 0) return;
+        const card = waste[waste.length - 1];
+        payload = {type: 'waste', suit: card.suit, rank: card.rank};
+      } else if (parentPile.classList.contains('tableau')) {
+        const col = parseInt(parentPile.id.replace('tableau', ''), 10);
+        if (isNaN(col)) return;
+
+        const clickedSuit = cardEl.dataset.suit;
+        const clickedRank = cardEl.dataset.rank;
+        const clickedFaceUp = cardEl.dataset.faceUp === 'true';
+
+        let clickedIndex = tableau[col].findIndex(c =>
+          c.suit === clickedSuit &&
+          c.rank === clickedRank &&
+          String(c.faceUp) === String(clickedFaceUp)
+        );
+        if (clickedIndex === -1) {
+          clickedIndex = tableau[col].findIndex(c => c.suit === clickedSuit && c.rank === clickedRank);
+          if (clickedIndex === -1) return;
+        }
+
+        if (!tableau[col][clickedIndex].faceUp) return;
+
+        const movingStack = tableau[col].slice(clickedIndex);
+        if (!isValidSequence(movingStack)) {
+          return;
+        }
+
+        payload = {
+          type: 'tableau',
+          col: col,
+          startIndex: clickedIndex,
+          numCards: movingStack.length
+        };
+      } else {
+        return;
+      }
+
+      if (!payload) return;
+
+      currentDragPayload = payload; // store globally for highlight helpers
+      markValidFoundations(payload);
+
+      try {e.dataTransfer.setData('application/json', JSON.stringify(payload));} catch (_) { }
+      try {e.dataTransfer.setData('text/plain', JSON.stringify(payload));} catch (_) { }
+      try {e.dataTransfer.setDragImage(cardEl, 35, 50);} catch (_) { }
+
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    // dragend cleanup
+    function dragEnd(e) {
+      currentDragPayload = null;
+      clearFoundationHighlights();
+    }
+
+    function allowDrop(e) {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    }
+
+    // When a dragged item enters a foundation, show the stronger 'over' class only when that foundation is valid
+    function foundationDragEnter(e) {
+      if (!e.currentTarget) return;
+      e.preventDefault();
+      const fEl = e.currentTarget;
+      if (fEl.classList.contains('valid')) {
+        fEl.classList.add('over');
+      }
+    }
+    function foundationDragLeave(e) {
+      if (!e.currentTarget) return;
+      e.preventDefault();
+      e.currentTarget.classList.remove('over');
+    }
+
+    function drop(e) {
+      e.preventDefault();
+      const targetEl = e.currentTarget;
+      if (!targetEl) return;
+
+      const dataStr = e.dataTransfer.getData('application/json') || e.dataTransfer.getData('text/plain');
+      if (!dataStr) {
+        // Cleanup highlights just in case
+        currentDragPayload = null;
+        clearFoundationHighlights();
+        return;
+      }
+      let data;
+      try {
+        data = JSON.parse(dataStr);
+      } catch (err) {
+        currentDragPayload = null;
+        clearFoundationHighlights();
+        return;
+      }
+
+      let targetIndex, targetPile;
+      if (targetEl.classList.contains('foundation')) {
+        targetIndex = parseInt(targetEl.id.replace('foundation', ''), 10);
+        targetPile = foundations[targetIndex];
+      } else if (targetEl.classList.contains('tableau')) {
+        targetIndex = parseInt(targetEl.id.replace('tableau', ''), 10);
+        targetPile = tableau[targetIndex];
+      } else {
+        currentDragPayload = null;
+        clearFoundationHighlights();
+        return;
+      }
+
+      // Prevent no-op dropping back onto the same tableau column
+      if (data.type === 'tableau' && targetEl.classList.contains('tableau') && targetIndex === data.col) {
+        currentDragPayload = null;
+        clearFoundationHighlights();
+        return;
+      }
+
+      let movingCards = [];
+      let exposedCard = null;
+      let exposedWasFlipped = false;
+
+      if (data.type === 'waste') {
+        if (waste.length === 0) {
+          currentDragPayload = null;
+          clearFoundationHighlights();
+          return;
+        }
+        movingCards = [waste.pop()];
+      } else if (data.type === 'tableau') {
+        if (!Array.isArray(tableau[data.col])) {
+          currentDragPayload = null;
+          clearFoundationHighlights();
+          return;
+        }
+        movingCards = tableau[data.col].splice(data.startIndex, data.numCards);
+        if (tableau[data.col].length > 0) {
+          const last = tableau[data.col][tableau[data.col].length - 1];
+          if (!last.faceUp) {
+            exposedCard = last;
+            exposedWasFlipped = true;
+            exposedCard.faceUp = true;
+          }
+        }
+      } else {
+        currentDragPayload = null;
+        clearFoundationHighlights();
+        return;
+      }
+
+      if (movingCards.length === 0) {
+        currentDragPayload = null;
+        clearFoundationHighlights();
+        return;
+      }
+
+      const bottomCard = movingCards[0];
+      const topCard = targetPile.length > 0 ? targetPile[targetPile.length - 1] : null;
+
+      let valid = false;
+      if (targetEl.classList.contains('foundation')) {
+        // empty foundation accepts any Ace (player choice). After first card, foundation locks to that suit.
+        if (movingCards.length === 1) {
+          if (topCard === null) {
+            if (bottomCard.rank === 'A') valid = true;
+          } else {
+            if (bottomCard.suit === topCard.suit &&
+              getRankValue(bottomCard.rank) === getRankValue(topCard.rank) + 1) {
+              valid = true;
+            }
+          }
+        } else {
+          valid = false;
+        }
+      } else {
+        // tableau rules
+        if (targetPile.length === 0) {
+          valid = bottomCard.rank === 'K';
+        } else {
+          valid = getColor(bottomCard.color) !== getColor(topCard.color) &&
+            getRankValue(bottomCard.rank) === getRankValue(topCard.rank) - 1;
+        }
+      }
+
+      if (valid) {
+        movingCards.forEach(card => targetPile.push(card));
+      } else {
+        // restore source
+        if (data.type === 'waste') {
+          waste.push(movingCards[0]);
+        } else if (data.type === 'tableau') {
+          tableau[data.col].splice(data.startIndex, 0, ...movingCards);
+          if (exposedWasFlipped && exposedCard) {
+            exposedCard.faceUp = false;
+          }
+        }
+      }
+
+      // cleanup highlights and drag state
+      currentDragPayload = null;
+      clearFoundationHighlights();
+
+      render();
+    }
+
+    function drawFromStock() {
+      if (stock.length > 0) {
+        const card = stock.pop();
+        card.faceUp = true;
+        waste.push(card);
+      } else {
+        // Recycle waste to stock, flip the pile
+        stock = waste.slice().reverse().map(card => {
+          card.faceUp = false;
+          return card;
+        });
+        waste = [];
+      }
+      render();
+    }
+
+    // Event listeners
+    document.getElementById('stock').addEventListener('click', drawFromStock);
+
+    // Foundations and tableau accept drops; also attach enter/leave for foundation 'over' styling
+    document.querySelectorAll('.foundation').forEach(f => {
+      f.addEventListener('dragover', allowDrop);
+      f.addEventListener('dragenter', foundationDragEnter);
+      f.addEventListener('dragleave', foundationDragLeave);
+      f.addEventListener('drop', drop);
+    });
+    document.querySelectorAll('.tableau').forEach(t => {
+      t.addEventListener('dragover', allowDrop);
+      t.addEventListener('drop', drop);
+    });
+
+    // Global cleanup on ESC or mouse up outside (safety)
+    window.addEventListener('dragend', dragEnd);
+    window.addEventListener('mouseup', () => {
+      // if the user cancels the drag with mouse up outside, clear highlights
+      if (currentDragPayload) {
+        currentDragPayload = null;
+        clearFoundationHighlights();
+      }
+    });
+
+    // Initial deal
+    deal();
+  </script>
+</body>
+
+</html>

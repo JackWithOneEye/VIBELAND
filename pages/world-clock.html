@@ -16,29 +16,85 @@
 
     .city-clock {
       background-color: #ffffff;
-      border: 2px inset #c0c0c0;
+      border: 1px solid #e0e0e0;
       padding: 15px;
       text-align: center;
     }
 
     .city-name {
       font-size: 1.1em;
-      font-weight: bold;
-      color: #000080;
+      font-weight: 500;
+      color: #333333;
       margin-bottom: 10px;
     }
 
-    .city-time {
-      font-size: 1.5em;
-      font-family: "Courier New", monospace;
-      color: #000000;
-      font-weight: bold;
-      margin-bottom: 5px;
+    .city-date {
+      font-size: 0.85em;
+      color: #666666;
+      margin-top: 5px;
     }
 
-    .city-date {
-      font-size: 0.9em;
-      color: #000080;
+    .analog-clock {
+      width: 150px;
+      height: 150px;
+      border: 2px solid #dddddd;
+      border-radius: 50%;
+      position: relative;
+      margin: 0 auto 10px;
+      background-color: #ffffff;
+    }
+
+    .number {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      color: #999999;
+      font-weight: 300;
+      text-align: center;
+    }
+
+    .dot {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 4px;
+      height: 4px;
+      background-color: #999999;
+      border-radius: 50%;
+    }
+
+    .hand {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border-radius: 1px;
+      transform-origin: bottom center;
+    }
+
+    .hour-hand {
+      width: 3px;
+      margin-left: -1.5px;
+      background-color: #666666;
+    }
+
+    .minute-hand {
+      width: 2px;
+      margin-left: -1px;
+      background-color: #333333;
+    }
+
+    .second-hand {
+      width: 1px;
+      margin-left: -0.5px;
+      background-color: #e74c3c;
+    }
+
+    .center-dot {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      background-color: #666666;
+      border-radius: 50%;
     }
 
     @media (max-width: 600px) {
@@ -54,7 +110,7 @@
   <div class="container extra-wide">
     <h1>VIBELAND WORLD CLOCK</h1>
     <div class="clock-grid" id="city-clocks">
-      <!-- Clocks will be rendered here -->
+      <!-- Clocks will be initialized here -->
     </div>
 
     <div class="footer">
@@ -77,39 +133,149 @@
       {name: "Mexico City", tz: "America/Mexico_City"}
     ];
 
-    function padZero(num) {
-      return num < 10 ? "0" + num : num;
-    }
+    let clocks = [];
 
     function getCityTime(tz) {
       const now = new Date();
-      const options = {hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: tz};
-      const time = now.toLocaleTimeString([], options);
+      const timeStr = now.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: tz});
+      const [h, m, s] = timeStr.split(':').map(Number);
 
       const dateOptions = {year: "numeric", month: "short", day: "numeric", weekday: "short", timeZone: tz};
-      const date = now.toLocaleDateString([], dateOptions);
+      const date = now.toLocaleDateString('en-US', dateOptions);
 
-      return {time, date};
+      return {hours: h, minutes: m, seconds: s, date};
     }
 
-    function renderClocks() {
+    function initClocks() {
       const container = document.getElementById('city-clocks');
-      container.innerHTML = '';
+
+      // Measure clock size
+      const tempClock = document.createElement('div');
+      tempClock.className = 'analog-clock';
+      document.body.appendChild(tempClock);
+      const clockSize = tempClock.offsetWidth;
+      document.body.removeChild(tempClock);
+
+      const radius = clockSize * 0.42;
+      const markerRadius = clockSize * 0.41;
+      const numFontSize = clockSize * 0.12;
+      const hourLength = clockSize * 0.28;
+      const minLength = clockSize * 0.42;
+      const secLength = clockSize * 0.45;
+      const centerSize = clockSize * 0.03;
+
       featuredCities.forEach(city => {
-        const {time, date} = getCityTime(city.tz);
         const clockDiv = document.createElement("div");
         clockDiv.className = "city-clock";
-        clockDiv.innerHTML = `
-          <div class="city-name">${city.name}</div>
-          <div class="city-time">${time}</div>
-          <div class="city-date">${date}</div>
-        `;
+
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "city-name";
+        nameDiv.textContent = city.name;
+        clockDiv.appendChild(nameDiv);
+
+        const analogDiv = document.createElement("div");
+        analogDiv.className = "analog-clock";
+
+        // Add markers: numbers at 12,3,6,9; dots elsewhere
+        for (let i = 1; i <= 12; i++) {
+          const deg = i * 30;
+          if ([3, 6, 9, 12].includes(i)) {
+            const numDiv = document.createElement("div");
+            numDiv.className = "number";
+            numDiv.textContent = i;
+            numDiv.style.fontSize = `${numFontSize}px`;
+            numDiv.style.transform = `translate(-50%, -50%) rotate(${deg}deg) translate(0, -${radius}px) rotate(-${deg}deg)`;
+            analogDiv.appendChild(numDiv);
+          } else {
+            const dotDiv = document.createElement("div");
+            dotDiv.className = "dot";
+            dotDiv.style.transform = `translate(-50%, -50%) rotate(${deg}deg) translate(0, -${markerRadius}px) rotate(-${deg}deg)`;
+            analogDiv.appendChild(dotDiv);
+          }
+        }
+
+        // Calculate initial time
+        const {hours, minutes, seconds, date} = getCityTime(city.tz);
+
+        // Calculate degrees
+        const hourDeg = (hours % 12) * 30 + minutes * 0.5 + seconds * (0.5 / 60);
+        const minDeg = minutes * 6 + seconds * 0.1;
+        const secDeg = seconds * 6;
+
+        // Hour hand
+        const hourHand = document.createElement("div");
+        hourHand.className = "hand hour-hand";
+        hourHand.style.height = `${hourLength}px`;
+        hourHand.style.marginTop = `-${hourLength}px`;
+        hourHand.style.transform = `rotate(${hourDeg}deg)`;
+        analogDiv.appendChild(hourHand);
+
+        // Minute hand
+        const minuteHand = document.createElement("div");
+        minuteHand.className = "hand minute-hand";
+        minuteHand.style.height = `${minLength}px`;
+        minuteHand.style.marginTop = `-${minLength}px`;
+        minuteHand.style.transform = `rotate(${minDeg}deg)`;
+        analogDiv.appendChild(minuteHand);
+
+        // Second hand
+        const secondHand = document.createElement("div");
+        secondHand.className = "hand second-hand";
+        secondHand.style.height = `${secLength}px`;
+        secondHand.style.marginTop = `-${secLength}px`;
+        secondHand.style.transform = `rotate(${secDeg}deg)`;
+        analogDiv.appendChild(secondHand);
+
+        // Center dot
+        const centerDot = document.createElement("div");
+        centerDot.className = "center-dot";
+        centerDot.style.width = `${centerSize}px`;
+        centerDot.style.height = `${centerSize}px`;
+        centerDot.style.marginLeft = `-${centerSize / 2}px`;
+        centerDot.style.marginTop = `-${centerSize / 2}px`;
+        analogDiv.appendChild(centerDot);
+
+        clockDiv.appendChild(analogDiv);
+
+        const dateDiv = document.createElement("div");
+        dateDiv.className = "city-date";
+        dateDiv.textContent = date;
+        clockDiv.appendChild(dateDiv);
+
         container.appendChild(clockDiv);
+
+        // Store references
+        clocks.push({
+          city: city,
+          hourHand: hourHand,
+          minuteHand: minuteHand,
+          secondHand: secondHand,
+          dateEl: dateDiv
+        });
       });
     }
 
-    renderClocks();
-    setInterval(renderClocks, 1000);
+    function updateClocks() {
+      clocks.forEach(clock => {
+        const {hours, minutes, seconds, date} = getCityTime(clock.city.tz);
+
+        // Calculate degrees
+        const hourDeg = (hours % 12) * 30 + minutes * 0.5 + seconds * (0.5 / 60);
+        const minDeg = minutes * 6 + seconds * 0.1;
+        const secDeg = seconds * 6;
+
+        clock.hourHand.style.transform = `rotate(${hourDeg}deg)`;
+        clock.minuteHand.style.transform = `rotate(${minDeg}deg)`;
+        clock.secondHand.style.transform = `rotate(${secDeg}deg)`;
+        clock.dateEl.textContent = date;
+      });
+    }
+
+    // Initialize once
+    initClocks();
+
+    // Update every second
+    setInterval(updateClocks, 1000);
   </script>
 </body>
 
