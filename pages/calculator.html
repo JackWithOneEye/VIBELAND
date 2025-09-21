@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VIBELAND - Scientific Calculator</title>
+    <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+    <style type="text/css">
+        .calculator {
+            width: 390px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        button {
+            padding: 10px 0;
+            font-size: 1rem;
+        }
+
+        button.zero {
+            grid-column: span 2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>VIBELAND CALCULATOR</h1>
+        
+        <div class="calculator">
+            <div class="display-container">
+                <input type="text" id="display" class="display" value="0" readonly />
+            </div>
+            <div class="buttons">
+                <button class="clear" onclick="clearDisplay()">C</button>
+                <button onclick="input('(')">(</button>
+                <button onclick="input(')')">)</button>
+                <button onclick="input('%')">%</button>
+                <button onclick="backspace()">⟵</button>
+
+                <button class="func" onclick="inputFunc('sin')">sin</button>
+                <button class="func" onclick="inputFunc('cos')">cos</button>
+                <button class="func" onclick="inputFunc('tan')">tan</button>
+                <button class="func" onclick="inputFunc('log')">log</button>
+                <button onclick="inputOperator('/')">÷</button>
+
+                <button onclick="input('7')">7</button>
+                <button onclick="input('8')">8</button>
+                <button onclick="input('9')">9</button>
+                <button class="func" onclick="inputFunc('sqrt')">√</button>
+                <button onclick="inputOperator('*')">×</button>
+
+                <button onclick="input('4')">4</button>
+                <button onclick="input('5')">5</button>
+                <button onclick="input('6')">6</button>
+                <button class="func" onclick="inputOperator('^')">^</button>
+                <button onclick="inputOperator('-')">−</button>
+
+                <button onclick="input('1')">1</button>
+                <button onclick="input('2')">2</button>
+                <button onclick="input('3')">3</button>
+                <button class="func" onclick="input('pi')">π</button>
+                <button onclick="inputOperator('+')">+</button>
+
+                <button onclick="input('0')" class="zero">0</button>
+                <button onclick="input('.')">.</button>
+                <button class="equal" onclick="calculate()">=</button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
+            <p>© 1999 VIBELAND - All Rights Reserved</p>
+        </div>
+    </div>
+  <script>
+    let display = document.getElementById('display');
+    let expr = "";
+    let lastWasResult = false;
+    let lastResult = 0;
+    let lastCalculation = ""; // For repeat "="
+
+    function input(val) {
+      if (lastWasResult) {
+        expr = "";
+        lastWasResult = false;
+      }
+      if (expr === "0") expr = "";
+      if (val === "pi") val = "π";
+      expr += val;
+      updateDisplay();
+    }
+
+    function inputOperator(op) {
+      if (lastWasResult || expr === "" || expr === "Error") {
+        // Use previous result (default 0) as first operand
+        expr = (isNaN(lastResult) ? "0" : lastResult.toString()) + op;
+        lastWasResult = false;
+      } else {
+        expr += op;
+      }
+      updateDisplay();
+    }
+
+    function inputFunc(func) {
+      if (lastWasResult || expr === "" || expr === "Error") {
+        // Use previous result (default 0) as argument
+        expr = func + "(" + (isNaN(lastResult) ? "0" : lastResult.toString()) + ")";
+        lastWasResult = false;
+      } else {
+        expr += func + "(";
+      }
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      display.value = expr || "0";
+    }
+
+    function clearDisplay() {
+      expr = "";
+      lastWasResult = false;
+      updateDisplay();
+    }
+
+    function backspace() {
+      expr = expr.slice(0, -1);
+      updateDisplay();
+    }
+
+    function compute(str) {
+      str = str.replace(/π/g, "Math.PI");
+      str = str.replace(/(\d+(\.\d+)?|\([^\)]+\))\s*\^\s*(\d+(\.\d+)?|\([^\)]+\))/g,
+        (_, a, _1, b) => `Math.pow(${a},${b})`
+      );
+      str = str.replace(/sqrt\(/g, "Math.sqrt(");
+      str = str.replace(/sin\(/g, "Math.sin(");
+      str = str.replace(/cos\(/g, "Math.cos(");
+      str = str.replace(/tan\(/g, "Math.tan(");
+      str = str.replace(/log\(/g, "Math.log10(");
+      str = str.replace(/(\d+(\.\d+)?)%/g, (_, n) => `(${n}/100)`);
+      str = str.replace(/÷/g, "/").replace(/×/g, "*").replace(/−/g, "-");
+      return str;
+    }
+
+    function calculate() {
+      let toEval, repeatMode = false;
+      if (lastWasResult && lastCalculation) {
+        // Repeat last calculation
+        toEval = lastCalculation;
+        repeatMode = true;
+      } else {
+        toEval = compute(expr);
+        lastCalculation = toEval;
+      }
+      try {
+        let result = Function(`"use strict";return (${toEval})`)();
+        if (typeof result === "number" && !Number.isInteger(result)) {
+          result = result.toFixed(9).replace(/\.?0+$/, "");
+        }
+        expr = result.toString();
+        lastResult = (typeof result === "string") ? Number(result) : result;
+        lastWasResult = true;
+      } catch (e) {
+        expr = "Error";
+        lastResult = 0;
+        lastWasResult = true;
+      }
+      updateDisplay();
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key >= '0' && e.key <= '9') input(e.key);
+      if (e.key === '.') input('.');
+      if (e.key === '+') inputOperator('+');
+      if (e.key === '-') inputOperator('-');
+      if (e.key === '*') inputOperator('*');
+      if (e.key === '/') inputOperator('/');
+      if (e.key === '(') input('(');
+      if (e.key === ')') input(')');
+      if (e.key === '^') inputOperator('^');
+      if (e.key === '%') input('%');
+      if (e.key.toLowerCase() === 'c') clearDisplay();
+      if (e.key === 'Backspace') backspace();
+      if (e.key === 'Enter') calculate();
+      // Functions via keyboard
+      if (e.key === 's') inputFunc('sin');
+      if (e.key === 'c') inputFunc('cos');
+      if (e.key === 't') inputFunc('tan');
+      if (e.key === 'l') inputFunc('log');
+      if (e.key === 'r') inputFunc('sqrt');
+      // π via keyboard
+      if (e.key === 'p') input('pi');
+    });
+  </script>
+</body>
+
+</html>

@@ -1,68 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Particle Simulator</title>
-  <style>
-    /* CSS for the body and canvas */
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background-color: #f0f0f0;
-      margin: 0;
-      padding: 20px;
-      font-family: Arial, sans-serif;
-    }
-
-    /* Style for the canvas */
-    canvas {
-      border: 2px solid #333;
-      background-color: #fff;
-      cursor: crosshair;
-    }
-
-    /* Container for controls */
-    .controls {
-      margin-top: 10px;
-      display: flex;
-      gap: 10px;
-    }
-
-    /* Style for buttons */
-    button {
-      padding: 10px 15px;
-      font-size: 16px;
-      cursor: pointer;
-      border: 1px solid #333;
-      background-color: #ddd;
-      transition: background-color 0.3s;
-    }
-
-    button:hover {
-      background-color: #ccc;
-    }
-
-    button.active {
-      background-color: #aaa;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>VIBELAND - Particle Simulator</title>
+    <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+    <style type="text/css">
+        button {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+    </style>
 </head>
 
 <body>
-  <!-- Canvas element for rendering the simulation -->
-  <canvas id="canvas" width="800" height="600"></canvas>
+    <div class="container wide">
+        <h1>VIBELAND PARTICLE SIMULATOR</h1>
+        
+        <div class="simulator">
+            <!-- Canvas element for rendering the simulation -->
+            <canvas id="canvas" width="800" height="600"></canvas>
 
-  <!-- Controls for selecting particle types -->
-  <div class="controls">
-    <button data-type="eraser">Eraser</button>
-    <button data-type="wall">Wall</button>
-    <button data-type="stone">Stone</button>
-    <button data-type="sand">Sand</button>
-    <button data-type="water">Water</button>
-  </div>
+            <!-- Controls for selecting particle types -->
+            <div class="controls">
+                <button data-type="eraser">Eraser</button>
+                <button data-type="wall">Wall</button>
+                <button data-type="stone">Stone</button>
+                <button data-type="sand">Sand</button>
+                <button data-type="water">Water</button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
+            <p>© 1999 VIBELAND - All Rights Reserved</p>
+        </div>
+    </div>
 
   <script>
     // Get the canvas and its 2D context

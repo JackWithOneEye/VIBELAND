@@ -1,99 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Instrument Tuner</title>
-  <style>
-    /* CSS for styling the tuner interface */
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f4f4f4;
-    }
+    <meta charset="UTF-8">
+    <title>VIBELAND - Instrument Tuner</title>
+    <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+    <style type="text/css">
+        .tuner-container {
+            background-color: #ffffff;
+            border: 2px inset #c0c0c0;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
 
-    #tuner-container {
-      text-align: center;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
+        #controls {
+            margin-top: 20px;
+        }
 
-    #note {
-      font-size: 48px;
-      font-weight: bold;
-      margin: 10px 0;
-    }
+        input[type="number"] {
+            padding: 5px;
+        }
 
-    #cents {
-      font-size: 24px;
-      color: #555;
-      margin: 10px 0;
-    }
-
-    #meter {
-      width: 300px;
-      height: 50px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      margin: 20px auto;
-    }
-
-    #controls {
-      margin-top: 20px;
-    }
-
-    label {
-      margin-right: 10px;
-    }
-
-    input[type="number"] {
-      width: 60px;
-      padding: 5px;
-      text-align: center;
-    }
-
-    button {
-      padding: 10px 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    button.stop {
-      background-color: #dc3545;
-    }
-
-    button.stop:hover {
-      background-color: #c82333;
-    }
-  </style>
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+    </style>
 </head>
 
 <body>
-  <div id="tuner-container">
-    <div id="note">--</div>
-    <div id="cents">0 cents</div>
-    <canvas id="meter" width="300" height="50"></canvas>
-    <div id="controls">
-      <label for="a4-freq">A4 Frequency (Hz):</label>
-      <input type="number" id="a4-freq" value="440" min="400" max="500" step="1">
-      <button id="toggle-btn">Start Tuner</button>
+    <div class="container">
+        <h1>VIBELAND TUNER</h1>
+        
+        <div class="tuner-container">
+            <div id="note">--</div>
+            <div id="cents">0 cents</div>
+            <canvas id="meter" width="300" height="50"></canvas>
+            <div id="controls">
+                <label for="a4-freq">A4 Frequency (Hz):</label>
+                <input type="number" id="a4-freq" value="440" min="400" max="500" step="1">
+                <button id="toggle-btn">Start Tuner</button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
+            <p>© 1999 VIBELAND - All Rights Reserved</p>
+        </div>
     </div>
-  </div>
 
   <script>
     // JavaScript for the instrument tuner functionality

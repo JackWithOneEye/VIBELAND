@@ -18,7 +18,7 @@ async function updateIndexHTML() {
     const linksList = htmlFiles.map(file => {
       const displayName = file.replace('.html', '').replace(/[-_]/g, ' ');
       const capitalizedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-      return `                <li><a href="pages/${file}">${capitalizedName} Page</a></li>`;
+      return `                <li><a href="pages/${file}">${capitalizedName}</a></li>`;
     }).join('\n');
 
     // Create new links section

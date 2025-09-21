@@ -2,151 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VIBELAND - String Vibration Simulator</title>
-    <style>
-        /* Simplified minimalistic styling */
-        body {
-            margin: 0;
-            padding: 20px;
-            background: #000;
-            color: #fff;
-            font-family: 'Courier New', monospace;
-            overflow: hidden;
-        }
-
-        h1 {
-            text-align: center;
-            margin: 20px 0;
-            font-size: 2em;
-            letter-spacing: 2px;
-        }
-
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-
-        /* Simplified canvas styling */
-        canvas {
-            border: 1px solid #333;
-            background: #111;
-            cursor: grab;
-        }
-
-        canvas:active {
-            cursor: grabbing;
-        }
-
-        /* Simplified control panel styling */
+    <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+    <style type="text/css">
         .controls {
-            display: flex;
             gap: 20px;
-            background: #111;
+            background-color: #c0c0c0;
             padding: 15px;
-            border: 1px solid #333;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        label {
-            font-size: 14px;
-        }
-
-        /* Simplified slider styling */
-        input[type="range"] {
-            width: 120px;
-            height: 20px;
-            background: #333;
-            outline: none;
-            border: 1px solid #666;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #fff;
-            cursor: pointer;
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background: #fff;
-            border: none;
-            cursor: pointer;
-        }
-
-        /* Simplified button styling */
-        .neon-btn {
-            background: #333;
-            border: 1px solid #666;
-            color: #fff;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            margin: 2px;
-        }
-
-        .neon-btn:hover {
-            background: #555;
-        }
-
-        .neon-btn:active {
-            background: #222;
-        }
-
-        .neon-btn.paused {
-            color: #ccc;
-            background: #444;
-        }
-
-        /* Simplified instructions */
-        .instructions {
-            text-align: center;
-            max-width: 600px;
-            line-height: 1.6;
-            background: #111;
-            padding: 15px;
-            border: 1px solid #333;
-        }
-
-        .instructions h3 {
-            margin-top: 0;
-            color: #fff;
-        }
-
-        /* Simplified home link */
-        .home-link {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: #fff;
-            text-decoration: none;
-            font-size: 18px;
-        }
-
-        .home-link:hover {
-            color: #ccc;
+            border: 2px inset #c0c0c0;
+            margin: 20px 0;
         }
     </style>
 </head>
 <body>
-    <a href="../index.html" class="home-link">← HOME</a>
-    
-    <div class="container">
-        <h1>STRING VIBRATION</h1>
+    <div class="container wide">
+        <h1>VIBELAND STRING VIBRATION</h1>
         
-        <canvas id="stringCanvas" width="800" height="400"></canvas>
+        <div class="simulator">
+            <canvas id="stringCanvas" width="800" height="400"></canvas>
+        </div>
         
         <div class="controls">
             <div class="control-group">
@@ -173,6 +47,11 @@
             <p><strong>TENSION:</strong> Higher values create faster wave propagation<br>
                <strong>DAMPING:</strong> Controls how quickly vibrations fade out<br>
                <strong>PLUCK SIZE:</strong> Controls the width of your finger contact area</p>
+        </div>
+        
+        <div class="footer">
+            <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
+            <p>© 1999 VIBELAND - All Rights Reserved</p>
         </div>
     </div>
 
@@ -453,10 +332,10 @@
                 // Clear canvas
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 
-                // Set up simple white line
+                // Set up simple black line
                 this.ctx.shadowColor = 'transparent';
                 this.ctx.shadowBlur = 0;
-                this.ctx.strokeStyle = '#fff';
+                this.ctx.strokeStyle = '#000000';
                 this.ctx.lineWidth = 2;
                 
                 // Draw the string as a smooth curve
