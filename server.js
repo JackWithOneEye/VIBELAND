@@ -290,6 +290,8 @@ serve({
         contentType = "image/jpeg";
       } else if (pathname.endsWith(".gif")) {
         contentType = "image/gif";
+      } else if (pathname.endsWith(".svg")) {
+        contentType = "image/svg+xml";
       }
 
       return new Response(fileContent, {

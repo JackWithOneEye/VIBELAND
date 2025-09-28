@@ -86,6 +86,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
     }
 
     .card:not(.face-down) {
@@ -105,8 +106,10 @@
       position: absolute;
       font-family: 'Times New Roman', serif;
       font-weight: bold;
-      font-size: 12px;
-      line-height: 1;
+      font-size: 16px;
+      line-height: 1.05;
+      text-align: center;
+      letter-spacing: 0.2px;
     }
 
     .top-left {
@@ -114,9 +117,20 @@
       left: 3px;
     }
 
+    .top-right {
+      top: 3px;
+      right: 3px;
+    }
+
     .bottom-right {
       bottom: 3px;
       right: 3px;
+      transform: rotate(180deg);
+    }
+
+    .bottom-left {
+      bottom: 3px;
+      left: 3px;
       transform: rotate(180deg);
     }
 
@@ -128,9 +142,56 @@
       color: #212121;
     }
 
+    /* Large center mark */
+    .center-mark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Times New Roman', serif;
+      font-weight: bold;
+      font-size: 34px;
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
     button {
       padding: 10px 0;
       font-size: 1rem;
+    }
+
+    /* Win overlay */
+    .win-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .win-modal {
+      background: #fffbea;
+      border: 3px solid #333;
+      padding: 20px 24px;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 6px 6px 0 #333;
+      font-family: 'Times New Roman', serif;
+    }
+    .win-modal h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    .win-modal p {
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+    .win-modal button {
+      width: 100%;
+      cursor: pointer;
+      background: #ffd54f;
+      border: 2px solid #333;
     }
   </style>
 </head>
@@ -167,6 +228,14 @@
     </div>
   </div>
 
+  <div class="win-overlay" id="winOverlay">
+    <div class="win-modal">
+      <h2>Congratulations!</h2>
+      <p>You won the game of Solitaire.</p>
+      <button id="newGameBtn">Deal a New Game</button>
+    </div>
+  </div>
+
   <script>
     const suits = ['♣', '♦', '♥', '♠'];
     const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -176,6 +245,8 @@
     let waste = [];
     let foundations = [[], [], [], []];
     let tableau = [[], [], [], [], [], [], []];
+
+    let gameWon = false;
 
     // Current drag payload (kept global to help highlighting and dragend cleanup)
     let currentDragPayload = null;
@@ -230,6 +301,9 @@
       waste = [];
       foundations = [[], [], [], []];
       tableau = [[], [], [], [], [], [], []];
+      gameWon = false;
+      const overlay = document.getElementById('winOverlay');
+      if (overlay) overlay.style.display = 'none';
       // Deal to tableau (classic Klondike layout)
       for (let col = 0; col < 7; col++) {
         for (let row = 0; row <= col; row++) {
@@ -244,12 +318,18 @@
     function createCardElement(card) {
       const el = document.createElement('div');
       el.className = `card ${card.faceUp ? '' : 'face-down'} ${card.color}`;
+
       if (card.faceUp) {
-        const rankSuit = `${card.rank}<br>${card.suit}`;
+        const colorClass = card.color === 'red' ? 'red' : 'black';
+        const rank = card.rank;
+        const suit = card.suit;
         el.innerHTML = `
-                    <span class="corner top-left">${rankSuit}</span>
-                    <span class="corner bottom-right">${rankSuit}</span>
-                `;
+          <span class="corner top-left ${colorClass}">${rank}</span>
+          <span class="corner bottom-right ${colorClass}">${rank}</span>
+          <span class="corner top-right ${colorClass}">${suit}</span>
+          <span class="corner bottom-left ${colorClass}">${suit}</span>
+          <span class="center-mark ${colorClass}">${suit}</span>
+        `;
       } else {
         el.innerHTML = '';
       }
@@ -314,6 +394,8 @@
           tEl.appendChild(cardEl);
         });
       }
+
+      checkWin();
     }
 
     // Mark which foundations are valid targets for the current payload
@@ -595,8 +677,98 @@
       render();
     }
 
+    // Determine a foundation index where the card can go, or -1 if none
+    function findFoundationTargetIndex(card) {
+      for (let i = 0; i < 4; i++) {
+        const pile = foundations[i];
+        const top = pile.length ? pile[pile.length - 1] : null;
+        if (!top) {
+          if (card.rank === 'A') return i;
+        } else if (card.suit === top.suit && getRankValue(card.rank) === getRankValue(top.rank) + 1) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    // Auto-move all possible single top cards to foundations
+    function autoMoveAllToFoundation() {
+      let moved = false;
+      let didMoveThisPass = true;
+      while (didMoveThisPass) {
+        didMoveThisPass = false;
+
+        // Try waste top first
+        if (waste.length > 0) {
+          const wTop = waste[waste.length - 1];
+          const fIdx = findFoundationTargetIndex(wTop);
+          if (fIdx !== -1) {
+            foundations[fIdx].push(waste.pop());
+            didMoveThisPass = true;
+            moved = true;
+            continue; // re-check from start to prioritize building same suit
+          }
+        }
+
+        // Then each tableau top face-up card
+        for (let col = 0; col < 7; col++) {
+          if (tableau[col].length === 0) continue;
+          const tTop = tableau[col][tableau[col].length - 1];
+          if (!tTop.faceUp) continue;
+          const fIdx = findFoundationTargetIndex(tTop);
+          if (fIdx !== -1) {
+            foundations[fIdx].push(tableau[col].pop());
+            // Flip newly exposed card if needed
+            if (tableau[col].length > 0) {
+              const newTop = tableau[col][tableau[col].length - 1];
+              if (!newTop.faceUp) newTop.faceUp = true;
+            }
+            didMoveThisPass = true;
+            moved = true;
+            break; // restart scanning from waste again
+          }
+        }
+      }
+
+      if (moved) {
+        render();
+      }
+    }
+
+    function showWinOverlay() {
+      const overlay = document.getElementById('winOverlay');
+      if (!overlay) return;
+      overlay.style.display = 'flex';
+    }
+
+    function checkWin() {
+      if (gameWon) return;
+      const total = foundations[0].length + foundations[1].length + foundations[2].length + foundations[3].length;
+      if (total === 52) {
+        gameWon = true;
+        showWinOverlay();
+      }
+    }
+
     // Event listeners
     document.getElementById('stock').addEventListener('click', drawFromStock);
+
+    // Right-click anywhere on the solitaire field to auto-move to foundations
+    const solitaireEl = document.querySelector('.solitaire');
+    if (solitaireEl) {
+      solitaireEl.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        autoMoveAllToFoundation();
+      });
+    }
+
+    // New game button in win overlay
+    const newGameBtn = document.getElementById('newGameBtn');
+    if (newGameBtn) {
+      newGameBtn.addEventListener('click', () => {
+        deal();
+      });
+    }
 
     // Foundations and tableau accept drops; also attach enter/leave for foundation 'over' styling
     document.querySelectorAll('.foundation').forEach(f => {
