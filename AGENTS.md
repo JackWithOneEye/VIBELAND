@@ -1,27 +1,26 @@
-# AGENTS.md - VIBELAND Coding Guide
+# AGENTS.md - VIBELAND Project Guide
 
-## Build/Run Commands
-- **Start server**: `bun server.js` or `bun run server.js`
-- **Development server**: Runs on port 3000 at http://localhost:3000
-- **Build pages**: `bun build.js` (updates index.html with page links)
-- **Watch mode**: `bun build.js --watch` (auto-rebuild on page changes)
-- **Database**: SQLite database at `vibeland.db` with migrations
+## Commands
+- **Build**: `bun build.js` - Updates index.html with links to all HTML pages in /pages
+- **Build (watch mode)**: `bun build.js --watch` - Watches /pages directory and rebuilds on changes
+- **Start server**: `bun server.js` - Starts server on http://localhost:3000
+- **No test suite**: This project has no automated tests
 
-## Architecture & Structure
-- Bun.js static file server with SQLite database and guestbook functionality
-- **Main entry**: `server.js` - HTTP routing, file serving, guestbook API
-- **Database**: SQLite with migrations in `/migration` directory
+## Architecture
+- **Runtime**: Bun-based web server with static HTML pages
+- **Server**: server.js - Bun.serve() with route handlers; handles /guestbook with dynamic HTML generation
+- **Database**: SQLite (vibeland.db) managed via bun:sqlite, used for guestbook entries
+- **Migrations**: migration/ directory - Sequential numbered migrations (001_initial_schema.js, etc.), run automatically on server start
+- **Build system**: build.js - Scans /pages directory and updates index.html with navigation links
 - **Frontend**: Vanilla HTML/CSS/JS with retro 90s styling theme
-- **Pages**: `/pages` directory (calculator, particles, tuner, unix-time, vibration, weather, world-clock)
-- **Assets**: `/assets/styles.css` for shared styling
-- **Build system**: `build.js` auto-generates page navigation in index.html
+- **Pages**: pages/ directory - Self-contained HTML pages with inline CSS and JavaScript
+- **Assets**: assets/ directory - Shared styles.css and other resources
 
-## Code Style Guidelines
-- **Server-side**: Modern ES6+ JavaScript with Bun runtime
-- **Frontend**: Vanilla JavaScript, no transpilation
-- **Imports**: Use ES6 `import` syntax (server), script tags for browser
-- **Database**: Raw SQL with prepared statements for security
-- **Styling**: Inline CSS in HTML files, retro 90s aesthetic maintained
-- **Naming**: camelCase for variables/functions, lowercase for files
-- **Error handling**: Try-catch blocks, return appropriate HTTP status codes
-- **Security**: HTML escaping for user input, whitelisted routes
+## Code Style & Conventions
+- Use **double quotes** for strings in JavaScript (not single quotes)
+- HTML pages are standalone with inline `<style>` and `<script>` tags
+- Inline CSS in HTML files, retro 90s aesthetic maintained
+- Database queries use prepared statements: `db.prepare("SQL").run()` or `.all()`
+- Migration files export `up(db)` and `down(db)` functions
+- Server routes defined in routes object with GET/POST handlers or direct file responses
+- Escape user input with escapeHtml() before rendering (see server.js example)

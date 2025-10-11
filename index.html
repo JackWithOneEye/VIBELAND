@@ -3,40 +3,342 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>VIBELAND</title>
-  <link rel="stylesheet" type="text/css" href="assets/styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>*** VIBELAND *** Welcome to the Zone!</title>
+  <meta name="description" content="Welcome to VIBELAND - Your Portal to Fun and Games!">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #008080;
+      background-image: url('data:image/gif;base64,R0lGODlhCAAIAIABAC0tLf///yH5BAEKAAEALAAAAAAIAAgAAAINjB+gC+jP2ptn0WskLQA7');
+      margin: 0;
+      padding: 10px;
+      color: #000000;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+    }
+
+    a {
+      color: #0000EE;
+    }
+
+    a:visited {
+      color: #551A8B;
+    }
+
+    a:hover {
+      color: #FF0000;
+      background-color: #FFFF99;
+    }
+
+    a:active {
+      color: #FF0000;
+    }
+
+    .container {
+      width: 780px;
+      margin: 0 auto;
+      background-color: #C0C0C0;
+      padding: 4px;
+    }
+
+    .outer-border {
+      background: #C0C0C0;
+      padding: 6px;
+      border: 2px solid #808080;
+      border-top-color: #FFFFFF;
+      border-left-color: #FFFFFF;
+    }
+
+    .header {
+      background-color: #FFFF00;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-family: 'Arial Black', Arial, Helvetica, sans-serif;
+      font-size: 48px;
+      font-weight: bold;
+      color: #FF0000;
+    }
+
+    .header p {
+      margin: 5px 0 0 0;
+      font-family: 'Comic Sans MS', Arial, Helvetica, sans-serif;
+      font-size: 18px;
+      font-style: italic;
+      color: #0000FF;
+    }
+
+    .content {
+      background-color: #FFFFCC;
+      padding: 10px;
+      border: 2px inset #FFFFFF;
+    }
+
+    .ticker {
+      overflow: hidden;
+      white-space: nowrap;
+      background: #000080;
+      color: #FFFF00;
+      border: 2px inset #FFFFFF;
+      padding: 4px;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .marquee {
+      display: inline-block;
+      padding-left: 100%;
+      animation: marquee 20s linear infinite;
+    }
+
+    @keyframes marquee {
+      from {
+        transform: translateX(0);
+      }
+
+      to {
+        transform: translateX(-100%);
+      }
+    }
+
+    .welcome {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .welcome-new {
+      font-size: 16px;
+      font-weight: bold;
+      color: #FF0000;
+    }
+
+    .welcome-text {
+      font-size: 13px;
+    }
+
+    .blink {
+      animation: blink 1s step-start infinite;
+    }
+
+    @keyframes blink {
+      50% {
+        opacity: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .blink,
+      .marquee {
+        animation: none;
+      }
+    }
+
+    hr {
+      border: none;
+      height: 2px;
+      background: linear-gradient(to bottom, #FFFFFF, #808080);
+      margin: 10px 0;
+    }
+
+    hr.thin {
+      height: 2px;
+    }
+
+    hr.thick {
+      height: 3px;
+    }
+
+    .guestbook-box {
+      display: inline-block;
+      background-color: #C0C0C0;
+      border: 3px outset #FFFFFF;
+      padding: 10px 15px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .guestbook-box:active {
+      border-style: inset;
+    }
+
+    .guestbook-box a {
+      font-size: 16px;
+      font-weight: bold;
+      color: #000000;
+      text-decoration: none;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .pages-section {
+      background-color: #FF99FF;
+      border: 2px solid #9900FF;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    .pages-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #000080;
+      margin-bottom: 10px;
+    }
+
+    .category {
+      margin-bottom: 15px;
+      font-size: 13px;
+    }
+
+    .category:last-child {
+      margin-bottom: 0;
+    }
+
+    .category-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #0000FF;
+      margin-bottom: 5px;
+      background-color: #FFFF99;
+      padding: 3px 5px;
+      border: 2px solid #FF00FF;
+    }
+
+    .category a {
+      font-weight: bold;
+    }
+
+    .footer {
+      text-align: center;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 11px;
+      color: #008000;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .badges {
+      margin: 10px 0;
+    }
+
+    .badges img {
+      image-rendering: pixelated;
+      margin: 4px;
+      vertical-align: middle;
+    }
+
+    .counter {
+      display: inline-block;
+      font-family: 'Courier New', monospace;
+      background: #000000;
+      color: #00FF00;
+      padding: 3px 8px;
+      border: 2px inset #FFFFFF;
+      letter-spacing: 2px;
+      font-size: 12px;
+      margin: 4px;
+      vertical-align: middle;
+    }
+
+    .webring {
+      margin: 8px 0;
+      font-size: 12px;
+      color: #000000;
+    }
+
+    .contact {
+      margin: 8px 0;
+      font-size: 11px;
+    }
+  </style>
 </head>
 
 <body>
   <div class="container">
-    <h1>VIBELAND</h1>
+    <div class="outer-border">
+      <div class="header">
+        <h1>✨ V I B E L A N D ✨</h1>
+        <p>~*~ Your Ultimate Portal to Fun, Games & Cool Stuff! ~*~</p>
+      </div>
 
-    <h2>Site Navigation</h2>
-    
-    <p style="text-align: center; margin: 20px 0;"><a href="guestbook.html">📖 Sign the Guest Book</a></p>
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ SIGN OUR GUESTBOOK ★ NEW GAMES & TOOLS ★ BEST VIEWED AT 800×600 ★
+        </div>
+      </div>
 
-    <div class="links">
-      <p><strong>Available Pages:</strong></p>
-      <ul>
-                <li><a href="pages/battleship.html">Battleship</a></li>
-                <li><a href="pages/calculator.html">Calculator</a></li>
-                <li><a href="pages/particles.html">Particles</a></li>
-                <li><a href="pages/pong.html">Pong</a></li>
-                <li><a href="pages/solitaire.html">Solitaire</a></li>
-                <li><a href="pages/sudoku.html">Sudoku</a></li>
-                <li><a href="pages/synthesizer.html">Synthesizer</a></li>
-                <li><a href="pages/the-orb.html">The orb</a></li>
-                <li><a href="pages/tuner.html">Tuner</a></li>
-                <li><a href="pages/unix-time.html">Unix time</a></li>
-                <li><a href="pages/vibration.html">Vibration</a></li>
-                <li><a href="pages/weather.html">Weather</a></li>
-                <li><a href="pages/world-clock.html">World clock</a></li>
-            </ul>
-    </div>
+      <div class="content">
+        <div class="welcome">
+          <span class="welcome-new blink">★ NEW! ★</span>
+          <span class="welcome-text">
+            Welcome to the coolest site on the web! Check out all our awesome stuff below!
+          </span>
+        </div>
 
-    <div class="footer">
-      <p>© 1999 VIBELAND - All Rights Reserved</p>
-      <p>Last updated: September 28, 2025</p>
+        <hr class="thick">
+
+        <div class="center">
+          <div class="guestbook-box">
+            <strong>📖 <a href="guestbook">SIGN OUR GUEST BOOK!</a> 📖</strong>
+          </div>
+        </div>
+
+        <br>
+        <hr class="thick">
+
+        <div class="pages-section">
+          <div class="pages-title">⚡ AVAILABLE PAGES ⚡</div>
+
+          <div class="category">
+            <div class="category-title">🎮 GAMES 🎮</div>
+            <strong><a href="battleship">Battleship</a></strong><br>
+            <strong><a href="freecell">Freecell</a></strong><br>
+            <strong><a href="mahjong">Mahjong</a></strong><br>
+            <strong><a href="paint">Paint</a></strong><br>
+            <strong><a href="pong">Pong</a></strong><br>
+            <strong><a href="solitaire">Solitaire</a></strong><br>
+            <strong><a href="sudoku">Sudoku</a></strong>
+          </div>
+
+          <div class="category">
+            <div class="category-title">🎵 MUSIC 🎵</div>
+            <strong><a href="synthesizer">Synthesizer</a></strong><br>
+            <strong><a href="tuner">Tuner</a></strong>
+          </div>
+
+          <div class="category">
+            <div class="category-title">🔬 SCIENCE 🔬</div>
+            <strong><a href="calculator">Calculator</a></strong><br>
+            <strong><a href="particles">Particles</a></strong><br>
+            <strong><a href="the-orb">The orb</a></strong><br>
+            <strong><a href="vibration">Vibration</a></strong>
+          </div>
+
+          <div class="category">
+            <div class="category-title">📰 INFORMATION 📰</div>
+            <strong><a href="unix-time">Unix time</a></strong><br>
+            <strong><a href="weather">Weather</a></strong><br>
+            <strong><a href="world-clock">World clock</a></strong>
+          </div>
+        </div>
+
+        <hr class="thick">
+        <br>
+
+        <div class="footer">
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+          <div>Last updated: October 11, 2025</div>
+          <div style="margin-top: 8px; font-size: 10px;">Best viewed at 800×600, 256 colors</div>
+        </div>
+      </div>
     </div>
   </div>
 </body>

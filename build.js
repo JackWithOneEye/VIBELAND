@@ -16,9 +16,10 @@ async function updateIndexHTML() {
 
     // Generate new links section
     const linksList = htmlFiles.map(file => {
-      const displayName = file.replace('.html', '').replace(/[-_]/g, ' ');
+      file = file.replace('.html', '');
+      const displayName = file.replace(/[-_]/g, ' ');
       const capitalizedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-      return `                <li><a href="pages/${file}">${capitalizedName}</a></li>`;
+      return `                <li><a href="${file}">${capitalizedName}</a></li>`;
     }).join('\n');
 
     // Create new links section

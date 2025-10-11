@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>VIBELAND - SUDOKU</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sudoku - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style type="text/css">
     .sudoku {
@@ -98,9 +99,18 @@
 
 <body>
   <div class="container">
-    <h1>VIBELAND SUDOKU</h1>
+    <div class="outer-border">
+      <div class="header">
+        <h1>🔢 SUDOKU 🔢</h1>
+        <p>~*~ Number Puzzle Challenge ~*~</p>
+      </div>
 
-    <div class="sudoku">
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ LOGIC & NUMBERS ★ FILL THE 9×9 GRID ★</div>
+      </div>
+
+      <div class="content">
+        <div class="sudoku">
       <div class="status" id="status">Select a cell and enter a number (1-9)</div>
       <div class="difficulty-selector">
         <label for="difficulty">Difficulty:</label>
@@ -118,11 +128,15 @@
         <button onclick="solvePuzzle()">Solve</button>
         <button onclick="clearHints()">Hints</button>
       </div>
-    </div>
+        </div>
 
-    <div class="footer">
-      <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
-      <p>© 1999 VIBELAND - All Rights Reserved</p>
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
     </div>
   </div>
 

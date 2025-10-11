@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-  <title>VIBELAND - Synthesizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Synthesizer - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
     /* Retro-styled panel wrappers matching VIBELAND aesthetic */
@@ -276,14 +276,6 @@
     .start-btn {
       padding: 8px 16px;
       font-weight: bold;
-    }
-
-    .footer {
-      text-align: center;
-      font-size: 10px;
-      color: #808080;
-      margin-top: 20px;
-      font-style: italic;
     }
 
     /* Selector knobs (waveform/filter type) */
@@ -596,309 +588,320 @@
     .lfo-section .ctrl.center-vert {
       justify-content: center;
     }
-
   </style>
 </head>
 
 <body>
   <div class="container extra-wide">
-    <h1>VIBELAND SYNTH</h1>
-
-    <div class="synth-panel">
-      <div class="top-bar">
-        <button id="power" class="start-btn">Start Synth</button>
-
-        <label class="switch">
-          <input type="checkbox" id="legato">
-          <span class="switch-slider"></span>
-        </label>
-        <span class="switch-label">Legato</span>
+    <div class="outer-border">
+      <div class="header">
+        <h1>🎹 SYNTHESIZER 🎹</h1>
+        <p>~*~ Create Electronic Music ~*~</p>
       </div>
 
-      <div class="controls-container" id="knobs">
-        <!-- Oscillator Section -->
-        <div class="control-section">
-          <div class="section-title">Oscillator</div>
-          <div class="controls-grid">
-            <div class="knob-wrap waveform">
-              <div class="waveform-knob-container">
-                <img src="../assets/img/sine.svg" class="waveform-icon sine" alt="Sine">
-                <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
-                <img src="../assets/img/sawtooth.svg" class="waveform-icon sawtooth active" alt="Sawtooth">
-                <img src="../assets/img/square.svg" class="waveform-icon square" alt="Square">
-                <div class="selector-knob" id="wave-knob" data-options="sine,triangle,sawtooth,square" data-value="2"
-                  title="Waveform">
-                  <div class="indicator"></div>
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ TURN UP THE VOLUME AND CREATE YOUR SOUND ★</div>
+      </div>
+
+      <div class="content">
+        <div class="synth-panel">
+          <div class="top-bar">
+            <button id="power" class="start-btn">Start Synth</button>
+
+            <label class="switch">
+              <input type="checkbox" id="legato">
+              <span class="switch-slider"></span>
+            </label>
+            <span class="switch-label">Legato</span>
+          </div>
+
+          <div class="controls-container" id="knobs">
+            <!-- Oscillator Section -->
+            <div class="control-section">
+              <div class="section-title">Oscillator</div>
+              <div class="controls-grid">
+                <div class="knob-wrap waveform">
+                  <div class="waveform-knob-container">
+                    <img src="../assets/img/sine.svg" class="waveform-icon sine" alt="Sine">
+                    <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
+                    <img src="../assets/img/sawtooth.svg" class="waveform-icon sawtooth active" alt="Sawtooth">
+                    <img src="../assets/img/square.svg" class="waveform-icon square" alt="Square">
+                    <div class="selector-knob" id="wave-knob" data-options="sine,triangle,sawtooth,square" data-value="2"
+                      title="Waveform">
+                      <div class="indicator"></div>
+                    </div>
+                  </div>
+                  <div class="knob-label">Wave</div>
                 </div>
-              </div>
-              <div class="knob-label">Wave</div>
-            </div>
-            <div class="knob-wrap">
-              <div class="knob" data-param="octave" data-min="-2" data-max="2" data-step="1" data-default="0" data-value="0"
-                title="Octave Shift"></div>
-              <div class="knob-label">Octave</div>
-              <div class="knob-value" data-for="octave">0</div>
-            </div>
-            <div class="knob-wrap">
-              <div class="knob" data-param="detune" data-min="-100" data-max="100" data-step="1" data-default="0"
-                data-value="0" title="Detune (cents)"></div>
-              <div class="knob-label">Detune</div>
-              <div class="knob-value" data-for="detune">0 ¢</div>
-            </div>
-            <div class="knob-wrap">
-              <div class="knob" data-param="lfoDetune" data-min="-100" data-max="100" data-step="1" data-default="0"
-                data-value="0" title="LFO Detune Amount"></div>
-              <div class="knob-label">LFO Amt</div>
-              <div class="knob-value" data-for="lfoDetune">0 ¢</div>
-            </div>
-            <div class="ctrl">
-              <select class="lfo-selector" id="detune-lfo-src">
-                <option value="off">Off</option>
-                <option value="lfo1">LFO1</option>
-                <option value="lfo2">LFO2</option>
-              </select>
-              <div class="knob-label" style="margin-top: 4px;">LFO Src</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Master Section -->
-        <div class="control-section">
-          <div class="section-title">Master</div>
-          <div class="controls-grid">
-            <div class="knob-wrap">
-              <div class="knob" data-param="master" data-min="0" data-max="1" data-step="0.001" data-default="0.7"
-                data-value="0.7" title="Master Volume"></div>
-              <div class="knob-label">Master</div>
-              <div class="knob-value" data-for="master">-6 dB</div>
-            </div>
-            <div class="knob-wrap">
-              <div class="knob" data-param="lfoPan" data-min="0" data-max="1" data-step="0.01" data-default="0"
-                data-value="0" title="Pan LFO Amount"></div>
-              <div class="knob-label">Pan Amt</div>
-              <div class="knob-value" data-for="lfoPan">0.00</div>
-            </div>
-            <div class="ctrl">
-              <select class="lfo-selector" id="pan-lfo-src">
-                <option value="off">Off</option>
-                <option value="lfo1">LFO1</option>
-                <option value="lfo2">LFO2</option>
-              </select>
-              <div class="knob-label" style="margin-top: 4px;">Pan LFO</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ADSR Envelope Section -->
-        <div class="control-section adsr-section">
-          <div class="section-title">ADSR Envelope</div>
-          <div class="controls-grid">
-            <div class="knob-wrap">
-              <div class="knob" data-param="attack" data-min="0.001" data-max="2" data-step="0.001" data-default="0.02"
-                data-value="0.02" title="Attack (s)"></div>
-              <div class="knob-label">Attack</div>
-              <div class="knob-value" data-for="attack">0.02s</div>
-            </div>
-            <div class="knob-wrap">
-              <div class="knob" data-param="decay" data-min="0.001" data-max="2" data-step="0.001" data-default="0.10"
-                data-value="0.10" title="Decay (s)"></div>
-              <div class="knob-label">Decay</div>
-              <div class="knob-value" data-for="decay">0.10s</div>
-            </div>
-            <div class="knob-wrap">
-              <div class="knob" data-param="sustain" data-min="0" data-max="1" data-step="0.001" data-default="0.70"
-                data-value="0.70" title="Sustain (0..1)"></div>
-              <div class="knob-label">Sustain</div>
-              <div class="knob-value" data-for="sustain">0.70</div>
-            </div>
-            <div class="knob-wrap">
-              <div class="knob" data-param="release" data-min="0.001" data-max="3" data-step="0.001" data-default="0.20"
-                data-value="0.20" title="Release (s)"></div>
-              <div class="knob-label">Release</div>
-              <div class="knob-value" data-for="release">0.20s</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Filter Section -->
-        <div class="control-section filter-section">
-          <div class="section-title">Filter</div>
-            <div class="controls-grid">
-              <div class="knob-wrap waveform">
-                <div class="filter-select-container">
-                  <select id="filter-select" class="filter-dropdown">
-                    <option value="lowpass">Lowpass</option>
-                    <option value="highpass">Highpass</option>
-                    <option value="bandpass">Bandpass</option>
-                    <option value="lowshelf">Lowshelf</option>
-                    <option value="highshelf">Highshelf</option>
-                    <option value="peaking">Peaking</option>
-                    <option value="notch">Notch</option>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="octave" data-min="-2" data-max="2" data-step="1" data-default="0" data-value="0"
+                    title="Octave Shift"></div>
+                  <div class="knob-label">Octave</div>
+                  <div class="knob-value" data-for="octave">0</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="detune" data-min="-100" data-max="100" data-step="1" data-default="0"
+                    data-value="0" title="Detune (cents)"></div>
+                  <div class="knob-label">Detune</div>
+                  <div class="knob-value" data-for="detune">0 ¢</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="lfoDetune" data-min="-100" data-max="100" data-step="1" data-default="0"
+                    data-value="0" title="LFO Detune Amount"></div>
+                  <div class="knob-label">LFO Amt</div>
+                  <div class="knob-value" data-for="lfoDetune">0 ¢</div>
+                </div>
+                <div class="ctrl">
+                  <select class="lfo-selector" id="detune-lfo-src">
+                    <option value="off">Off</option>
+                    <option value="lfo1">LFO1</option>
+                    <option value="lfo2">LFO2</option>
                   </select>
+                  <div class="knob-label" style="margin-top: 4px;">LFO Src</div>
                 </div>
-                <div class="knob-label">Type</div>
-              </div>
-              <div class="knob-wrap">
-                <div class="knob" data-param="cutoff" data-min="0" data-max="1" data-step="0.001" data-default="0.54"
-                  data-value="0.54" title="Cutoff Frequency"></div>
-                <div class="knob-label">Cutoff</div>
-                <div class="knob-value" data-for="cutoff">829 Hz</div>
-              </div>
-              <div class="knob-wrap">
-                <div class="knob" data-param="resonance" data-min="0.1" data-max="20" data-step="0.1" data-default="0.5"
-                  data-value="0.5" title="Resonance (Q)"></div>
-                <div class="knob-label">Resonance</div>
-                <div class="knob-value" data-for="resonance">0.5 Q</div>
-              </div>
-              <div class="knob-wrap">
-                <div class="knob" id="filter-gain-knob" data-param="filterGain" data-min="0" data-max="1" data-step="0.001" data-default="0.5"
-                  data-value="0.5" title="Filter Gain (dB)"></div>
-                <div class="knob-label">Gain</div>
-                <div class="knob-value" data-for="filterGain">-30 dB</div>
-              </div>
-              <div class="knob-wrap">
-                <div class="knob" data-param="envAmount" data-min="-5000" data-max="5000" data-step="1" data-default="0"
-                  data-value="0" title="Env Amount (Hz)"></div>
-                <div class="knob-label">Env Amt</div>
-                <div class="knob-value" data-for="envAmount">0 Hz</div>
-              </div>
-              <div class="knob-wrap">
-                <div class="knob" data-param="lfoAmount" data-min="-2400" data-max="2400" data-step="1" data-default="0"
-                  data-value="0" title="LFO Amount (Hz)"></div>
-                <div class="knob-label">LFO Amt</div>
-                <div class="knob-value" data-for="lfoAmount">0 Hz</div>
-              </div>
-              <div class="ctrl">
-                <select class="lfo-selector" id="filter-lfo-src">
-                  <option value="off">Off</option>
-                  <option value="lfo1">LFO1</option>
-                  <option value="lfo2">LFO2</option>
-                </select>
-                <div class="knob-label" style="margin-top: 4px;">LFO Src</div>
               </div>
             </div>
-        </div>
 
-        <!-- LFO 1 Section -->
-        <div class="control-section lfo-section">
-            <div class="section-title">LFO 1</div>
-            <div class="controls-grid">
-              <div class="knob-wrap waveform">
-                <div class="waveform-knob-container">
-                  <img src="../assets/img/sine.svg" class="waveform-icon sine active" alt="Sine">
-                  <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
-                  <img src="../assets/img/sawtooth.svg" class="waveform-icon sawtooth" alt="Sawtooth">
-                  <img src="../assets/img/square.svg" class="waveform-icon square" alt="Square">
-                  <div class="selector-knob" id="lfo1-wave-knob" data-options="sine,triangle,sawtooth,square" data-value="0"
-                    title="LFO1 Waveform">
-                    <div class="indicator"></div>
+            <!-- Master Section -->
+            <div class="control-section">
+              <div class="section-title">Master</div>
+              <div class="controls-grid">
+                <div class="knob-wrap">
+                  <div class="knob" data-param="master" data-min="0" data-max="1" data-step="0.001" data-default="0.7"
+                    data-value="0.7" title="Master Volume"></div>
+                  <div class="knob-label">Master</div>
+                  <div class="knob-value" data-for="master">-6 dB</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="lfoPan" data-min="0" data-max="1" data-step="0.01" data-default="0"
+                    data-value="0" title="Pan LFO Amount"></div>
+                  <div class="knob-label">Pan Amt</div>
+                  <div class="knob-value" data-for="lfoPan">0.00</div>
+                </div>
+                <div class="ctrl">
+                  <select class="lfo-selector" id="pan-lfo-src">
+                    <option value="off">Off</option>
+                    <option value="lfo1">LFO1</option>
+                    <option value="lfo2">LFO2</option>
+                  </select>
+                  <div class="knob-label" style="margin-top: 4px;">Pan LFO</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ADSR Envelope Section -->
+            <div class="control-section adsr-section">
+              <div class="section-title">ADSR Envelope</div>
+              <div class="controls-grid">
+                <div class="knob-wrap">
+                  <div class="knob" data-param="attack" data-min="0.001" data-max="2" data-step="0.001" data-default="0.02"
+                    data-value="0.02" title="Attack (s)"></div>
+                  <div class="knob-label">Attack</div>
+                  <div class="knob-value" data-for="attack">0.02s</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="decay" data-min="0.001" data-max="2" data-step="0.001" data-default="0.10"
+                    data-value="0.10" title="Decay (s)"></div>
+                  <div class="knob-label">Decay</div>
+                  <div class="knob-value" data-for="decay">0.10s</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="sustain" data-min="0" data-max="1" data-step="0.001" data-default="0.70"
+                    data-value="0.70" title="Sustain (0..1)"></div>
+                  <div class="knob-label">Sustain</div>
+                  <div class="knob-value" data-for="sustain">0.70</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="release" data-min="0.001" data-max="3" data-step="0.001" data-default="0.20"
+                    data-value="0.20" title="Release (s)"></div>
+                  <div class="knob-label">Release</div>
+                  <div class="knob-value" data-for="release">0.20s</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="control-section filter-section">
+              <div class="section-title">Filter</div>
+                <div class="controls-grid">
+                  <div class="knob-wrap waveform">
+                    <div class="filter-select-container">
+                      <select id="filter-select" class="filter-dropdown">
+                        <option value="lowpass">Lowpass</option>
+                        <option value="highpass">Highpass</option>
+                        <option value="bandpass">Bandpass</option>
+                        <option value="lowshelf">Lowshelf</option>
+                        <option value="highshelf">Highshelf</option>
+                        <option value="peaking">Peaking</option>
+                        <option value="notch">Notch</option>
+                      </select>
+                    </div>
+                    <div class="knob-label">Type</div>
+                  </div>
+                  <div class="knob-wrap">
+                    <div class="knob" data-param="cutoff" data-min="0" data-max="1" data-step="0.001" data-default="0.54"
+                      data-value="0.54" title="Cutoff Frequency"></div>
+                    <div class="knob-label">Cutoff</div>
+                    <div class="knob-value" data-for="cutoff">829 Hz</div>
+                  </div>
+                  <div class="knob-wrap">
+                    <div class="knob" data-param="resonance" data-min="0.1" data-max="20" data-step="0.1" data-default="0.5"
+                      data-value="0.5" title="Resonance (Q)"></div>
+                    <div class="knob-label">Resonance</div>
+                    <div class="knob-value" data-for="resonance">0.5 Q</div>
+                  </div>
+                  <div class="knob-wrap">
+                    <div class="knob" id="filter-gain-knob" data-param="filterGain" data-min="0" data-max="1" data-step="0.001" data-default="0.5"
+                      data-value="0.5" title="Filter Gain (dB)"></div>
+                    <div class="knob-label">Gain</div>
+                    <div class="knob-value" data-for="filterGain">-30 dB</div>
+                  </div>
+                  <div class="knob-wrap">
+                    <div class="knob" data-param="envAmount" data-min="-5000" data-max="5000" data-step="1" data-default="0"
+                      data-value="0" title="Env Amount (Hz)"></div>
+                    <div class="knob-label">Env Amt</div>
+                    <div class="knob-value" data-for="envAmount">0 Hz</div>
+                  </div>
+                  <div class="knob-wrap">
+                    <div class="knob" data-param="lfoAmount" data-min="-2400" data-max="2400" data-step="1" data-default="0"
+                      data-value="0" title="LFO Amount (Hz)"></div>
+                    <div class="knob-label">LFO Amt</div>
+                    <div class="knob-value" data-for="lfoAmount">0 Hz</div>
+                  </div>
+                  <div class="ctrl">
+                    <select class="lfo-selector" id="filter-lfo-src">
+                      <option value="off">Off</option>
+                      <option value="lfo1">LFO1</option>
+                      <option value="lfo2">LFO2</option>
+                    </select>
+                    <div class="knob-label" style="margin-top: 4px;">LFO Src</div>
                   </div>
                 </div>
-                <div class="knob-label">Wave</div>
-              </div>
-              <div class="knob-wrap">
-                <div class="knob" data-param="lfo1Freq" data-min="0.1" data-max="20" data-step="0.1" data-default="5"
-                  data-value="5" title="LFO1 Frequency"></div>
-                <div class="knob-label">Rate</div>
-                <div class="knob-value" data-for="lfo1Freq">5.00 Hz</div>
-              </div>
-              <div class="ctrl center-vert">
-                <label class="switch vertical-switch">
-                  <input type="checkbox" id="lfo1-unipolar">
-                  <span class="switch-slider"></span>
-                </label>
-              </div>
             </div>
-        </div>
 
-        <!-- LFO 2 Section -->
-        <div class="control-section lfo-section">
-            <div class="section-title">LFO 2</div>
-            <div class="controls-grid">
-              <div class="knob-wrap waveform">
-                <div class="waveform-knob-container">
-                  <img src="../assets/img/sine.svg" class="waveform-icon sine active" alt="Sine">
-                  <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
-                  <img src="../assets/img/sawtooth.svg" class="waveform-icon sawtooth" alt="Sawtooth">
-                  <img src="../assets/img/square.svg" class="waveform-icon square" alt="Square">
-                  <div class="selector-knob" id="lfo2-wave-knob" data-options="sine,triangle,sawtooth,square" data-value="0"
-                    title="LFO2 Waveform">
-                    <div class="indicator"></div>
+            <!-- LFO 1 Section -->
+            <div class="control-section lfo-section">
+                <div class="section-title">LFO 1</div>
+                <div class="controls-grid">
+                  <div class="knob-wrap waveform">
+                    <div class="waveform-knob-container">
+                      <img src="../assets/img/sine.svg" class="waveform-icon sine active" alt="Sine">
+                      <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
+                      <img src="../assets/img/sawtooth.svg" class="waveform-icon sawtooth" alt="Sawtooth">
+                      <img src="../assets/img/square.svg" class="waveform-icon square" alt="Square">
+                      <div class="selector-knob" id="lfo1-wave-knob" data-options="sine,triangle,sawtooth,square" data-value="0"
+                        title="LFO1 Waveform">
+                        <div class="indicator"></div>
+                      </div>
+                    </div>
+                    <div class="knob-label">Wave</div>
+                  </div>
+                  <div class="knob-wrap">
+                    <div class="knob" data-param="lfo1Freq" data-min="0.1" data-max="20" data-step="0.1" data-default="5"
+                      data-value="5" title="LFO1 Frequency"></div>
+                    <div class="knob-label">Rate</div>
+                    <div class="knob-value" data-for="lfo1Freq">5.00 Hz</div>
+                  </div>
+                  <div class="ctrl center-vert">
+                    <label class="switch vertical-switch">
+                      <input type="checkbox" id="lfo1-unipolar">
+                      <span class="switch-slider"></span>
+                    </label>
                   </div>
                 </div>
-                <div class="knob-label">Wave</div>
+            </div>
+
+            <!-- LFO 2 Section -->
+            <div class="control-section lfo-section">
+                <div class="section-title">LFO 2</div>
+                <div class="controls-grid">
+                  <div class="knob-wrap waveform">
+                    <div class="waveform-knob-container">
+                      <img src="../assets/img/sine.svg" class="waveform-icon sine active" alt="Sine">
+                      <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
+                      <img src="../assets/img/sawtooth.svg" class="waveform-icon sawtooth" alt="Sawtooth">
+                      <img src="../assets/img/square.svg" class="waveform-icon square" alt="Square">
+                      <div class="selector-knob" id="lfo2-wave-knob" data-options="sine,triangle,sawtooth,square" data-value="0"
+                        title="LFO2 Waveform">
+                        <div class="indicator"></div>
+                      </div>
+                    </div>
+                    <div class="knob-label">Wave</div>
+                  </div>
+                  <div class="knob-wrap">
+                    <div class="knob" data-param="lfo2Freq" data-min="0.1" data-max="20" data-step="0.1" data-default="5"
+                      data-value="5" title="LFO2 Frequency"></div>
+                    <div class="knob-label">Rate</div>
+                    <div class="knob-value" data-for="lfo2Freq">5.00 Hz</div>
+                  </div>
+                  <div class="ctrl center-vert">
+                    <label class="switch vertical-switch">
+                      <input type="checkbox" id="lfo2-unipolar">
+                      <span class="switch-slider"></span>
+                    </label>
+                  </div>
+                  <div class="ctrl center-vert">
+                    <button id="lfo-sync" class="sync-button">SYNC</button>
+                  </div>
+                </div>
+            </div>
+          </div>
+
+          <div class="keyboard" id="keyboard">
+            <div class="white-keys" id="white-keys">
+              <!-- Octave 1: C to B (no top C to avoid duplicate) -->
+              <div class="octave" style="width: 46.6667%;">
+                <div class="white-key" data-midi="0" data-key-type="white"></div>
+                <div class="white-key" data-midi="2" data-key-type="white"></div>
+                <div class="white-key" data-midi="4" data-key-type="white"></div>
+                <div class="white-key" data-midi="5" data-key-type="white"></div>
+                <div class="white-key" data-midi="7" data-key-type="white"></div>
+                <div class="white-key" data-midi="9" data-key-type="white"></div>
+                <div class="white-key" data-midi="11" data-key-type="white"></div>
               </div>
-              <div class="knob-wrap">
-                <div class="knob" data-param="lfo2Freq" data-min="0.1" data-max="20" data-step="0.1" data-default="5"
-                  data-value="5" title="LFO2 Frequency"></div>
-                <div class="knob-label">Rate</div>
-                <div class="knob-value" data-for="lfo2Freq">5.00 Hz</div>
-              </div>
-              <div class="ctrl center-vert">
-                <label class="switch vertical-switch">
-                  <input type="checkbox" id="lfo2-unipolar">
-                  <span class="switch-slider"></span>
-                </label>
-              </div>
-              <div class="ctrl center-vert">
-                <button id="lfo-sync" class="sync-button">SYNC</button>
+              <!-- Octave 2: C to C (inclusive) -->
+              <div class="octave" style="width: 53.3333%;">
+                <div class="white-key" data-midi="12" data-key-type="white"></div>
+                <div class="white-key" data-midi="14" data-key-type="white"></div>
+                <div class="white-key" data-midi="16" data-key-type="white"></div>
+                <div class="white-key" data-midi="17" data-key-type="white"></div>
+                <div class="white-key" data-midi="19" data-key-type="white"></div>
+                <div class="white-key" data-midi="21" data-key-type="white"></div>
+                <div class="white-key" data-midi="23" data-key-type="white"></div>
+                <div class="white-key" data-midi="24" data-key-type="white"></div>
               </div>
             </div>
+            <div class="black-keys" id="black-keys">
+              <!-- Octave 1 black keys -->
+              <div class="octave oct1" style="left: 0; width: 46.6667%; position: absolute; top: 0; bottom: 0;">
+                <div class="black-key" data-midi="1" data-key-type="black" style="left: 14.2857%;"></div>
+                <div class="black-key" data-midi="3" data-key-type="black" style="left: 28.5714%;"></div>
+                <div class="black-key" data-midi="6" data-key-type="black" style="left: 57.1429%;"></div>
+                <div class="black-key" data-midi="8" data-key-type="black" style="left: 71.4286%;"></div>
+                <div class="black-key" data-midi="10" data-key-type="black" style="left: 85.7143%;"></div>
+              </div>
+              <!-- Octave 2 black keys -->
+              <div class="octave oct2" style="left: 46.6667%; width: 53.3333%; position: absolute; top: 0; bottom: 0;">
+                <div class="black-key" data-midi="13" data-key-type="black" style="left: 12.5%;"></div>
+                <div class="black-key" data-midi="15" data-key-type="black" style="left: 25%;"></div>
+                <div class="black-key" data-midi="18" data-key-type="black" style="left: 50%;"></div>
+                <div class="black-key" data-midi="20" data-key-type="black" style="left: 62.5%;"></div>
+                <div class="black-key" data-midi="22" data-key-type="black" style="left: 75%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <hr class="thick">
+        
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
         </div>
       </div>
-
-      <div class="keyboard" id="keyboard">
-        <div class="white-keys" id="white-keys">
-          <!-- Octave 1: C to B (no top C to avoid duplicate) -->
-          <div class="octave" style="width: 46.6667%;">
-            <div class="white-key" data-midi="0" data-key-type="white"></div>
-            <div class="white-key" data-midi="2" data-key-type="white"></div>
-            <div class="white-key" data-midi="4" data-key-type="white"></div>
-            <div class="white-key" data-midi="5" data-key-type="white"></div>
-            <div class="white-key" data-midi="7" data-key-type="white"></div>
-            <div class="white-key" data-midi="9" data-key-type="white"></div>
-            <div class="white-key" data-midi="11" data-key-type="white"></div>
-          </div>
-          <!-- Octave 2: C to C (inclusive) -->
-          <div class="octave" style="width: 53.3333%;">
-            <div class="white-key" data-midi="12" data-key-type="white"></div>
-            <div class="white-key" data-midi="14" data-key-type="white"></div>
-            <div class="white-key" data-midi="16" data-key-type="white"></div>
-            <div class="white-key" data-midi="17" data-key-type="white"></div>
-            <div class="white-key" data-midi="19" data-key-type="white"></div>
-            <div class="white-key" data-midi="21" data-key-type="white"></div>
-            <div class="white-key" data-midi="23" data-key-type="white"></div>
-            <div class="white-key" data-midi="24" data-key-type="white"></div>
-          </div>
-        </div>
-        <div class="black-keys" id="black-keys">
-          <!-- Octave 1 black keys -->
-          <div class="octave oct1" style="left: 0; width: 46.6667%; position: absolute; top: 0; bottom: 0;">
-            <div class="black-key" data-midi="1" data-key-type="black" style="left: 14.2857%;"></div>
-            <div class="black-key" data-midi="3" data-key-type="black" style="left: 28.5714%;"></div>
-            <div class="black-key" data-midi="6" data-key-type="black" style="left: 57.1429%;"></div>
-            <div class="black-key" data-midi="8" data-key-type="black" style="left: 71.4286%;"></div>
-            <div class="black-key" data-midi="10" data-key-type="black" style="left: 85.7143%;"></div>
-          </div>
-          <!-- Octave 2 black keys -->
-          <div class="octave oct2" style="left: 46.6667%; width: 53.3333%; position: absolute; top: 0; bottom: 0;">
-            <div class="black-key" data-midi="13" data-key-type="black" style="left: 12.5%;"></div>
-            <div class="black-key" data-midi="15" data-key-type="black" style="left: 25%;"></div>
-            <div class="black-key" data-midi="18" data-key-type="black" style="left: 50%;"></div>
-            <div class="black-key" data-midi="20" data-key-type="black" style="left: 62.5%;"></div>
-            <div class="black-key" data-midi="22" data-key-type="black" style="left: 75%;"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer">
-      <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
-      <p>© 1999 VIBELAND - All Rights Reserved</p>
     </div>
   </div>
-
+  
   <script src="../assets/synthesizer.js"></script>
 </body>
-
 </html>

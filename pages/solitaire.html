@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>VIBELAND - SOLITAIRE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solitaire - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style type="text/css">
     .solitaire {
@@ -198,9 +199,18 @@
 
 <body>
   <div class="container">
-    <h1>VIBELAND SOLITAIRE</h1>
+    <div class="outer-border">
+      <div class="header">
+        <h1>♠️ SOLITAIRE ♠️</h1>
+        <p>~*~ Classic Klondike ~*~</p>
+      </div>
 
-    <div class="solitaire">
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ CLASSIC CARD GAME ★ STACK THE FOUNDATIONS ★</div>
+      </div>
+
+      <div class="content">
+        <div class="solitaire">
       <div class="top-row">
         <div class="stock" id="stock"></div>
         <div class="waste" id="waste"></div>
@@ -220,11 +230,15 @@
         <div class="tableau" id="tableau5"></div>
         <div class="tableau" id="tableau6"></div>
       </div>
-    </div>
+        </div>
 
-    <div class="footer">
-      <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
-      <p>© 1999 VIBELAND - All Rights Reserved</p>
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
     </div>
   </div>
 

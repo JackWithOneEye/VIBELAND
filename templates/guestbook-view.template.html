@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guest Book - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style type="text/css">
+    .sign-link-box {
+      text-align: center;
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #ffffff;
+      border: 2px inset #c0c0c0;
+    }
+
+    .sign-link-box p {
+      margin: 0;
+      font-size: 1em;
+    }
+
+    .sign-link-box a {
+      color: #000080;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    .sign-link-box a:hover {
+      color: #FF0000;
+      background-color: #FFFF99;
+    }
+
+    h2 {
+      color: #0000FF;
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container wide">
+    <div class="outer-border">
+      <div class="header">
+        <h1>✨ GUEST BOOK ✨</h1>
+        <p>~*~ See What Others Are Saying ~*~</p>
+      </div>
+
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ SIGN THE GUEST BOOK ★ SHARE YOUR THOUGHTS ★</div>
+      </div>
+
+      <div class="content">
+        {{ successMessage }}
+
+        <div class="sign-link-box">
+          <p>📖 Leave your mark on VIBELAND! <a href="/guestbook/add">✍️ Sign the Guest Book »</a></p>
+        </div>
+
+        <h2>Recent Entries</h2>
+        <div class="entries" id="entries">
+          {{ entries }}
+        </div>
+
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

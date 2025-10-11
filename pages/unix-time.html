@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-  <title>VIBELAND - Unix Timestamp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unix Timestamp - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
-  <style type="text/css">
+  <style>
     .unix-timestamp-main {
       width: 390px;
       margin-left: auto;
@@ -34,34 +34,46 @@
     }
   </style>
 </head>
-
 <body>
   <div class="container">
-    <h1>VIBELAND UNIX TIMESTAMP</h1>
+    <div class="outer-border">
+      <div class="header">
+        <h1>⏰ UNIX TIMESTAMP ⏰</h1>
+        <p>~*~ Time since January 1, 1970 ~*~</p>
+      </div>
 
-    <div class="unix-timestamp-main">
-      <div class="timestamp-label">Current UTC time as a Unix timestamp</div>
-      <div class="timestamp-value" id="timestamp"></div>
-      <div class="timestamp-desc">
-        <span id="readable"></span>
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ COUNTING SECONDS SINCE THE EPOCH ★ UTC TIME DISPLAY ★</div>
+      </div>
+
+      <div class="content">
+        <div class="unix-timestamp-main">
+          <div class="timestamp-label">Current UTC time as a Unix timestamp</div>
+          <div class="timestamp-value" id="timestamp"></div>
+          <div class="timestamp-desc">
+            <span id="readable"></span>
+          </div>
+        </div>
+
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
       </div>
     </div>
-
-    <div class="footer">
-      <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
-      <p>© 1999 VIBELAND - All Rights Reserved</p>
-    </div>
   </div>
+
   <script>
     function updateTimestamp() {
       const now = new Date();
       const unix = Math.floor(now.getTime() / 1000);
-      document.getElementById('timestamp').textContent = unix;
-      document.getElementById('readable').textContent = now.toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC');
+      document.getElementById("timestamp").textContent = unix;
+      document.getElementById("readable").textContent = now.toISOString().replace("T", " ").replace(/\.\d+Z$/, " UTC");
     }
     updateTimestamp();
     setInterval(updateTimestamp, 1000);
   </script>
 </body>
-
 </html>

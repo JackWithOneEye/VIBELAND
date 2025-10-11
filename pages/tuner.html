@@ -1,53 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>VIBELAND - Instrument Tuner</title>
-    <link rel="stylesheet" type="text/css" href="../assets/styles.css">
-    <style type="text/css">
-        .tuner-container {
-            background-color: #ffffff;
-            border: 2px inset #c0c0c0;
-            padding: 20px;
-            margin: 20px 0;
-            text-align: center;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instrument Tuner - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style>
+    .tuner-container {
+      background-color: #ffffff;
+      border: 2px inset #c0c0c0;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
 
-        #controls {
-            margin-top: 20px;
-        }
+    #note {
+      font-size: 48px;
+      font-weight: bold;
+      color: #000080;
+      margin: 10px 0;
+    }
 
-        input[type="number"] {
-            padding: 5px;
-        }
+    #cents {
+      font-size: 24px;
+      color: #000;
+      margin: 10px 0;
+    }
 
-        button {
-            padding: 10px 20px;
-            font-size: 14px;
-        }
-    </style>
+    #controls {
+      margin-top: 20px;
+    }
+
+    input[type="number"] {
+      padding: 5px;
+      border: 2px inset #c0c0c0;
+      font-family: "Times New Roman", serif;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+    }
+
+    canvas {
+      margin: 20px auto;
+      display: block;
+    }
+  </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>VIBELAND TUNER</h1>
-        
+  <div class="container">
+    <div class="outer-border">
+      <div class="header">
+        <h1>🎵 INSTRUMENT TUNER 🎵</h1>
+        <p>~*~ Tune Your Instrument ~*~</p>
+      </div>
+
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ GET IN TUNE AND PLAY PERFECTLY ★</div>
+      </div>
+
+      <div class="content">
         <div class="tuner-container">
-            <div id="note">--</div>
-            <div id="cents">0 cents</div>
-            <canvas id="meter" width="300" height="50"></canvas>
-            <div id="controls">
-                <label for="a4-freq">A4 Frequency (Hz):</label>
-                <input type="number" id="a4-freq" value="440" min="400" max="500" step="1">
-                <button id="toggle-btn">Start Tuner</button>
-            </div>
+          <div id="note">--</div>
+          <div id="cents">0 cents</div>
+          <canvas id="meter" width="300" height="50"></canvas>
+          <div id="controls">
+            <label for="a4-freq">A4 Frequency (Hz):</label>
+            <input type="number" id="a4-freq" value="440" min="400" max="500" step="1">
+            <button id="toggle-btn">Start Tuner</button>
+          </div>
         </div>
+        
+        <hr class="thick">
         
         <div class="footer">
-            <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
-            <p>© 1999 VIBELAND - All Rights Reserved</p>
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
         </div>
+      </div>
     </div>
+  </div>
 
   <script>
     // JavaScript for the instrument tuner functionality
@@ -65,7 +99,7 @@
     const HOLD_FRAMES = 12; // Hold for ~200ms at 60fps
 
     // Note names array (starting from C)
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
     // Function to toggle tuner start/stop
     async function toggleTuner() {
@@ -94,14 +128,14 @@
         isRunning = true;
         lastFreq = -1;
         holdFrames = 0;
-        document.getElementById('toggle-btn').textContent = 'Stop Tuner';
-        document.getElementById('toggle-btn').classList.add('stop');
+        document.getElementById("toggle-btn").textContent = "Stop Tuner";
+        document.getElementById("toggle-btn").classList.add("stop");
 
         // Start the update loop
         updatePitch();
       } catch (err) {
-        console.error('Error accessing microphone:', err);
-        alert('Unable to access microphone. Please check permissions.');
+        console.error("Error accessing microphone:", err);
+        alert("Unable to access microphone. Please check permissions.");
       }
     }
 
@@ -117,11 +151,11 @@
       if (audioContext) {
         audioContext.close();
       }
-      document.getElementById('toggle-btn').textContent = 'Start Tuner';
-      document.getElementById('toggle-btn').classList.remove('stop');
+      document.getElementById("toggle-btn").textContent = "Start Tuner";
+      document.getElementById("toggle-btn").classList.remove("stop");
       // Reset display
-      document.getElementById('note').textContent = '--';
-      document.getElementById('cents').textContent = '0 cents';
+      document.getElementById("note").textContent = "--";
+      document.getElementById("cents").textContent = "0 cents";
       drawMeter(0);
       lastFreq = -1;
       holdFrames = 0;
@@ -148,8 +182,8 @@
           updateDisplay(lastFreq);
         } else {
           // Show no signal
-          document.getElementById('note').textContent = '--';
-          document.getElementById('cents').textContent = 'No signal';
+          document.getElementById("note").textContent = "--";
+          document.getElementById("cents").textContent = "No signal";
           drawMeter(0);
         }
       }
@@ -208,8 +242,8 @@
       const {note, cents} = getNoteAndCents(freq);
 
       // Update note and cents display
-      document.getElementById('note').textContent = note;
-      document.getElementById('cents').textContent = `${cents.toFixed(0)} cents`;
+      document.getElementById("note").textContent = note;
+      document.getElementById("cents").textContent = `${cents.toFixed(0)} cents`;
 
       // Draw meter
       drawMeter(cents);
@@ -235,8 +269,8 @@
 
     // Function to draw the linear tuner meter on canvas
     function drawMeter(cents) {
-      const canvas = document.getElementById('meter');
-      const ctx = canvas.getContext('2d');
+      const canvas = document.getElementById("meter");
+      const ctx = canvas.getContext("2d");
       const width = canvas.width;
       const height = canvas.height;
       const centerX = width / 2;
@@ -246,7 +280,7 @@
       ctx.clearRect(0, 0, width, height);
 
       // Draw center line
-      ctx.strokeStyle = '#ccc';
+      ctx.strokeStyle = "#ccc";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(0, height / 2);
@@ -259,7 +293,7 @@
         ctx.beginPath();
         ctx.moveTo(x, height / 2 - 5);
         ctx.lineTo(x, height / 2 + 5);
-        ctx.strokeStyle = i === 0 ? '#00ff00' : '#000';
+        ctx.strokeStyle = i === 0 ? "#00ff00" : "#000";
         ctx.lineWidth = i === 0 ? 3 : 1;
         ctx.stroke();
       }
@@ -270,18 +304,17 @@
       ctx.beginPath();
       ctx.moveTo(needleX, 0);
       ctx.lineTo(needleX, height);
-      ctx.strokeStyle = '#ff0000';
+      ctx.strokeStyle = "#ff0000";
       ctx.lineWidth = 3;
       ctx.stroke();
     }
 
     // Event listeners
-    document.getElementById('toggle-btn').addEventListener('click', toggleTuner);
+    document.getElementById("toggle-btn").addEventListener("click", toggleTuner);
 
-    document.getElementById('a4-freq').addEventListener('input', (e) => {
+    document.getElementById("a4-freq").addEventListener("input", (e) => {
       a4Freq = parseFloat(e.target.value) || 440;
     });
   </script>
 </body>
-
 </html>

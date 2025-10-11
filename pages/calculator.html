@@ -1,83 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>VIBELAND - Scientific Calculator</title>
-    <link rel="stylesheet" type="text/css" href="../assets/styles.css">
-    <style type="text/css">
-        .calculator {
-            width: 390px;
-            margin-left: auto;
-            margin-right: auto;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculator - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style>
+    .calculator {
+      width: 390px;
+      margin-left: auto;
+      margin-right: auto;
+    }
 
-        button {
-            padding: 10px 0;
-            font-size: 1rem;
-        }
+    button {
+      padding: 10px 0;
+      font-size: 1rem;
+    }
 
-        button.zero {
-            grid-column: span 2;
-        }
-    </style>
+    button.zero {
+      grid-column: span 2;
+    }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <h1>VIBELAND CALCULATOR</h1>
-        
+  <div class="container">
+    <div class="outer-border">
+      <div class="header">
+        <h1>🔢 CALCULATOR 🔢</h1>
+        <p>~*~ Scientific Computing for the Modern Age ~*~</p>
+      </div>
+
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ CRUNCH NUMBERS LIKE A PRO ★ SUPPORTS TRIG & LOGARITHMS ★</div>
+      </div>
+
+      <div class="content">
         <div class="calculator">
-            <div class="display-container">
-                <input type="text" id="display" class="display" value="0" readonly />
-            </div>
-            <div class="buttons">
-                <button class="clear" onclick="clearDisplay()">C</button>
-                <button onclick="input('(')">(</button>
-                <button onclick="input(')')">)</button>
-                <button onclick="input('%')">%</button>
-                <button onclick="backspace()">⟵</button>
+          <div class="display-container">
+            <input type="text" id="display" class="display" value="0" readonly />
+          </div>
+          <div class="buttons">
+            <button class="clear" onclick="clearDisplay()">C</button>
+            <button onclick="input('(')">(</button>
+            <button onclick="input(')')">)</button>
+            <button onclick="input('%')">%</button>
+            <button onclick="backspace()">⟵</button>
 
-                <button class="func" onclick="inputFunc('sin')">sin</button>
-                <button class="func" onclick="inputFunc('cos')">cos</button>
-                <button class="func" onclick="inputFunc('tan')">tan</button>
-                <button class="func" onclick="inputFunc('log')">log</button>
-                <button onclick="inputOperator('/')">÷</button>
+            <button class="func" onclick="inputFunc('sin')">sin</button>
+            <button class="func" onclick="inputFunc('cos')">cos</button>
+            <button class="func" onclick="inputFunc('tan')">tan</button>
+            <button class="func" onclick="inputFunc('log')">log</button>
+            <button onclick="inputOperator('/')">÷</button>
 
-                <button onclick="input('7')">7</button>
-                <button onclick="input('8')">8</button>
-                <button onclick="input('9')">9</button>
-                <button class="func" onclick="inputFunc('sqrt')">√</button>
-                <button onclick="inputOperator('*')">×</button>
+            <button onclick="input('7')">7</button>
+            <button onclick="input('8')">8</button>
+            <button onclick="input('9')">9</button>
+            <button class="func" onclick="inputFunc('sqrt')">√</button>
+            <button onclick="inputOperator('*')">×</button>
 
-                <button onclick="input('4')">4</button>
-                <button onclick="input('5')">5</button>
-                <button onclick="input('6')">6</button>
-                <button class="func" onclick="inputOperator('^')">^</button>
-                <button onclick="inputOperator('-')">−</button>
+            <button onclick="input('4')">4</button>
+            <button onclick="input('5')">5</button>
+            <button onclick="input('6')">6</button>
+            <button class="func" onclick="inputOperator('^')">^</button>
+            <button onclick="inputOperator('-')">−</button>
 
-                <button onclick="input('1')">1</button>
-                <button onclick="input('2')">2</button>
-                <button onclick="input('3')">3</button>
-                <button class="func" onclick="input('pi')">π</button>
-                <button onclick="inputOperator('+')">+</button>
+            <button onclick="input('1')">1</button>
+            <button onclick="input('2')">2</button>
+            <button onclick="input('3')">3</button>
+            <button class="func" onclick="input('pi')">π</button>
+            <button onclick="inputOperator('+')">+</button>
 
-                <button onclick="input('0')" class="zero">0</button>
-                <button onclick="input('.')">.</button>
-                <button class="equal" onclick="calculate()">=</button>
-            </div>
+            <button onclick="input('0')" class="zero">0</button>
+            <button onclick="input('.')">.</button>
+            <button class="equal" onclick="calculate()">=</button>
+          </div>
         </div>
+        
+        <hr class="thick">
         
         <div class="footer">
-            <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
-            <p>© 1999 VIBELAND - All Rights Reserved</p>
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
         </div>
+      </div>
     </div>
+  </div>
+  
   <script>
     let display = document.getElementById('display');
     let expr = "";
     let lastWasResult = false;
     let lastResult = 0;
-    let lastCalculation = ""; // For repeat "="
+    let lastCalculation = "";
 
     function input(val) {
       if (lastWasResult) {
@@ -92,7 +106,6 @@
 
     function inputOperator(op) {
       if (lastWasResult || expr === "" || expr === "Error") {
-        // Use previous result (default 0) as first operand
         expr = (isNaN(lastResult) ? "0" : lastResult.toString()) + op;
         lastWasResult = false;
       } else {
@@ -103,7 +116,6 @@
 
     function inputFunc(func) {
       if (lastWasResult || expr === "" || expr === "Error") {
-        // Use previous result (default 0) as argument
         expr = func + "(" + (isNaN(lastResult) ? "0" : lastResult.toString()) + ")";
         lastWasResult = false;
       } else {
@@ -145,7 +157,6 @@
     function calculate() {
       let toEval, repeatMode = false;
       if (lastWasResult && lastCalculation) {
-        // Repeat last calculation
         toEval = lastCalculation;
         repeatMode = true;
       } else {
@@ -182,16 +193,13 @@
       if (e.key.toLowerCase() === 'c') clearDisplay();
       if (e.key === 'Backspace') backspace();
       if (e.key === 'Enter') calculate();
-      // Functions via keyboard
       if (e.key === 's') inputFunc('sin');
       if (e.key === 'c') inputFunc('cos');
       if (e.key === 't') inputFunc('tan');
       if (e.key === 'l') inputFunc('log');
       if (e.key === 'r') inputFunc('sqrt');
-      // π via keyboard
       if (e.key === 'p') input('pi');
     });
   </script>
 </body>
-
 </html>

@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VIBELAND World Clock</title>
-  <link rel="stylesheet" href="../assets/styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World Clock - VIBELAND</title>
+  <link rel="stylesheet" href="../assets/styles.css">
   <style>
     .clock-grid {
       display: grid;
@@ -105,21 +104,32 @@
     }
   </style>
 </head>
-
 <body>
   <div class="container extra-wide">
-    <h1>VIBELAND WORLD CLOCK</h1>
-    <div class="clock-grid" id="city-clocks">
-      <!-- Clocks will be initialized here -->
-    </div>
+    <div class="outer-border">
+      <div class="header">
+        <h1>🌍 WORLD CLOCK 🌍</h1>
+        <p>~*~ Time around the globe ~*~</p>
+      </div>
 
-    <div class="footer">
-      <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
-      <p>© 1999 VIBELAND - All Rights Reserved</p>
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ FEATURING 10 MAJOR CITIES ★ LIVE ANALOG CLOCKS ★ REAL-TIME UPDATES ★</div>
+      </div>
+
+      <div class="content">
+        <div class="clock-grid" id="city-clocks"></div>
+
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
     </div>
   </div>
+
   <script>
-    // List of featured cities with IANA time zones
     const featuredCities = [
       {name: "New York", tz: "America/New_York"},
       {name: "Los Angeles", tz: "America/Los_Angeles"},
@@ -137,21 +147,20 @@
 
     function getCityTime(tz) {
       const now = new Date();
-      const timeStr = now.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: tz});
-      const [h, m, s] = timeStr.split(':').map(Number);
+      const timeStr = now.toLocaleTimeString("en-US", {hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: tz});
+      const [h, m, s] = timeStr.split(":").map(Number);
 
       const dateOptions = {year: "numeric", month: "short", day: "numeric", weekday: "short", timeZone: tz};
-      const date = now.toLocaleDateString('en-US', dateOptions);
+      const date = now.toLocaleDateString("en-US", dateOptions);
 
       return {hours: h, minutes: m, seconds: s, date};
     }
 
     function initClocks() {
-      const container = document.getElementById('city-clocks');
+      const container = document.getElementById("city-clocks");
 
-      // Measure clock size
-      const tempClock = document.createElement('div');
-      tempClock.className = 'analog-clock';
+      const tempClock = document.createElement("div");
+      tempClock.className = "analog-clock";
       document.body.appendChild(tempClock);
       const clockSize = tempClock.offsetWidth;
       document.body.removeChild(tempClock);
@@ -176,7 +185,6 @@
         const analogDiv = document.createElement("div");
         analogDiv.className = "analog-clock";
 
-        // Add markers: numbers at 12,3,6,9; dots elsewhere
         for (let i = 1; i <= 12; i++) {
           const deg = i * 30;
           if ([3, 6, 9, 12].includes(i)) {
@@ -194,15 +202,12 @@
           }
         }
 
-        // Calculate initial time
         const {hours, minutes, seconds, date} = getCityTime(city.tz);
 
-        // Calculate degrees
         const hourDeg = (hours % 12) * 30 + minutes * 0.5 + seconds * (0.5 / 60);
         const minDeg = minutes * 6 + seconds * 0.1;
         const secDeg = seconds * 6;
 
-        // Hour hand
         const hourHand = document.createElement("div");
         hourHand.className = "hand hour-hand";
         hourHand.style.height = `${hourLength}px`;
@@ -210,7 +215,6 @@
         hourHand.style.transform = `rotate(${hourDeg}deg)`;
         analogDiv.appendChild(hourHand);
 
-        // Minute hand
         const minuteHand = document.createElement("div");
         minuteHand.className = "hand minute-hand";
         minuteHand.style.height = `${minLength}px`;
@@ -218,7 +222,6 @@
         minuteHand.style.transform = `rotate(${minDeg}deg)`;
         analogDiv.appendChild(minuteHand);
 
-        // Second hand
         const secondHand = document.createElement("div");
         secondHand.className = "hand second-hand";
         secondHand.style.height = `${secLength}px`;
@@ -226,7 +229,6 @@
         secondHand.style.transform = `rotate(${secDeg}deg)`;
         analogDiv.appendChild(secondHand);
 
-        // Center dot
         const centerDot = document.createElement("div");
         centerDot.className = "center-dot";
         centerDot.style.width = `${centerSize}px`;
@@ -244,7 +246,6 @@
 
         container.appendChild(clockDiv);
 
-        // Store references
         clocks.push({
           city: city,
           hourHand: hourHand,
@@ -259,7 +260,6 @@
       clocks.forEach(clock => {
         const {hours, minutes, seconds, date} = getCityTime(clock.city.tz);
 
-        // Calculate degrees
         const hourDeg = (hours % 12) * 30 + minutes * 0.5 + seconds * (0.5 / 60);
         const minDeg = minutes * 6 + seconds * 0.1;
         const secDeg = seconds * 6;
@@ -271,12 +271,8 @@
       });
     }
 
-    // Initialize once
     initClocks();
-
-    // Update every second
     setInterval(updateClocks, 1000);
   </script>
 </body>
-
 </html>

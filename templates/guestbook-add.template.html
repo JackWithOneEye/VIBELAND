@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Guest Book - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style type="text/css">
+    .error-message {
+      background-color: #ff0000;
+      color: #ffffff;
+      padding: 15px;
+      margin: 20px 0;
+      border: 2px outset #ff0000;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .guestbook-form {
+      background-color: #ffffff;
+      border: 2px inset #c0c0c0;
+      padding: 30px;
+      margin: 20px 0;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #000080;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 2px inset #c0c0c0;
+      background-color: #ffffff;
+      color: #000000;
+      font-family: Arial, Helvetica, sans-serif;
+      box-sizing: border-box;
+      font-size: 1em;
+    }
+
+    .form-group textarea {
+      height: 120px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .form-group input[type="text"]:focus,
+    .form-group input[type="email"]:focus,
+    .form-group textarea:focus {
+      outline: 2px solid #000080;
+      background-color: #fffff0;
+    }
+
+    .char-count {
+      font-size: 12px;
+      color: #808080;
+      text-align: right;
+      margin-top: 5px;
+      font-style: italic;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 25px;
+    }
+
+    .submit-btn {
+      background-color: #000080;
+      color: #ffffff;
+      border: 2px outset #000080;
+      padding: 12px 24px;
+      cursor: pointer;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      font-size: 1.1em;
+      flex: 1;
+    }
+
+    .submit-btn:hover {
+      background-color: #0000a0;
+    }
+
+    .submit-btn:active {
+      border: 2px inset #000080;
+      background-color: #000060;
+    }
+
+    .cancel-btn {
+      background-color: #c0c0c0;
+      color: #000000;
+      border: 2px outset #c0c0c0;
+      padding: 12px 24px;
+      cursor: pointer;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      font-size: 1.1em;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .cancel-btn:hover {
+      background-color: #d0d0d0;
+    }
+
+    .cancel-btn:active {
+      border: 2px inset #c0c0c0;
+      background-color: #a0a0a0;
+    }
+
+    .info-box {
+      background-color: #ffffe0;
+      border: 2px solid #000080;
+      padding: 15px;
+      margin: 20px 0;
+    }
+
+    .info-box h3 {
+      margin-top: 0;
+      color: #000080;
+      font-size: 1em;
+    }
+
+    .info-box ul {
+      margin: 10px 0 0 20px;
+      color: #000000;
+    }
+
+    .emoji-bar {
+      background-color: #f0f0f0;
+      border: 2px inset #c0c0c0;
+      padding: 5px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+    }
+
+    .emoji-btn {
+      background-color: #ffffff;
+      border: 2px outset #c0c0c0;
+      padding: 2px 6px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: none;
+    }
+
+    .emoji-btn:hover {
+      background-color: #ffffd0;
+    }
+
+    .emoji-btn:active {
+      border: 2px inset #c0c0c0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container wide">
+    <div class="outer-border">
+      <div class="header">
+        <h1>✨ GUEST BOOK ✨</h1>
+        <p>~*~ Leave Your Mark on VIBELAND ~*~</p>
+      </div>
+
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ SIGN THE GUEST BOOK ★ SHARE YOUR THOUGHTS ★</div>
+      </div>
+
+      <div class="content">
+        {{ errorMessage }}
+
+        <div class="info-box">
+          <h3>📝 Guest Book Guidelines:</h3>
+          <ul>
+            <li>Be respectful and friendly</li>
+            <li>Keep it PG-rated</li>
+            <li>No spam or advertising</li>
+            <li>Have fun and be creative!</li>
+          </ul>
+        </div>
+
+        <div class="guestbook-form">
+          <form method="POST" action="/guestbook/add" id="guestbook-form">
+            <div class="form-group">
+              <label for="name">Your Name:</label>
+              <input type="text" id="name" name="name" required maxlength="50" placeholder="Enter your name...">
+              <div class="char-count"><span id="name-count">0</span>/50 characters</div>
+            </div>
+            <div class="form-group">
+              <label for="email">Email (optional):</label>
+              <input type="email" id="email" name="email" maxlength="255" placeholder="your.email@example.com">
+            </div>
+            <div class="form-group">
+              <label for="message">Your Message:</label>
+              <div class="emoji-bar">
+                <button type="button" class="emoji-btn" data-emoji="😀">😀</button>
+                <button type="button" class="emoji-btn" data-emoji="😊">😊</button>
+                <button type="button" class="emoji-btn" data-emoji="😂">😂</button>
+                <button type="button" class="emoji-btn" data-emoji="😉">😉</button>
+                <button type="button" class="emoji-btn" data-emoji="😎">😎</button>
+                <button type="button" class="emoji-btn" data-emoji="😍">😍</button>
+                <button type="button" class="emoji-btn" data-emoji="😜">😜</button>
+                <button type="button" class="emoji-btn" data-emoji="😢">😢</button>
+                <button type="button" class="emoji-btn" data-emoji="😮">😮</button>
+                <button type="button" class="emoji-btn" data-emoji="😕">😕</button>
+                <button type="button" class="emoji-btn" data-emoji="😈">😈</button>
+                <button type="button" class="emoji-btn" data-emoji="😡">😡</button>
+                <button type="button" class="emoji-btn" data-emoji="😏">😏</button>
+              </div>
+              <textarea id="message" name="message" required maxlength="500"
+                placeholder="Leave your mark on VIBELAND..."></textarea>
+              <div class="char-count"><span id="message-count">0</span>/500 characters</div>
+            </div>
+            <div class="button-group">
+              <a href="/guestbook" class="cancel-btn">Cancel</a>
+              <button type="submit" class="submit-btn">✍️ Sign Guest Book</button>
+            </div>
+          </form>
+        </div>
+
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const nameInput = document.getElementById("name");
+    const messageInput = document.getElementById("message");
+    const nameCount = document.getElementById("name-count");
+    const messageCount = document.getElementById("message-count");
+
+    nameInput.addEventListener("input", function() {
+      nameCount.textContent = this.value.length;
+    });
+
+    messageInput.addEventListener("input", function() {
+      messageCount.textContent = this.value.length;
+    });
+
+    document.querySelectorAll(".emoji-btn").forEach(btn => {
+      btn.addEventListener("click", function() {
+        const emoji = this.getAttribute("data-emoji");
+        const cursorPos = messageInput.selectionStart;
+        const textBefore = messageInput.value.substring(0, cursorPos);
+        const textAfter = messageInput.value.substring(cursorPos);
+        messageInput.value = textBefore + emoji + textAfter;
+        messageInput.selectionStart = messageInput.selectionEnd = cursorPos + emoji.length;
+        messageInput.focus();
+        messageCount.textContent = messageInput.value.length;
+      });
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Paint - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style>
+    /* --- Windows 2000-ish look (classic) --- */
+    :root {
+      --bg: #c0c0c0;
+      --panel: #e7e7e7;
+      --titlebar: #0a3ea8;
+      /* active title color */
+      --titlebar-text: #fff;
+      --toolbar: #d4d0c8;
+      --button-face: #f0f0f0;
+      --accent: #0a3ea8;
+      --shadow: rgba(0, 0, 0, 0.15);
+      --font: Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Paint page wrapper */
+    .paint-wrapper {
+      background: #008080;
+      background-image: url('data:image/gif;base64,R0lGODlhCAAIAIABAC0tLf///yH5BAEKAAEALAAAAAAIAAgAAAINjB+gC+jP2ptn0WskLQA7');
+      min-height: 100vh;
+      padding: 10px;
+    }
+
+    /* Window container */
+    .app {
+      width: 1200px;
+      height: 760px;
+      margin: 18px auto;
+      border: 2px solid #808080;
+      box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.12);
+      background: linear-gradient(#f5f5f5, #ededed);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Title bar */
+    .titlebar {
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(var(--titlebar), #0b55d0);
+      color: var(--titlebar-text);
+      padding: 0 8px;
+      user-select: none;
+      box-shadow: inset 0 -1px rgba(0, 0, 0, 0.2);
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .titlebar .title {
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .titlebar .title .icon {
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 2px;
+      box-shadow: inset 0 0 0 1px #999
+    }
+
+    .titlebar .window-controls {
+      display: flex;
+      gap: 4px
+    }
+
+    .btn-win {
+      width: 18px;
+      height: 18px;
+      border: 1px solid #333;
+      background: linear-gradient(#fff, #ddd);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #000
+    }
+
+    /* Menu bar */
+    .menubar {
+      height: 30px;
+      background: var(--toolbar);
+      display: flex;
+      align-items: center;
+      padding: 0 6px;
+      border-top: 1px solid #9a9a9a
+    }
+
+    .menu {
+      position: relative;
+      margin-right: 8px
+    }
+
+    .menu>button {
+      background: transparent;
+      border: 0;
+      padding: 6px 8px;
+      font-size: 13px;
+      cursor: pointer
+    }
+
+    .menu>.dropdown {
+      position: absolute;
+      left: 0;
+      top: 30px;
+      background: #fff;
+      border: 1px solid #888;
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+      display: none;
+      min-width: 180px;
+      z-index: 50
+    }
+
+    .menu:hover>.dropdown {
+      display: block
+    }
+
+    .dropdown button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 6px 8px;
+      border: 0;
+      background: transparent;
+      cursor: pointer
+    }
+
+    .dropdown hr {
+      margin: 6px 0;
+      border: 0;
+      border-top: 1px solid #ddd
+    }
+
+    /* Main area */
+    .main {
+      flex: 1;
+      display: flex;
+      gap: 8px;
+      padding: 8px;
+      background: linear-gradient(#e0e0e0, #d7d7d7)
+    }
+
+    /* Left toolbar */
+    .toolbar {
+      width: 64px;
+      background: linear-gradient(#e9e9e9, #d9d9d9);
+      border: 2px solid #b0b0b0;
+      padding: 8px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 6px
+    }
+
+    .tool {
+      width: 46px;
+      height: 40px;
+      background: var(--button-face);
+      border: 1px solid #8f8f8f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: inset 0 -1px rgba(0, 0, 0, 0.05)
+    }
+
+    .tool.active {
+      outline: 2px solid var(--accent)
+    }
+
+    .tool svg {
+      width: 24px;
+      height: 24px
+    }
+
+    /* Top tools (brush size etc) */
+    .top-controls {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 8px;
+      align-items: center
+    }
+
+    .control-group {
+      background: linear-gradient(#f6f6f6, #ededed);
+      padding: 6px;
+      border: 1px solid #bdbdbd;
+      border-radius: 2px
+    }
+
+    .label {
+      font-size: 12px;
+      margin-right: 6px
+    }
+
+    /* Canvas area */
+    .canvas-wrap {
+      flex: 1;
+      background: repeating-linear-gradient(0deg, #fff, #fff 20px, #f8f8f8 20px, #f8f8f8 21px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      overflow: auto;
+      border: 2px solid #9a9a9a
+    }
+
+    .paper {
+      background: #fff;
+      padding: 8px;
+      border: 1px solid #b7b7b7;
+      position: relative
+    }
+
+    /* Color palette */
+    .palette {
+      width: 260px;
+      background: linear-gradient(#efece8, #e8e5e1);
+      padding: 8px;
+      border: 2px solid #b0b0b0;
+      box-sizing: border-box
+    }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px
+    }
+
+    .swatch {
+      width: 24px;
+      height: 18px;
+      border: 1px solid #6b6b6b;
+      cursor: pointer
+    }
+
+    .color-pair {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px
+    }
+
+    .color-box {
+      width: 48px;
+      height: 28px;
+      border: 1px solid #333
+    }
+
+    .color-box.secondary {
+      border-style: dashed
+    }
+
+    /* Status bar */
+    .statusbar {
+      height: 22px;
+      background: linear-gradient(#e7e7e7, #d7d7d7);
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      border-top: 1px solid #9a9a9a;
+      font-size: 12px
+    }
+
+    .status-left {
+      flex: 1
+    }
+
+    /* selection handles */
+    .handle {
+      width: 8px;
+      height: 8px;
+      background: #fff;
+      border: 1px solid #000;
+      position: absolute;
+      margin: -4px
+    }
+
+    /* color picker modal */
+    .modal {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 2px solid #666;
+      padding: 12px;
+      z-index: 2000;
+      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2)
+    }
+
+    .modal .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px
+    }
+
+    /* small helpers */
+    button.small {
+      padding: 4px 6px;
+      font-size: 12px
+    }
+
+    input[type=range] {
+      width: 130px
+    }
+
+    .muted {
+      color: #666;
+      font-size: 12px
+    }
+
+    img,
+    canvas {
+      user-select: none;
+      -webkit-user-drag: none;
+      cursor: crosshair;
+    }
+    
+    canvas#canvasMain {
+      cursor: crosshair !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="paint-wrapper">
+    <div class="container extra-wide">
+      <div class="outer-border">
+        <div class="header">
+          <h1>🎨 PAINT 🎨</h1>
+          <p>~*~ Create Your Masterpiece ~*~</p>
+        </div>
+
+        <div class="ticker" aria-label="site news">
+          <div class="marquee">★ WELCOME TO VIBELAND ★ DRAW, PAINT & CREATE ★ WINDOWS 2000 STYLE ★</div>
+        </div>
+
+        <div class="content">
+          <div class="app" role="application" aria-label="Paint (Windows 2000 style)" style="margin: 0 auto;">
+    <div class="titlebar">
+      <div class="title">
+        <div class="icon"></div>
+        <div class="title-text">Untitled - Paint</div>
+      </div>
+      <div class="window-controls">
+        <div class="btn-win">_</div>
+        <div class="btn-win">▢</div>
+        <div class="btn-win">✕</div>
+      </div>
+    </div>
+
+    <div class="menubar" role="menubar">
+      <div class="menu"><button>File</button>
+        <div class="dropdown" role="menu">
+          <button id="newBtn">New</button>
+          <button id="openBtn">Open...</button>
+          <button id="saveBtn">Save as PNG...</button>
+          <hr>
+          <button id="exitBtn">Exit</button>
+        </div>
+      </div>
+      <div class="menu"><button>Edit</button>
+        <div class="dropdown">
+          <button id="undoBtn">Undo</button>
+          <button id="redoBtn">Redo</button>
+          <hr>
+          <button id="cutBtn">Cut</button>
+          <button id="copyBtn">Copy</button>
+          <button id="pasteBtn">Paste</button>
+        </div>
+      </div>
+      <div class="menu"><button>View</button>
+        <div class="dropdown">
+          <button id="zoomIn">Zoom In</button>
+          <button id="zoomOut">Zoom Out</button>
+          <button id="resetZoom">Actual Size</button>
+        </div>
+      </div>
+      <div class="menu"><button>Image</button>
+        <div class="dropdown">
+          <button id="resizeBtn">Resize...</button>
+          <button id="rotateBtn">Rotate...</button>
+          <button id="flipHBtn">Flip Horizontal</button>
+          <button id="flipVBtn">Flip Vertical</button>
+        </div>
+      </div>
+      <div class="menu"><button>Colors</button>
+        <div class="dropdown">
+          <button id="editColors">Edit Colors...</button>
+        </div>
+      </div>
+      <div class="menu"><button>Help</button>
+        <div class="dropdown">
+          <button id="aboutBtn">About</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="toolbar" role="toolbar" aria-label="tools">
+        <!-- More accurate/matching icons (SVG) -->
+        <div class="tool" data-tool="select" title="Select (S)">
+          <!-- dotted rectangle icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
+            <rect x="3" y="3" width="18" height="18" stroke-dasharray="2 2" />
+          </svg>
+        </div>
+        <div class="tool active" data-tool="pencil" title="Pencil (P)">
+          <!-- pencil icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
+            <path d="M3 21l3-1 11-11 2-2-3-3-2 2L6 17l-3 4z" />
+          </svg>
+        </div>
+        <div class="tool" data-tool="brush" title="Brush (B)">
+          <!-- brush icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
+            <path d="M4 18c0 3 4 3 8 0s8-3 8-6-4-2-8 0-8 3-8 6z" />
+          </svg>
+        </div>
+        <div class="tool" data-tool="eraser" title="Eraser (E)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
+            <path d="M3 12l5 5 9-9-5-5L3 7z" />
+          </svg>
+        </div>
+        <div class="tool" data-tool="fill" title="Fill (F)">
+          <svg viewBox="0 0 24 24" fill="#000">
+            <path d="M12 2l8 8-6 6-8-8 6-6z" />
+          </svg>
+        </div>
+        <div class="tool" data-tool="eyedrop" title="Color Picker (I)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
+            <path d="M14.5 3.5L20.5 9.5 12 18l-6-6L14.5 3.5z" />
+          </svg>
+        </div>
+        <div class="tool" data-tool="text" title="Text (T)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
+            <path d="M4 6h16M12 6v12" />
+          </svg>
+        </div>
+        <div class="tool" data-tool="line" title="Line (L)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
+            <line x1="3" y1="21" x2="21" y2="3" />
+          </svg>
+        </div>
+        <div class="tool" data-tool="curve" title="Curve (C)">
+          <!-- curve tool icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
+            <path d="M3 12c4-6 8-6 12-4s6 6 6 6" />
+          </svg>
+        </div>
+        <div class="tool" data-tool="polygon" title="Polygon (Y)">
+          <!-- polygon icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
+            <path d="M12 2l4 3 6 6-4 8-8 3-6-6 4-8 6-6z" />
+          </svg>
+        </div>
+        <div class="tool" data-tool="rect" title="Rectangle (R)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
+            <rect x="3" y="5" width="18" height="12" />
+          </svg>
+        </div>
+        <div class="tool" data-tool="ellipse" title="Ellipse (O)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
+            <ellipse cx="12" cy="11" rx="8" ry="5" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="top-controls">
+        <div class="controls-row">
+          <div class="control-group">
+            <span class="label">Size</span>
+            <input id="sizeRange" type="range" min="1" max="80" value="4">
+          </div>
+          <div class="control-group">
+            <span class="label">Mode</span>
+            <select id="drawMode">
+              <option value="stroke">Outline</option>
+              <option value="fill">Filled</option>
+              <option value="stroke-fill">Outline + Fill</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <button id="undoBtn2" class="small">Undo</button>
+            <button id="redoBtn2" class="small">Redo</button>
+          </div>
+          <div class="control-group">
+            <button id="openFileBtn" class="small">Open</button>
+            <button id="saveFileBtn" class="small">Save</button>
+          </div>
+        </div>
+
+        <div class="controls-row" style="align-items:center">
+          <div style="font-size:13px;margin-right:8px">Tool: <strong id="currentToolName">Pencil</strong></div>
+          <div style="font-size:13px;margin-left:auto">Zoom: <strong id="zoomLabel">100%</strong></div>
+        </div>
+
+        <div style="flex:1;display:flex;align-items:center;justify-content:center">
+          <!-- Canvas area -->
+          <div class="canvas-wrap" id="canvasWrap">
+            <div class="paper" id="paper" style="position:relative;">
+              <!-- multiple canvases stacked -->
+              <canvas id="canvasMain" width="900" height="600" draggable="false"
+                style="display:block;background:#fff;border:1px solid #bdbdbd;image-rendering:pixelated"></canvas>
+              <canvas id="canvasTemp" width="900" height="600" draggable="false"
+                style="position:absolute;left:0;top:0;pointer-events:none"></canvas>
+              <canvas id="canvasSel" width="900" height="600" draggable="false"
+                style="position:absolute;left:0;top:0;pointer-events:none"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="palette" aria-label="colors">
+        <div style="font-size:13px;margin-bottom:8px">Colors</div>
+        <div class="swatches" id="swatches"></div>
+        <div class="color-pair">
+          <div>
+            <div style="font-size:11px">Primary</div>
+            <div id="primaryColor" class="color-box" title="Primary color"></div>
+          </div>
+          <div>
+            <div style="font-size:11px">Secondary</div>
+            <div id="secondaryColor" class="color-box secondary" title="Secondary color"></div>
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <button id="editColorsBtn" class="small">Edit Colors...</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <div class="status-left" id="statusLeft">Ready</div>
+      <div id="statusRight">0,0</div>
+      <div style="margin-left:8px;padding-left:8px;border-left:1px solid #aaa"><span id="zoomLabel2">100%</span></div>
+    </div>
+
+          <hr class="thick">
+
+          <div class="footer">
+            <div><a href="../home">← Back to VIBELAND</a></div>
+            <div>© 1999 VIBELAND - All Rights Reserved</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden file input for opening images -->
+  <input id="fileInput" type="file" accept="image/*" style="display:none" />
+
+  <!-- Color Picker Modal template -->
+  <div id="colorModal" class="modal" style="display:none">
+    <div style="font-weight:bold;margin-bottom:6px">Edit Colors</div>
+    <div class="row">
+      <div>
+        <input id="colorInput" type="color" style="width:56px;height:34px;border:0;padding:0">
+      </div>
+      <div style="flex:1">
+        <div class="row"><label class="muted">Hex</label><input id="hexInput" type="text" style="width:120px"></div>
+        <div class="row"><label class="muted">R</label><input id="rRange" type="range" min="0" max="255"></div>
+        <div class="row"><label class="muted">G</label><input id="gRange" type="range" min="0" max="255"></div>
+        <div class="row"><label class="muted">B</label><input id="bRange" type="range" min="0" max="255"></div>
+      </div>
+    </div>
+    <div style="text-align:right;margin-top:8px"><button id="colorOk" class="small">OK</button> <button id="colorCancel"
+        class="small">Cancel</button></div>
+  </div>
+
+  <script>
+    // ====== Paint clone logic (extended) ======
+    (function () {
+      // Elements
+      const canvasMain = document.getElementById('canvasMain');
+      const canvasTemp = document.getElementById('canvasTemp');
+      const canvasSel = document.getElementById('canvasSel');
+      const swatchesEl = document.getElementById('swatches');
+      const primaryBox = document.getElementById('primaryColor');
+      const secondaryBox = document.getElementById('secondaryColor');
+      const currentToolName = document.getElementById('currentToolName');
+      const statusLeft = document.getElementById('statusLeft');
+      const statusRight = document.getElementById('statusRight');
+      const zoomLabel = document.getElementById('zoomLabel');
+      const canvasWrap = document.getElementById('canvasWrap');
+      const paper = document.getElementById('paper');
+
+      // Modal elements
+      const colorModal = document.getElementById('colorModal');
+      const colorInput = document.getElementById('colorInput');
+      const hexInput = document.getElementById('hexInput');
+      const rRange = document.getElementById('rRange');
+      const gRange = document.getElementById('gRange');
+      const bRange = document.getElementById('bRange');
+      const colorOk = document.getElementById('colorOk');
+      const colorCancel = document.getElementById('colorCancel');
+
+      // Internal state
+      let tool = 'pencil';
+      let drawing = false;
+      let start = {x: 0, y: 0};
+      let last = {x: 0, y: 0};
+      let primary = '#000000';
+      let secondary = '#ffffff';
+      let size = 4;
+      let drawMode = 'stroke';
+      let zoom = 1;
+      let selection = null; // {x,y,w,h,imageData,angle}
+      let copied = null; // copied imageData
+
+      // For polygon/curve tools
+      let polygonPoints = [];
+      let curvePoints = [];
+
+      // Undo/redo stack (store ImageData objects)
+      const undoStack = [];
+      const redoStack = [];
+      const MAX_UNDO = 60;
+
+      // HiDPI helpers
+      const DPR = window.devicePixelRatio || 1;
+
+      // HiDPI setup
+      function setupCanvas(c) {
+        const ratio = window.devicePixelRatio || 1;
+        const w = c.width; const h = c.height;
+        c.width = Math.round(w * ratio);
+        c.height = Math.round(h * ratio);
+        c.style.width = w + 'px';
+        c.style.height = h + 'px';
+        const g = c.getContext('2d', { willReadFrequently: true });
+        g.setTransform(ratio, 0, 0, ratio, 0, 0);
+        return g;
+      }
+      const ctxMainHi = setupCanvas(canvasMain);
+      const ctxTempHi = setupCanvas(canvasTemp);
+      const ctxSelHi = setupCanvas(canvasSel);
+
+      // Fill initial background white
+      ctxMainHi.fillStyle = '#ffffff';
+      ctxMainHi.fillRect(0, 0, canvasMain.width / (window.devicePixelRatio || 1), canvasMain.height / (window.devicePixelRatio || 1));
+
+      // Utilities
+      function updateStatus(text) {statusLeft.textContent = text;}
+      function getPos(e) {
+        const rect = canvasMain.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / zoom;
+        const y = (e.clientY - rect.top) / zoom;
+        return {x: Math.max(0, Math.min(canvasMain.width / (window.devicePixelRatio || 1), x)), y: Math.max(0, Math.min(canvasMain.height / (window.devicePixelRatio || 1), y))};
+      }
+
+      // Colors
+      const defaultColors = ['#000000', '#808080', '#800000', '#ff0000', '#808000', '#ffff00', '#008000', '#00ff00', '#008080', '#00ffff', '#000080', '#0000ff', '#800080', '#ff00ff', '#808040', '#ffffff', '#c0c0c0', '#ffb6c1', '#ffd700', '#f0e68c', '#add8e6', '#87ceeb', '#98fb98', '#90ee90', '#ffe4b5', '#ffdead', '#ffe4e1', '#faf0e6', '#f5f5dc', '#dcdcdc', '#e6e6fa', '#fffacd', '#e0ffff', '#f0fff0', '#fff0f5', '#f5f5f5'];
+      function buildSwatches() {swatchesEl.innerHTML = ''; defaultColors.forEach(c => {const d = document.createElement('div'); d.className = 'swatch'; d.style.background = c; d.title = c; d.addEventListener('click', () => setPrimary(c)); d.addEventListener('contextmenu', (ev) => {ev.preventDefault(); setSecondary(c)}); swatchesEl.appendChild(d);});}
+      buildSwatches();
+      function setPrimary(c) {primary = c; primaryBox.style.background = c; colorInput.value = c; hexInput.value = c;}
+      function setSecondary(c) {secondary = c; secondaryBox.style.background = c;}
+      setPrimary(primary); setSecondary(secondary);
+
+      // Tool UI
+      document.querySelectorAll('.tool').forEach(el => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.tool').forEach(t => t.classList.remove('active'));
+          el.classList.add('active');
+          tool = el.dataset.tool;
+          currentToolName.textContent = el.title.split(' ')[0];
+          // reset polygon/curve mode when switching tools
+          polygonPoints = []; curvePoints = [];
+        });
+      });
+
+      // Size & mode
+      const sizeRange = document.getElementById('sizeRange');
+      sizeRange.addEventListener('input', () => {size = parseInt(sizeRange.value, 10);});
+      const drawModeSel = document.getElementById('drawMode');
+      drawModeSel.addEventListener('change', () => {drawMode = drawModeSel.value;});
+
+      // Prevent context menu and drag on canvases
+      [canvasMain, canvasTemp, canvasSel].forEach(c => {
+        c.addEventListener('contextmenu', (e) => e.preventDefault());
+        c.addEventListener('dragstart', (e) => e.preventDefault());
+        c.addEventListener('drag', (e) => e.preventDefault());
+      });
+
+      // Undo/Redo
+      function pushUndo() {try {if (undoStack.length >= MAX_UNDO) undoStack.shift(); const data = ctxMainHi.getImageData(0, 0, canvasMain.width, canvasMain.height); undoStack.push(data); redoStack.length = 0; updateUndoButtons();} catch (e) {console.warn(e)} }
+      function undo() {if (!undoStack.length) return; try {const img = undoStack.pop(); const cur = ctxMainHi.getImageData(0, 0, canvasMain.width, canvasMain.height); redoStack.push(cur); ctxMainHi.putImageData(img, 0, 0); updateStatus('Undid');} catch (e) {console.warn(e)} updateUndoButtons();}
+      function redo() {if (!redoStack.length) return; try {const img = redoStack.pop(); const cur = ctxMainHi.getImageData(0, 0, canvasMain.width, canvasMain.height); undoStack.push(cur); ctxMainHi.putImageData(img, 0, 0); updateStatus('Redid');} catch (e) {console.warn(e)} updateUndoButtons();}
+      function updateUndoButtons() {document.getElementById('undoBtn').disabled = undoStack.length === 0; document.getElementById('undoBtn2').disabled = undoStack.length === 0; document.getElementById('redoBtn').disabled = redoStack.length === 0; document.getElementById('redoBtn2').disabled = redoStack.length === 0;}
+      document.getElementById('undoBtn').addEventListener('click', undo); document.getElementById('undoBtn2').addEventListener('click', undo);
+      document.getElementById('redoBtn').addEventListener('click', redo); document.getElementById('redoBtn2').addEventListener('click', redo);
+
+      // File open/save
+      const fileInput = document.getElementById('fileInput');
+      document.getElementById('openBtn').addEventListener('click', () => fileInput.click());
+      document.getElementById('openFileBtn').addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {const f = e.target.files[0]; if (!f) return; const url = URL.createObjectURL(f); const img = new Image(); img.onload = () => {pushUndo(); ctxMainHi.clearRect(0, 0, canvasMain.width / DPR, canvasMain.height / DPR); const scale = Math.min((canvasMain.width / DPR) / img.width, (canvasMain.height / DPR) / img.height, 1); const w = img.width * scale; const h = img.height * scale; ctxMainHi.drawImage(img, 0, 0, w, h); URL.revokeObjectURL(url); updateStatus('Image opened');}; img.src = url;});
+      function saveAsPNG() {const link = document.createElement('a'); link.download = 'painting.png'; const tmp = document.createElement('canvas'); tmp.width = canvasMain.width / (window.devicePixelRatio || 1); tmp.height = canvasMain.height / (window.devicePixelRatio || 1); const g = tmp.getContext('2d'); g.drawImage(canvasMain, 0, 0, tmp.width, tmp.height); link.href = tmp.toDataURL('image/png'); link.click();}
+      document.getElementById('saveBtn').addEventListener('click', saveAsPNG); document.getElementById('saveFileBtn').addEventListener('click', saveAsPNG);
+
+      // New / Exit / About
+      document.getElementById('newBtn').addEventListener('click', () => {if (confirm('Create new image? Unsaved changes will be lost.')) {pushUndo(); ctxMainHi.fillStyle = '#ffffff'; ctxMainHi.fillRect(0, 0, canvasMain.width / (window.devicePixelRatio || 1), canvasMain.height / (window.devicePixelRatio || 1));} });
+      document.getElementById('exitBtn').addEventListener('click', () => {if (confirm('Close Paint?')) window.close();});
+      document.getElementById('aboutBtn').addEventListener('click', () => {alert('Windows 2000 Paint — recreation (HTML/JS) — extended');});
+
+      // Zoom
+      function setZoom(z) {zoom = Math.max(0.25, Math.min(4, z)); paper.style.transform = `scale(${zoom})`; paper.style.transformOrigin = '0 0'; zoomLabel.textContent = Math.round(zoom * 100) + '%';}
+      document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.25));
+      document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.25));
+      document.getElementById('resetZoom').addEventListener('click', () => setZoom(1));
+
+      // Resize/Flip/Rotate
+      document.getElementById('flipHBtn').addEventListener('click', () => {pushUndo(); const w = canvasMain.width / (window.devicePixelRatio || 1); const h = canvasMain.height / (window.devicePixelRatio || 1); const tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h; const g = tmp.getContext('2d'); g.translate(w, 0); g.scale(-1, 1); g.drawImage(canvasMain, 0, 0, w, h); ctxMainHi.clearRect(0, 0, w, h); ctxMainHi.drawImage(tmp, 0, 0);});
+      document.getElementById('flipVBtn').addEventListener('click', () => {pushUndo(); const w = canvasMain.width / (window.devicePixelRatio || 1); const h = canvasMain.height / (window.devicePixelRatio || 1); const tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h; const g = tmp.getContext('2d'); g.translate(0, h); g.scale(1, -1); g.drawImage(canvasMain, 0, 0, w, h); ctxMainHi.clearRect(0, 0, w, h); ctxMainHi.drawImage(tmp, 0, 0);});
+      document.getElementById('resizeBtn').addEventListener('click', () => {const w = parseInt(prompt('New width (px):', canvasMain.width / (window.devicePixelRatio || 1)), 10); const h = parseInt(prompt('New height (px):', canvasMain.height / (window.devicePixelRatio || 1)), 10); if (!w || !h) return; pushUndo(); const tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h; const g = tmp.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); g.drawImage(canvasMain, 0, 0, w, h); canvasMain.width = w; canvasMain.height = h; canvasTemp.width = w; canvasTemp.height = h; canvasSel.width = w; canvasSel.height = h; setupCanvas(canvasMain); setupCanvas(canvasTemp); setupCanvas(canvasSel); ctxMainHi.drawImage(tmp, 0, 0);});
+
+      // Rotate dialog
+      document.getElementById('rotateBtn').addEventListener('click', () => {
+        const angle = parseFloat(prompt('Rotate (degrees, positive = clockwise):', '90'));
+        if (isNaN(angle)) return; pushUndo(); rotateCanvas(angle);
+      });
+      function rotateCanvas(angle) {
+        const w = canvasMain.width / (window.devicePixelRatio || 1); const h = canvasMain.height / (window.devicePixelRatio || 1);
+        const radians = angle * Math.PI / 180;
+        // compute new bounds
+        const sin = Math.abs(Math.sin(radians)); const cos = Math.abs(Math.cos(radians));
+        const nw = Math.ceil(w * cos + h * sin); const nh = Math.ceil(w * sin + h * cos);
+        const tmp = document.createElement('canvas'); tmp.width = nw; tmp.height = nh; const g = tmp.getContext('2d');
+        g.fillStyle = '#ffffff'; g.fillRect(0, 0, nw, nh);
+        g.translate(nw / 2, nh / 2); g.rotate(radians); g.drawImage(canvasMain, -w / 2, -h / 2);
+        canvasMain.width = nw; canvasMain.height = nh; canvasTemp.width = nw; canvasTemp.height = nh; canvasSel.width = nw; canvasSel.height = nh; setupCanvas(canvasMain); setupCanvas(canvasTemp); setupCanvas(canvasSel);
+        ctxMainHi.drawImage(tmp, 0, 0);
+      }
+
+      // Drawing helpers
+      function drawLine(g, x1, y1, x2, y2, strokeClr, width) {g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = strokeClr; g.lineWidth = width; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.restore();}
+      function drawBrushStroke(g, fromX, fromY, toX, toY, color, w) {drawLine(g, fromX, fromY, toX, toY, color, w);}
+
+      // Flood fill (iterative)
+      function floodFill(x, y, fillColor) {const w = canvasMain.width; const h = canvasMain.height; const img = ctxMainHi.getImageData(0, 0, w, h); const data = img.data; const px = Math.floor(x * DPR); const py = Math.floor(y * DPR); const idx = (py * w + px) * 4; const target = [data[idx], data[idx + 1], data[idx + 2], data[idx + 3]]; const fill = hexToRgba(fillColor); if (target[0] === fill[0] && target[1] === fill[1] && target[2] === fill[2] && target[3] === fill[3]) return; const stack = [[px, py]]; while (stack.length) {const [cx, cy] = stack.pop(); let nx = cx; while (nx >= 0) {const k = (cy * w + nx) * 4; if (k < 0 || k >= data.length) break; if (data[k] === target[0] && data[k + 1] === target[1] && data[k + 2] === target[2] && data[k + 3] === target[3]) nx--; else break;} nx++; let spanUp = false, spanDown = false; for (let tx = nx; tx < w; tx++) {const k = (cy * w + tx) * 4; if (!(data[k] === target[0] && data[k + 1] === target[1] && data[k + 2] === target[2] && data[k + 3] === target[3])) break; data[k] = fill[0]; data[k + 1] = fill[1]; data[k + 2] = fill[2]; data[k + 3] = fill[3]; if (cy > 0) {const ku = ((cy - 1) * w + tx) * 4; if (data[ku] === target[0] && data[ku + 1] === target[1] && data[ku + 2] === target[2] && data[ku + 3] === target[3]) {if (!spanUp) {stack.push([tx, cy - 1]); spanUp = true;} } else spanUp = false;} if (cy < h - 1) {const kd = ((cy + 1) * w + tx) * 4; if (data[kd] === target[0] && data[kd + 1] === target[1] && data[kd + 2] === target[2] && data[kd + 3] === target[3]) {if (!spanDown) {stack.push([tx, cy + 1]); spanDown = true;} } else spanDown = false;} } } ctxMainHi.putImageData(img, 0, 0);}
+      function hexToRgba(hex) {const c = hex.replace('#', ''); const bigint = parseInt(c, 16); if (c.length === 6) {return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255, 255];} if (c.length === 3) {const r = parseInt(c[0] + c[0], 16); const g = parseInt(c[1] + c[1], 16); const b = parseInt(c[2] + c[2], 16); return [r, g, b, 255];} return [0, 0, 0, 255];}
+
+      // Eyedropper
+      function pickColor(x, y, which) {const w = canvasMain.width / DPR; const h = canvasMain.height / DPR; if (x < 0 || y < 0 || x >= w || y >= h) return; const data = ctxMainHi.getImageData(Math.floor(x * DPR), Math.floor(y * DPR), 1, 1).data; const hex = '#' + [data[0], data[1], data[2]].map(v => v.toString(16).padStart(2, '0')).join(''); if (which === 'primary') setPrimary(hex); else setSecondary(hex);}
+
+      // Selection drawing (with transform handles and rotation)
+      function drawSelectionVisual(sel) {
+        ctxSelHi.clearRect(0, 0, canvasSel.width / (window.devicePixelRatio || 1), canvasSel.height / (window.devicePixelRatio || 1)); if (!sel) return; ctxSelHi.save(); ctxSelHi.setLineDash([4, 3]); ctxSelHi.strokeStyle = '#000'; ctxSelHi.strokeRect(sel.x + 0.5, sel.y + 0.5, sel.w, sel.h); // handles
+        const handles = getHandles(sel);
+        handles.forEach(h => {ctxSelHi.fillStyle = '#fff'; ctxSelHi.strokeStyle = '#000'; ctxSelHi.fillRect(h.x - 4, h.y - 4, 8, 8); ctxSelHi.strokeRect(h.x - 4, h.y - 4, 8, 8);}); ctxSelHi.restore();
+      }
+      function getHandles(sel) {
+        const cx = sel.x + sel.w / 2; const cy = sel.y + sel.h / 2; return [ // corners
+          {x: sel.x, y: sel.y, name: 'nw'}, {x: sel.x + sel.w, y: sel.y, name: 'ne'}, {x: sel.x, y: sel.y + sel.h, name: 'sw'}, {x: sel.x + sel.w, y: sel.y + sel.h, name: 'se'}, // edges
+          {x: cx, y: sel.y, name: 'n'}, {x: cx, y: sel.y + sel.h, name: 's'}, {x: sel.x, y: cy, name: 'w'}, {x: sel.x + sel.w, y: cy, name: 'e'}, // rotate handle above
+          {x: cx, y: sel.y - 20, name: 'rotate'}];
+      }
+
+      // Selection copy/cut/paste
+      function copySelection() {if (!selection) return; copied = selection.imageData; updateStatus('Copied selection');}
+      function cutSelection() {if (!selection) return; pushUndo(); copied = selection.imageData; ctxMainHi.clearRect(selection.x, selection.y, selection.w, selection.h); selection = null; drawSelectionVisual(null); updateStatus('Cut selection');}
+      function pasteSelection(x = 10, y = 10) {if (!copied) return; pushUndo(); ctxMainHi.putImageData(copied, x * DPR, y * DPR); updateStatus('Pasted');}
+      document.getElementById('copyBtn').addEventListener('click', copySelection); document.getElementById('cutBtn').addEventListener('click', cutSelection); document.getElementById('pasteBtn').addEventListener('click', () => pasteSelection(10, 10));
+
+      // Keyboard
+      window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {e.preventDefault(); undo();}
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {e.preventDefault(); redo();}
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {e.preventDefault(); fileInput.click();}
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {e.preventDefault(); saveAsPNG();}
+        if (!e.ctrlKey && !e.metaKey) {const k = e.key.toLowerCase(); const mapping = {'p': 'pencil', 'b': 'brush', 'e': 'eraser', 'f': 'fill', 'i': 'eyedrop', 't': 'text', 'l': 'line', 'r': 'rect', 'o': 'ellipse', 's': 'select', 'c': 'curve', 'y': 'polygon'}; if (mapping[k]) {const el = document.querySelector(`.tool[data-tool='${mapping[k]}']`); if (el) el.click();} }
+      });
+
+      // Mouse events
+      let selDrag = null; // {type:'move'|'handle'|'rotate', handleName, startMouse, startSel}
+      canvasMain.addEventListener('mousedown', (e) => {
+        const pos = getPos(e); const btn = e.button; const color = btn === 2 ? secondary : primary; drawing = true; start = {...pos}; last = {...pos};
+        if (['pencil', 'brush', 'eraser', 'line', 'rect', 'ellipse', 'fill', 'text', 'curve', 'polygon'].includes(tool)) pushUndo();
+
+        if (tool === 'pencil') {drawBrushStroke(ctxMainHi, start.x, start.y, start.x + 0.01, start.y + 0.01, color, size);}
+        else if (tool === 'brush') {drawBrushStroke(ctxMainHi, start.x, start.y, start.x + 0.01, start.y + 0.01, color, size * 2);}
+        else if (tool === 'eraser') {drawBrushStroke(ctxMainHi, start.x, start.y, start.x + 0.01, start.y + 0.01, '#ffffff', size * 2);}
+        else if (tool === 'fill') {floodFill(start.x, start.y, color); drawing = false;}
+        else if (tool === 'eyedrop') {pickColor(start.x, start.y, btn === 2 ? 'secondary' : 'primary'); drawing = false;}
+        else if (tool === 'select') {
+          // check if clicked inside selection handles
+          if (selection) {
+            const h = hitTestHandles(selection, pos); if (h) { // start transform
+              selDrag = {type: h === 'rotate' ? 'rotate' : 'handle', handleName: h, startMouse: pos, startSel: {...selection}}; drawing = false; return;
+            }
+            // click inside selection to move
+            if (pointInSel(selection, pos)) {selDrag = {type: 'move', startMouse: pos, startSel: {...selection}}; drawing = false; return;}
+          }
+          // otherwise begin new selection
+          selection = {x: start.x, y: start.y, w: 0, h: 0, imageData: null, angle: 0}; drawSelectionVisual(selection);
+        }
+        else if (tool === 'text') {createTextEditor(start.x, start.y, color); drawing = false;}
+        else if (tool === 'line' || tool === 'rect' || tool === 'ellipse' || tool === 'curve' || tool === 'polygon') {
+          // start drawing, preview on temp
+          if (tool === 'polygon') {
+            // add point, double-click to finish
+            polygonPoints.push([start.x, start.y]); drawPolygonPreview(); drawing = false; // polygon uses clicks not drags
+          } else if (tool === 'curve') {
+            // curve drawing collects points by clicks; for simplicity use mouse move to draw cubic via points
+            curvePoints.push([start.x, start.y]); drawing = false; // clicks
+          }
+        }
+        e.preventDefault();
+      });
+
+      canvasMain.addEventListener('mousemove', (e) => {
+        const pos = getPos(e); statusRight.textContent = Math.round(pos.x) + ',' + Math.round(pos.y);
+        if (selDrag) { // handle selection transform
+          if (selDrag.type === 'move') {const dx = pos.x - selDrag.startMouse.x; const dy = pos.y - selDrag.startMouse.y; selection.x = selDrag.startSel.x + dx; selection.y = selDrag.startSel.y + dy; drawSelectionVisual(selection); drawSelectionPreview();}
+          else if (selDrag.type === 'handle') { // resize
+            const name = selDrag.handleName; const s = selDrag.startSel; const dx = pos.x - selDrag.startMouse.x; const dy = pos.y - selDrag.startMouse.y; // basic handles (no rotation)
+            if (name === 'nw') {selection.x = s.x + dx; selection.y = s.y + dy; selection.w = s.w - dx; selection.h = s.h - dy;}
+            else if (name === 'ne') {selection.y = s.y + dy; selection.w = s.w + dx; selection.h = s.h - dy;}
+            else if (name === 'sw') {selection.x = s.x + dx; selection.w = s.w - dx; selection.h = s.h + dy;}
+            else if (name === 'se') {selection.w = s.w + dx; selection.h = s.h + dy;}
+            else if (name === 'n') {selection.y = s.y + dy; selection.h = s.h - dy;}
+            else if (name === 's') {selection.h = s.h + dy;}
+            else if (name === 'w') {selection.x = s.x + dx; selection.w = s.w - dx;}
+            else if (name === 'e') {selection.w = s.w + dx;}
+            // clamp
+            if (selection.w < 1) selection.w = 1; if (selection.h < 1) selection.h = 1;
+            drawSelectionVisual(selection);
+            drawSelectionPreview();
+          }
+          else if (selDrag.type === 'rotate') {const cx = selDrag.startSel.x + selDrag.startSel.w / 2; const cy = selDrag.startSel.y + selDrag.startSel.h / 2; const a1 = Math.atan2(selDrag.startMouse.y - cy, selDrag.startMouse.x - cx); const a2 = Math.atan2(pos.y - cy, pos.x - cx); const delta = (a2 - a1) * 180 / Math.PI; selection.angle = (selDrag.startSel.angle || 0) + delta; drawSelectionVisual(selection); drawSelectionPreview();}
+          return;
+        }
+
+        if (!drawing) return;
+        if (tool === 'pencil') {drawBrushStroke(ctxMainHi, last.x, last.y, pos.x, pos.y, primary, size); last = {...pos};}
+        else if (tool === 'brush') {drawBrushStroke(ctxMainHi, last.x, last.y, pos.x, pos.y, primary, size * 2); last = {...pos};}
+        else if (tool === 'eraser') {drawBrushStroke(ctxMainHi, last.x, last.y, pos.x, pos.y, '#ffffff', size * 2); last = {...pos};}
+        else if (tool === 'select') {
+          // Update selection dimensions while dragging
+          const x = Math.min(start.x, pos.x);
+          const y = Math.min(start.y, pos.y);
+          const w = Math.abs(pos.x - start.x);
+          const h = Math.abs(pos.y - start.y);
+          selection.x = x;
+          selection.y = y;
+          selection.w = w;
+          selection.h = h;
+          drawSelectionVisual(selection);
+        }
+        else if (['line', 'rect', 'ellipse'].includes(tool)) {
+          ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); ctxTempHi.save(); ctxTempHi.lineWidth = size; ctxTempHi.lineCap = 'round'; ctxTempHi.strokeStyle = primary; ctxTempHi.fillStyle = primary;
+          if (tool === 'line') {ctxTempHi.beginPath(); ctxTempHi.moveTo(start.x, start.y); ctxTempHi.lineTo(pos.x, pos.y); ctxTempHi.stroke();}
+          else if (tool === 'rect') {const x = Math.min(start.x, pos.x); const y = Math.min(start.y, pos.y); const w = Math.abs(pos.x - start.x); const h = Math.abs(pos.y - start.y); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxTempHi.fillRect(x, y, w, h); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxTempHi.strokeRect(x + 0.5, y + 0.5, w, h);}
+          else if (tool === 'ellipse') {const x = (start.x + pos.x) / 2, y = (start.y + pos.y) / 2, rx = Math.abs(pos.x - start.x) / 2, ry = Math.abs(pos.y - start.y) / 2; ctxTempHi.beginPath(); ctxTempHi.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxTempHi.fill(); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxTempHi.stroke();}
+          ctxTempHi.restore();
+        }
+      });
+
+      canvasMain.addEventListener('mouseup', (e) => {
+        const pos = getPos(e); drawing = false; if (selDrag) { // commit transform
+          applySelectionTransform();
+          ctxTempHi.clearRect(0, 0, canvasTemp.width / DPR, canvasTemp.height / DPR);
+          selDrag = null;
+          return;
+        }
+        if (tool === 'line') {ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); drawLine(ctxMainHi, start.x, start.y, pos.x, pos.y, primary, size);}
+        else if (tool === 'rect') {ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); const x = Math.min(start.x, pos.x); const y = Math.min(start.y, pos.y); const w = Math.abs(pos.x - start.x); const h = Math.abs(pos.y - start.y); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxMainHi.fillStyle = primary, ctxMainHi.fillRect(x, y, w, h); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxMainHi.strokeStyle = primary, ctxMainHi.lineWidth = size, ctxMainHi.strokeRect(x + 0.5, y + 0.5, w, h);}
+        else if (tool === 'ellipse') {ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); const x = (start.x + pos.x) / 2, y = (start.y + pos.y) / 2, rx = Math.abs(pos.x - start.x) / 2, ry = Math.abs(pos.y - start.y) / 2; ctxMainHi.beginPath(); ctxMainHi.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxMainHi.fillStyle = primary, ctxMainHi.fill(); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxMainHi.strokeStyle = primary, ctxMainHi.lineWidth = size, ctxMainHi.stroke();}
+        else if (tool === 'select') {if (selection && selection.w > 0 && selection.h > 0) {selection.imageData = ctxMainHi.getImageData(selection.x * DPR, selection.y * DPR, selection.w * DPR, selection.h * DPR); selection.angle = selection.angle || 0; updateStatus('Selection created'); drawSelectionVisual(selection);} else {selection = null; drawSelectionVisual(null);} }
+        else if (tool === 'polygon') { // polygonPoints handled by clicks; finish if near start
+          if (polygonPoints.length > 1) {
+            const first = polygonPoints[0]; const lastP = polygonPoints[polygonPoints.length - 1]; const dx = pos.x - first[0], dy = pos.y - first[1]; if (Math.hypot(dx, dy) < 8) { // finish
+              // draw polygon
+              pushUndo(); ctxMainHi.beginPath(); ctxMainHi.moveTo(polygonPoints[0][0], polygonPoints[0][1]); for (let i = 1; i < polygonPoints.length; i++) ctxMainHi.lineTo(polygonPoints[i][0], polygonPoints[i][1]); ctxMainHi.closePath(); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxMainHi.fillStyle = primary, ctxMainHi.fill(); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxMainHi.strokeStyle = primary, ctxMainHi.lineWidth = size, ctxMainHi.stroke(); polygonPoints = []; ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); updateStatus('Polygon created');
+            }
+          }
+        }
+      });
+
+      // Helpers for polygon preview
+      function drawPolygonPreview() {ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); if (polygonPoints.length === 0) return; ctxTempHi.save(); ctxTempHi.beginPath(); ctxTempHi.moveTo(polygonPoints[0][0], polygonPoints[0][1]); polygonPoints.slice(1).forEach(p => ctxTempHi.lineTo(p[0], p[1])); ctxTempHi.strokeStyle = primary; ctxTempHi.lineWidth = 1; ctxTempHi.stroke(); ctxTempHi.restore();}
+
+      // Curve tool: click to add control points, double-click to finish with a smooth cubic bezier through points
+      function finishCurve() {
+        if (curvePoints.length < 2) {curvePoints = []; return;} pushUndo(); ctxMainHi.save(); ctxMainHi.beginPath(); ctxMainHi.moveTo(curvePoints[0][0], curvePoints[0][1]); if (curvePoints.length === 2) {ctxMainHi.lineTo(curvePoints[1][0], curvePoints[1][1]);} else {
+          // draw Catmull-Rom to Bezier approximation
+          for (let i = 0; i < curvePoints.length - 1; i++) {
+            const p0 = i > 0 ? curvePoints[i - 1] : curvePoints[i];
+            const p1 = curvePoints[i];
+            const p2 = curvePoints[i + 1];
+            const p3 = i + 2 < curvePoints.length ? curvePoints[i + 2] : p2;
+            const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+            const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+            const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+            const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+            ctxMainHi.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2[0], p2[1]);
+          }
+        }
+        ctxMainHi.strokeStyle = primary; ctxMainHi.lineWidth = size; ctxMainHi.stroke(); ctxMainHi.restore(); curvePoints = []; ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); updateStatus('Curve drawn');
+      }
+
+      // Hit test handles
+      function hitTestHandles(sel, pt) {if (!sel) return null; const hs = getHandles(sel); for (const h of hs) {if (Math.abs(pt.x - h.x) <= 6 && Math.abs(pt.y - h.y) <= 6) return h.name;} return null;}
+      function pointInSel(sel, pt) {return sel && pt.x >= sel.x && pt.y >= sel.y && pt.x <= sel.x + sel.w && pt.y <= sel.y + sel.h;}
+      
+      // Draw selection preview on temp canvas during transform
+      function drawSelectionPreview() {
+        if (!selection || !selection.imageData) return;
+        ctxTempHi.clearRect(0, 0, canvasTemp.width / DPR, canvasTemp.height / DPR);
+        const offscreen = document.createElement('canvas');
+        offscreen.width = selection.imageData.width;
+        offscreen.height = selection.imageData.height;
+        const g = offscreen.getContext('2d');
+        g.putImageData(selection.imageData, 0, 0);
+        
+        ctxTempHi.save();
+        ctxTempHi.globalAlpha = 0.7;
+        ctxTempHi.imageSmoothingEnabled = false;
+        const angle = selection.angle || 0;
+        const cx = selection.x + selection.w / 2;
+        const cy = selection.y + selection.h / 2;
+        ctxTempHi.translate(cx, cy);
+        ctxTempHi.rotate(angle * Math.PI / 180);
+        ctxTempHi.drawImage(offscreen, -selection.w / 2, -selection.h / 2, selection.w, selection.h);
+        ctxTempHi.restore();
+      }
+
+      // Apply selection transform (resize/rotate/move) by drawing selection image data onto a tmp canvas and then compositing
+      function applySelectionTransform() {
+        if (!selection) return; pushUndo(); const img = selection.imageData; if (!img) return;
+        // Create offscreen canvas with original imageData size
+        const offscreen = document.createElement('canvas');
+        offscreen.width = img.width;
+        offscreen.height = img.height;
+        const g = offscreen.getContext('2d');
+        g.putImageData(img, 0, 0);
+        
+        // Disable image smoothing for crisp pixel art
+        ctxMainHi.imageSmoothingEnabled = false;
+        
+        // Clear original area
+        ctxMainHi.clearRect(selection.x, selection.y, selection.w, selection.h);
+        
+        // Apply rotation and scaling
+        const angle = selection.angle || 0;
+        ctxMainHi.save();
+        const cx = selection.x + selection.w / 2;
+        const cy = selection.y + selection.h / 2;
+        ctxMainHi.translate(cx, cy);
+        ctxMainHi.rotate(angle * Math.PI / 180);
+        
+        // Draw offscreen canvas scaled to new selection size
+        ctxMainHi.drawImage(offscreen, -selection.w / 2, -selection.h / 2, selection.w, selection.h);
+        ctxMainHi.restore();
+        
+        // Update selection imageData with DPR correction
+        selection.imageData = ctxMainHi.getImageData(selection.x * DPR, selection.y * DPR, selection.w * DPR, selection.h * DPR);
+        drawSelectionVisual(selection);
+        updateStatus('Selection transformed');
+      }
+
+      // Text editor overlay
+      function createTextEditor(x, y, color) {
+        const editor = document.createElement('div');
+        editor.contentEditable = 'true';
+        editor.className = 'text-editor';
+        editor.style.position = 'absolute';
+        editor.style.left = (x * zoom) + 'px';
+        editor.style.top = (y * zoom) + 'px';
+        editor.style.color = color;
+        editor.style.font = '16px Tahoma';
+        editor.style.minWidth = '40px';
+        editor.style.minHeight = '20px';
+        editor.style.zIndex = 1000;
+        editor.style.background = 'rgba(255,255,255,0.9)';
+        editor.style.border = '1px dashed #000';
+        editor.style.padding = '2px';
+        editor.style.outline = 'none';
+        paper.appendChild(editor);
+        editor.focus();
+        
+        function finalize() {
+          const text = editor.innerText;
+          if (text.trim().length) {
+            pushUndo();
+            ctxMainHi.fillStyle = color;
+            ctxMainHi.font = '16px Tahoma';
+            ctxMainHi.fillText(text, x, y + 12);
+          }
+          editor.remove();
+        }
+        
+        editor.addEventListener('blur', finalize);
+        editor.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            editor.blur();
+          }
+        });
+      }
+
+      // Color modal wiring
+      document.getElementById('editColorsBtn').addEventListener('click', () => showColorModal()); document.getElementById('editColors').addEventListener('click', () => showColorModal());
+      function showColorModal() {colorModal.style.display = 'block'; colorInput.value = primary; hexInput.value = primary; const rgb = hexToRgba(primary); rRange.value = rgb[0]; gRange.value = rgb[1]; bRange.value = rgb[2];}
+      function hideColorModal() {colorModal.style.display = 'none';}
+      colorInput.addEventListener('input', () => {hexInput.value = colorInput.value; const c = hexToRgba(hexInput.value); rRange.value = c[0]; gRange.value = c[1]; bRange.value = c[2];});
+      hexInput.addEventListener('input', () => {try {const v = hexInput.value; if (/^#?[0-9a-fA-F]{6}$/.test(v)) {const hex = v.startsWith('#') ? v : '#' + v; colorInput.value = hex; const c = hexToRgba(hex); rRange.value = c[0]; gRange.value = c[1]; bRange.value = c[2];} } catch (e) { } });
+      function updateFromRGB() {const hex = '#' + [parseInt(rRange.value, 10), parseInt(gRange.value, 10), parseInt(bRange.value, 10)].map(n => n.toString(16).padStart(2, '0')).join(''); colorInput.value = hex; hexInput.value = hex;}
+      [rRange, gRange, bRange].forEach(i => i.addEventListener('input', () => updateFromRGB()));
+      colorOk.addEventListener('click', () => {setPrimary(colorInput.value); hideColorModal();}); colorCancel.addEventListener('click', hideColorModal);
+
+      // Primary/secondary swap
+      primaryBox.addEventListener('click', () => {const tmp = primary; setPrimary(secondary); setSecondary(tmp);}); secondaryBox.addEventListener('click', () => {const tmp = primary; setPrimary(secondary); setSecondary(tmp);});
+
+      // Simple clipboard support (internal)
+      document.addEventListener('copy', (e) => {if (selection && selection.imageData) {copied = selection.imageData; updateStatus('Copied to internal clipboard'); e.preventDefault();} });
+
+      // Curve/polygon mouse clicks handling for adding points and finishing
+      canvasMain.addEventListener('dblclick', (e) => {
+        const pos = getPos(e); if (tool === 'curve') {curvePoints.push([pos.x, pos.y]); finishCurve();} else if (tool === 'polygon') { // finish polygon
+          if (polygonPoints.length > 2) {pushUndo(); ctxMainHi.beginPath(); ctxMainHi.moveTo(polygonPoints[0][0], polygonPoints[0][1]); for (let i = 1; i < polygonPoints.length; i++) ctxMainHi.lineTo(polygonPoints[i][0], polygonPoints[i][1]); ctxMainHi.closePath(); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxMainHi.fillStyle = primary, ctxMainHi.fill(); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxMainHi.strokeStyle = primary, ctxMainHi.lineWidth = size, ctxMainHi.stroke(); polygonPoints = []; ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); updateStatus('Polygon finished');}
+        }
+      });
+      canvasMain.addEventListener('click', (e) => {
+        const pos = getPos(e); if (tool === 'polygon') {polygonPoints.push([pos.x, pos.y]); drawPolygonPreview();} else if (tool === 'curve') {
+          curvePoints.push([pos.x, pos.y]); // preview polyline
+          ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); if (curvePoints.length > 0) {ctxTempHi.beginPath(); ctxTempHi.moveTo(curvePoints[0][0], curvePoints[0][1]); for (let i = 1; i < curvePoints.length; i++) ctxTempHi.lineTo(curvePoints[i][0], curvePoints[i][1]); ctxTempHi.strokeStyle = primary; ctxTempHi.stroke();}
+        }
+      });
+
+      window.addEventListener('mouseup', () => {if (selDrag) {applySelectionTransform(); ctxTempHi.clearRect(0, 0, canvasTemp.width / DPR, canvasTemp.height / DPR); selDrag = null;} });
+
+      // Update status
+      updateStatus('Ready'); updateUndoButtons();
+
+      window.paintApp = {canvasMain, ctxMainHi, pushUndo};
+
+    })();
+  </script>
+</body>
+
+</html>

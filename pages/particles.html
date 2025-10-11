@@ -1,70 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>VIBELAND - Particle Simulator</title>
-    <link rel="stylesheet" type="text/css" href="../assets/styles.css">
-    <style type="text/css">
-        button {
-            padding: 8px 12px;
-            font-size: 14px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Particle Simulator - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style>
+    button {
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+  </style>
 </head>
-
 <body>
-    <div class="container wide">
-        <h1>VIBELAND PARTICLE SIMULATOR</h1>
-        
-        <div class="simulator">
-            <!-- Canvas element for rendering the simulation -->
-            <canvas id="canvas" width="800" height="600"></canvas>
+  <div class="container wide">
+    <div class="outer-border">
+      <div class="header">
+        <h1>⚛️ PARTICLE SIMULATOR ⚛️</h1>
+        <p>~*~ Watch Physics Come Alive ~*~</p>
+      </div>
 
-            <!-- Controls for selecting particle types -->
-            <div class="controls">
-                <button data-type="eraser">Eraser</button>
-                <button data-type="wall">Wall</button>
-                <button data-type="stone">Stone</button>
-                <button data-type="sand">Sand</button>
-                <button data-type="water">Water</button>
-            </div>
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ CREATE SAND, WATER & MORE ★ WATCH GRAVITY IN ACTION ★</div>
+      </div>
+
+      <div class="content">
+        <div class="simulator">
+          <canvas id="canvas" width="800" height="600"></canvas>
+
+          <div class="controls">
+            <button data-type="eraser">Eraser</button>
+            <button data-type="wall">Wall</button>
+            <button data-type="stone">Stone</button>
+            <button data-type="sand">Sand</button>
+            <button data-type="water">Water</button>
+          </div>
         </div>
+        
+        <hr class="thick">
         
         <div class="footer">
-            <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
-            <p>© 1999 VIBELAND - All Rights Reserved</p>
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
         </div>
+      </div>
     </div>
+  </div>
 
   <script>
-    // Get the canvas and its 2D context
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
 
-    // Define grid dimensions and cell size
-    const cellSize = 4; // Size of each grid cell in pixels
-    const gridWidth = canvas.width / cellSize; // Number of cells horizontally (200)
-    const gridHeight = canvas.height / cellSize; // Number of cells vertically (150)
+    const cellSize = 4;
+    const gridWidth = canvas.width / cellSize;
+    const gridHeight = canvas.height / cellSize;
 
-    // Initialize the grid as a 2D array with 'empty' cells
     let grid = Array.from({length: gridHeight}, () => Array(gridWidth).fill('empty'));
 
-    // Define particle properties (colors and behaviors are handled in logic)
     const particles = {
-      empty: {color: '#fff'}, // White (background)
-      wall: {color: '#333'},  // Dark gray, static barrier
-      stone: {color: '#888'}, // Gray, falls straight down
-      sand: {color: '#ffd700'}, // Gold, falls down or diagonally
-      water: {color: '#00bfff'} // Blue, falls and spreads sideways
+      empty: {color: '#fff'},
+      wall: {color: '#333'},
+      stone: {color: '#888'},
+      sand: {color: '#ffd700'},
+      water: {color: '#00bfff'}
     };
 
-    // Current selected tool (particle type or eraser)
-    let selectedType = 'sand'; // Default to sand
+    const density = {
+      empty: 0,
+      water: 1,
+      sand: 2,
+      stone: 3,
+      wall: 1000
+    };
 
-    // Mouse state for drawing
+    const MAX_WATER_SPREAD = 6;
+    const WATER_MOMENTUM_STEPS = 3;
+
+    let tick = 0;
+    let waterMomentum = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(0));
+
+    let selectedType = 'sand';
+
     let isMouseDown = false;
 
-    // Function to get grid coordinates from mouse position
     function getGridPos(x, y) {
       return {
         gx: Math.floor(x / cellSize),
@@ -72,14 +90,13 @@
       };
     }
 
-    // Function to place a particle at a grid position
     function placeParticle(gx, gy, type) {
       if (gx >= 0 && gx < gridWidth && gy >= 0 && gy < gridHeight) {
         grid[gy][gx] = type === 'eraser' ? 'empty' : type;
+        waterMomentum[gy][gx] = 0;
       }
     }
 
-    // Handle mouse down event (start drawing)
     canvas.addEventListener('mousedown', (e) => {
       isMouseDown = true;
       const rect = canvas.getBoundingClientRect();
@@ -87,12 +104,10 @@
       placeParticle(gx, gy, selectedType);
     });
 
-    // Handle mouse up event (stop drawing)
     canvas.addEventListener('mouseup', () => {
       isMouseDown = false;
     });
 
-    // Handle mouse move event (draw while dragging)
     canvas.addEventListener('mousemove', (e) => {
       if (isMouseDown) {
         const rect = canvas.getBoundingClientRect();
@@ -101,87 +116,173 @@
       }
     });
 
-    // Handle button clicks for selecting particle type
     document.querySelectorAll('button').forEach(button => {
       button.addEventListener('click', () => {
-        // Remove active class from all buttons
         document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        // Add active to selected
         button.classList.add('active');
-        // Set selected type
         selectedType = button.dataset.type;
       });
     });
 
-    // Mark default button as active
     document.querySelector('button[data-type="sand"]').classList.add('active');
 
-    // Function to simulate particle physics
     function simulate() {
-      // Create a copy of the grid to avoid modifying while iterating
       let newGrid = grid.map(row => row.slice());
+      let newMomentum = waterMomentum.map(row => row.slice());
 
-      // Iterate from bottom to top to simulate gravity properly
+      const xStart = (tick % 2 === 0) ? 0 : gridWidth - 1;
+      const xStep  = (tick % 2 === 0) ? 1 : -1;
+
+      const swap = (x1, y1, x2, y2) => {
+        const t1 = newGrid[y1][x1];
+        const t2 = newGrid[y2][x2];
+        newGrid[y1][x1] = t2;
+        newGrid[y2][x2] = t1;
+
+        const m1 = newMomentum[y1][x1];
+        const m2 = newMomentum[y2][x2];
+
+        newMomentum[y1][x1] = (t2 === 'water') ? m2 : 0;
+        newMomentum[y2][x2] = (t1 === 'water') ? m1 : 0;
+      };
+
+      const findDrop = (gx, gy, dir) => {
+        for (let d = 1; d <= MAX_WATER_SPREAD; d++) {
+          const cx = gx + dir * d;
+          if (cx < 0 || cx >= gridWidth) break;
+          if (grid[gy][cx] !== 'empty') break;
+          if (gy + 1 < gridHeight && grid[gy + 1][cx] === 'empty') return d;
+        }
+        return null;
+      };
+
       for (let y = gridHeight - 1; y >= 0; y--) {
-        for (let x = 0; x < gridWidth; x++) {
-          const type = grid[y][x];
-          if (type === 'empty' || type === 'wall') continue; // Skip empty or static walls
+        for (let i = 0; i < gridWidth; i++) {
+          const x = xStart + i * xStep;
+          if (x < 0 || x >= gridWidth) continue;
 
-          // Check if can move down
-          const below = y + 1 < gridHeight ? grid[y + 1][x] : null;
-          const belowLeft = y + 1 < gridHeight && x - 1 >= 0 ? grid[y + 1][x - 1] : null;
-          const belowRight = y + 1 < gridHeight && x + 1 < gridWidth ? grid[y + 1][x + 1] : null;
-          const left = x - 1 >= 0 ? grid[y][x - 1] : null;
-          const right = x + 1 < gridWidth ? grid[y][x + 1] : null;
+          const type = grid[y][x];
+          if (type === 'empty' || type === 'wall') continue;
+
+          const belowY = y + 1;
+          const leftX = x - 1;
+          const rightX = x + 1;
+
+          const below = (belowY < gridHeight) ? grid[belowY][x] : null;
 
           if (type === 'stone') {
-            // Stone falls straight down if possible, no diagonal or side movement
-            if (below === 'empty') {
-              newGrid[y][x] = 'empty';
-              newGrid[y + 1][x] = 'stone';
+            if (below && density[below] < density.stone) {
+              swap(x, y, x, y + 1);
             }
-          } else if (type === 'sand') {
-            // Sand falls down, or diagonally if blocked
-            if (below === 'empty') {
-              newGrid[y][x] = 'empty';
-              newGrid[y + 1][x] = 'sand';
-            } else if (belowLeft === 'empty') {
-              newGrid[y][x] = 'empty';
-              newGrid[y + 1][x - 1] = 'sand';
-            } else if (belowRight === 'empty') {
-              newGrid[y][x] = 'empty';
-              newGrid[y + 1][x + 1] = 'sand';
-            }
-          } else if (type === 'water') {
-            // Water falls down or diagonally, and spreads sideways if at rest
-            if (below === 'empty') {
-              newGrid[y][x] = 'empty';
-              newGrid[y + 1][x] = 'water';
-            } else if (belowLeft === 'empty') {
-              newGrid[y][x] = 'empty';
-              newGrid[y + 1][x - 1] = 'water';
-            } else if (belowRight === 'empty') {
-              newGrid[y][x] = 'empty';
-              newGrid[y + 1][x + 1] = 'water';
+            continue;
+          }
+
+          if (type === 'sand') {
+            if (below && density[below] < density.sand) {
+              swap(x, y, x, y + 1);
             } else {
-              // Spread sideways if can't fall
-              const dir = Math.random() < 0.5 ? -1 : 1; // Random direction to avoid bias
-              const sideX = x + dir;
-              const side = dir === -1 ? left : right;
-              if (side === 'empty') {
-                newGrid[y][x] = 'empty';
-                newGrid[y][sideX] = 'water';
+              const canDL =
+                y + 1 < gridHeight && x - 1 >= 0 &&
+                density[grid[y + 1][x - 1]] < density.sand;
+              const canDR =
+                y + 1 < gridHeight && x + 1 < gridWidth &&
+                density[grid[y + 1][x + 1]] < density.sand;
+
+              if (canDL && canDR) {
+                if ((tick + x) % 2 === 0) {
+                  swap(x, y, x - 1, y + 1);
+                } else {
+                  swap(x, y, x + 1, y + 1);
+                }
+              } else if (canDL) {
+                swap(x, y, x - 1, y + 1);
+              } else if (canDR) {
+                swap(x, y, x + 1, y + 1);
               }
+            }
+            continue;
+          }
+
+          if (type === 'water') {
+            if (below && density[below] < density.water) {
+              swap(x, y, x, y + 1);
+              newMomentum[y + 1][x] = 0;
+              newMomentum[y][x] = 0;
+              continue;
+            }
+
+            const canDL =
+              y + 1 < gridHeight && x - 1 >= 0 &&
+              density[grid[y + 1][x - 1]] < density.water;
+            const canDR =
+              y + 1 < gridHeight && x + 1 < gridWidth &&
+              density[grid[y + 1][x + 1]] < density.water;
+
+            if (canDL && canDR) {
+              if ((tick + x) % 2 === 0) {
+                swap(x, y, x - 1, y + 1);
+                newMomentum[y + 1][x - 1] = -1;
+              } else {
+                swap(x, y, x + 1, y + 1);
+                newMomentum[y + 1][x + 1] = 1;
+              }
+              continue;
+            } else if (canDL) {
+              swap(x, y, x - 1, y + 1);
+              newMomentum[y + 1][x - 1] = -1;
+              continue;
+            } else if (canDR) {
+              swap(x, y, x + 1, y + 1);
+              newMomentum[y + 1][x + 1] = 1;
+              continue;
+            }
+
+            const leftDrop = findDrop(x, y, -1);
+            const rightDrop = findDrop(x, y, 1);
+
+            let dir = 0;
+            if (leftDrop != null && rightDrop != null) {
+              dir = (leftDrop === rightDrop)
+                ? (((tick + y) % 2 === 0) ? -1 : 1)
+                : (leftDrop < rightDrop ? -1 : 1);
+            } else if (leftDrop != null) {
+              dir = -1;
+            } else if (rightDrop != null) {
+              dir = 1;
+            } else {
+              const m = Math.sign(waterMomentum[y][x]);
+              if (m !== 0) {
+                const nx = x + m;
+                if (nx >= 0 && nx < gridWidth && grid[y][nx] === 'empty') {
+                  dir = m;
+                }
+              }
+            }
+
+            if (dir !== 0) {
+              const nx = x + dir;
+              if (nx >= 0 && nx < gridWidth && grid[y][nx] === 'empty') {
+                swap(x, y, nx, y);
+                newMomentum[y][nx] = dir * WATER_MOMENTUM_STEPS;
+                newMomentum[y][x] = 0;
+                continue;
+              }
+            }
+
+            const currentM = waterMomentum[y][x];
+            if (currentM !== 0) {
+              const s = Math.sign(currentM);
+              const mag = Math.abs(currentM) - 1;
+              newMomentum[y][x] = mag > 0 ? s * mag : 0;
             }
           }
         }
       }
 
-      // Update the grid
       grid = newGrid;
+      waterMomentum = newMomentum;
     }
 
-    // Function to render the grid on the canvas
     function render() {
       for (let y = 0; y < gridHeight; y++) {
         for (let x = 0; x < gridWidth; x++) {
@@ -192,16 +293,14 @@
       }
     }
 
-    // Main animation loop
     function loop() {
-      simulate(); // Update physics
-      render();   // Draw the grid
-      requestAnimationFrame(loop); // Schedule next frame
+      tick++;
+      simulate();
+      render();
+      requestAnimationFrame(loop);
     }
 
-    // Start the simulation loop
     loop();
   </script>
 </body>
-
 </html>

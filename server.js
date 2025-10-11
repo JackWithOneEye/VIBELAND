@@ -1,24 +1,103 @@
-import { serve } from "bun";
-import { file } from "bun";
 import { runMigrations } from "./migration/migrate.js";
 
 // Initialize database with migrations
 const db = await runMigrations();
 
-function generateGuestbookHTML(entries, hasError, hasSuccess, locale = 'en-US', timezone = 'UTC') {
+Bun.serve({
+  port: 3000,
+  routes: {
+    "/": Response.redirect("/home"),
+    "/home": Bun.file("./index.html"),
+    "/battleship": Bun.file("./pages/battleship.html"),
+    "/calculator": Bun.file("./pages/calculator.html"),
+    "/freecell": Bun.file("./pages/freecell.html"),
+    "/mahjong": Bun.file("./pages/mahjong.html"),
+    "/paint": Bun.file("./pages/paint.html"),
+    "/particles": Bun.file("./pages/particles.html"),
+    "/pong": Bun.file("./pages/pong.html"),
+    "/solitaire": Bun.file("./pages/solitaire.html"),
+    "/sudoku": Bun.file("./pages/sudoku.html"),
+    "/synthesizer": Bun.file("./pages/synthesizer.html"),
+    "/the-orb": Bun.file("./pages/the-orb.html"),
+    "/tuner": Bun.file("./pages/tuner.html"),
+    "/unix-time": Bun.file("./pages/unix-time.html"),
+    "/vibration": Bun.file("./pages/vibration.html"),
+    "/weather": Bun.file("./pages/weather.html"),
+    "/world-clock": Bun.file("./pages/world-clock.html"),
+
+    "/guestbook": {
+      GET: async req => {
+        const url = new URL(req.url);
+        const entries = db.prepare("SELECT * FROM guestbook WHERE approved = 1 ORDER BY submitted_at DESC LIMIT 100").all();
+        const hasSuccess = url.searchParams.has("success");
+
+        const acceptLanguage = req.headers.get('Accept-Language') || 'en-US';
+        const locale = acceptLanguage.split(',')[0].split(';')[0] || 'en-US';
+
+        const html = await generateGuestbookViewHTML(entries, hasSuccess, locale);
+        return new Response(html, {
+          headers: { "Content-Type": "text/html" }
+        });
+      }
+    },
+    "/guestbook/add": {
+      GET: async req => {
+        const url = new URL(req.url);
+        const hasError = url.searchParams.has("error");
+
+        const html = await generateGuestbookAddHTML(hasError);
+        return new Response(html, {
+          headers: { "Content-Type": "text/html" }
+        });
+      },
+      POST: async (req, server) => {
+        const url = new URL(req.url);
+        const formData = await req.formData();
+        const name = formData.get("name");
+        const email = formData.get("email") || null;
+        const message = formData.get("message");
+
+        if (!name || !message) {
+          return Response.redirect(url.origin + "/guestbook/add?error=missing", 302);
+        }
+
+        const reqIp = server.requestIP(req);
+        const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("x-real-ip") || reqIp.address || null;
+        const userAgent = req.headers.get("user-agent") || null;
+        const acceptLanguage = req.headers.get("accept-language") || null;
+        const locale = acceptLanguage?.split(",")[0].split(";")[0] || null;
+
+        db.prepare("INSERT INTO guestbook (name, email, message, ip, user_agent, locale) VALUES (?, ?, ?, ?, ?, ?)").run(name, email, message, ip, userAgent, locale);
+        return Response.redirect(url.origin + "/guestbook?success=1", 302);
+      }
+    },
+    "/assets/:file": async req => {
+      const file = Bun.file(`./assets/${req.params.file}`);
+      if (!(await file.exists())) {
+        return new Response(null, { status: 404 });
+      }
+      return new Response(file);
+    },
+    "/assets/img/:file": async req => {
+      const file = Bun.file(`./assets/img/${req.params.file}`);
+      if (!(await file.exists())) {
+        return new Response(null, { status: 404 });
+      }
+      return new Response(file);
+    }
+  }
+});
+
+async function generateGuestbookViewHTML(entries, hasSuccess, locale = 'en-US') {
   const entriesHTML = entries.length === 0
     ? '<div class="loading-message">No entries yet. Be the first to sign!</div>'
     : entries.map(entry => {
       const formatter = new Intl.DateTimeFormat(locale, {
-        timeZone: timezone,
         year: 'numeric',
         month: 'short',
         day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
       });
-      const date = formatter.format(new Date(entry.timestamp + 'Z'));
+      const date = formatter.format(new Date(entry.submitted_at));
       return `
           <div class="entry">
             <div class="entry-header">
@@ -30,168 +109,19 @@ function generateGuestbookHTML(entries, hasError, hasSuccess, locale = 'en-US', 
         `;
     }).join('');
 
-  const errorMessage = hasError ? '<div class="error" style="color: #ff0000; padding: 10px; margin: 10px 0; text-align: center;">Please fill in both name and message fields.</div>' : '';
-  const successMessage = hasSuccess ? '<div class="success" style="color: #008000; padding: 10px; margin: 10px 0; text-align: center;">Your entry has been added to the guest book!</div>' : '';
+  const successMessage = hasSuccess ? '<div class="success-message">✅ Your entry has been submitted successfully!</div>' : '';
 
-  return `<!DOCTYPE html>
-<html lang="en">
+  const tmpl = await Bun.file("./templates/guestbook-view.template.html").text();
+  return tmpl
+    .replace("{{ entries }}", entriesHTML)
+    .replace("{{ successMessage }}", successMessage);
+}
 
-<head>
-  <meta charset="UTF-8">
-  <title>Guest Book - VIBELAND</title>
-  <link rel="stylesheet" type="text/css" href="assets/styles.css">
-  <style>
-    .guestbook-form {
-      background-color: #ffffff;
-      border: 2px inset #c0c0c0;
-      padding: 20px;
-      margin: 20px 0;
-    }
-    
-    .form-group {
-      margin-bottom: 15px;
-    }
-    
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-      color: #000080;
-      font-weight: bold;
-    }
-    
-    .form-group input[type="text"],
-    .form-group textarea {
-      width: 100%;
-      padding: 8px;
-      border: 2px inset #c0c0c0;
-      background-color: #ffffff;
-      color: #000000;
-      font-family: "Times New Roman", serif;
-      box-sizing: border-box;
-    }
-    
-    .form-group textarea {
-      height: 80px;
-      resize: vertical;
-    }
-    
-    .submit-btn {
-      background-color: #000080;
-      color: #ffffff;
-      border: 2px outset #000080;
-      padding: 10px 20px;
-      cursor: pointer;
-      font-family: "Times New Roman", serif;
-      font-weight: bold;
-    }
-    
-    .submit-btn:active {
-      border: 2px inset #000080;
-      background-color: #000060;
-    }
-    
-    .entries {
-      background-color: #ffffff;
-      border: 2px inset #c0c0c0;
-      padding: 20px;
-      margin: 20px 0;
-      max-height: 400px;
-      overflow-y: auto;
-    }
-    
-    .entry {
-      border-bottom: 1px solid #c0c0c0;
-      padding: 15px 0;
-      margin-bottom: 15px;
-    }
-    
-    .entry:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-    }
-    
-    .entry-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    
-    .entry-name {
-      font-weight: bold;
-      color: #000080;
-    }
-    
-    .entry-date {
-      font-size: 12px;
-      color: #808080;
-      font-style: italic;
-    }
-    
-    .entry-message {
-      color: #000000;
-      line-height: 1.4;
-      word-wrap: break-word;
-    }
-    
-    .loading-message {
-      text-align: center;
-      color: #000080;
-      font-style: italic;
-      padding: 20px;
-    }
-  </style>
-</head>
+async function generateGuestbookAddHTML(hasError) {
+  const errorMessage = hasError ? '<div class="error-message">⚠️ Please fill in both name and message fields.</div>' : '';
 
-<body>
-  <div class="container">
-    <h1>VIBELAND Guest Book</h1>
-    
-    <p><a href="/" class="home-link">← Back to VIBELAND</a></p>
-
-    <h2>Sign the Guest Book</h2>
-    <div class="guestbook-form">
-      ${errorMessage}
-      ${successMessage}
-      <form method="POST" action="/guestbook.html">
-        <div class="form-group">
-          <label for="name">Name:</label>
-          <input type="text" id="name" name="name" required maxlength="50">
-        </div>
-        <div class="form-group">
-          <label for="message">Message:</label>
-          <textarea id="message" name="message" required maxlength="500" placeholder="Leave your mark on VIBELAND..."></textarea>
-        </div>
-        <button type="submit" class="submit-btn">Sign Guest Book</button>
-      </form>
-    </div>
-
-    <h2>Guest Book Entries</h2>
-    <div class="entries" id="entries">
-      ${entriesHTML}
-    </div>
-
-    <div class="footer">
-      <p>© 1999 VIBELAND - All Rights Reserved</p>
-    </div>
-  </div>
-
-  <script>
-    // Detect user timezone and reload with timezone parameter
-    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    if (!urlParams.has('tz') && userTimezone) {
-      urlParams.set('tz', userTimezone);
-      const newUrl = window.location.pathname + '?' + urlParams.toString();
-      if (newUrl !== window.location.href) {
-        window.location.replace(newUrl);
-      }
-    }
-  </script>
-</body>
-
-</html>`;
+  const tmpl = await Bun.file("./templates/guestbook-add.template.html").text();
+  return tmpl.replace("{{ errorMessage }}", errorMessage);
 }
 
 function escapeHtml(text) {
@@ -204,104 +134,5 @@ function escapeHtml(text) {
   };
   return text.replace(/[&<>"']/g, function (m) { return map[m]; });
 }
-
-serve({
-  port: 3000,
-  async fetch(req) {
-    const url = new URL(req.url);
-    let pathname = url.pathname;
-
-    // Whitelist allowed paths
-    const allowedPaths = [
-      "/", // root redirects to index.html
-      "/index.html",
-      "/guestbook.html"
-    ];
-
-    const isInPages = pathname.startsWith("/pages/");
-    const isInAssets = pathname.startsWith("/assets/");
-    const isWhitelisted = allowedPaths.includes(pathname) || isInPages || isInAssets;
-
-    if (!isWhitelisted) {
-      return new Response("Not Found", { status: 404 });
-    }
-
-    // Handle guest book routes
-    if (pathname === "/guestbook.html") {
-      if (req.method === "POST") {
-        // Handle form submission
-        const formData = await req.formData();
-        const name = formData.get("name");
-        const message = formData.get("message");
-
-        if (!name || !message) {
-          return Response.redirect(url.origin + "/guestbook.html?error=missing", 302);
-        }
-
-        db.prepare("INSERT INTO guestbook (name, message) VALUES (?, ?)").run(name, message);
-        return Response.redirect(url.origin + "/guestbook.html?success=1", 302);
-      } else {
-        // Serve dynamic guestbook page
-        const entries = db.prepare("SELECT * FROM guestbook ORDER BY timestamp DESC").all();
-        const hasError = url.searchParams.has("error");
-        const hasSuccess = url.searchParams.has("success");
-
-        // Extract locale from Accept-Language header with en-US fallback
-        const acceptLanguage = req.headers.get('Accept-Language') || 'en-US';
-        const locale = acceptLanguage.split(',')[0].split(';')[0] || 'en-US';
-
-        // Extract timezone from URL parameter with UTC fallback
-        const timezone = decodeURIComponent(url.searchParams.get('tz') || 'UTC');
-
-        const html = generateGuestbookHTML(entries, hasError, hasSuccess, locale, timezone);
-        return new Response(html, {
-          headers: { "Content-Type": "text/html" }
-        });
-      }
-    }
-
-
-
-    // Default to index.html for root path
-    if (pathname === "/") {
-      pathname = "/index.html";
-    }
-
-    // Construct file path
-    const filePath = `.${pathname}`;
-
-    try {
-      const fileContent = file(filePath);
-
-      // Check if file exists
-      if (!(await fileContent.exists())) {
-        return new Response("Not Found", { status: 404 });
-      }
-
-      // Determine content type
-      let contentType = "text/html";
-      if (pathname.endsWith(".css")) {
-        contentType = "text/css";
-      } else if (pathname.endsWith(".js")) {
-        contentType = "application/javascript";
-      } else if (pathname.endsWith(".png")) {
-        contentType = "image/png";
-      } else if (pathname.endsWith(".jpg") || pathname.endsWith(".jpeg")) {
-        contentType = "image/jpeg";
-      } else if (pathname.endsWith(".gif")) {
-        contentType = "image/gif";
-      } else if (pathname.endsWith(".svg")) {
-        contentType = "image/svg+xml";
-      }
-
-      return new Response(fileContent, {
-        headers: { "Content-Type": contentType }
-      });
-
-    } catch (error) {
-      return new Response("Internal Server Error", { status: 500 });
-    }
-  }
-});
 
 console.log("🌟 VIBELAND server is running on http://localhost:3000");

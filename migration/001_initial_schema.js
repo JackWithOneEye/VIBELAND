@@ -1,40 +1,73 @@
+/**
+ * @param db {import('bun:sqlite').Database}
+ */
 export function up(db) {
   // Create guestbook table
-  db.run(`
-    CREATE TABLE IF NOT EXISTS guestbook (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      message TEXT NOT NULL,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+  db.transaction(() => {
+    db.run(`
+      CREATE TABLE guestbook (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        name VARCHAR(63) NOT NULL,
+        email VARCHAR(255) NULL,
+        message VARCHAR(2047) NOT NULL,
+
+        ip VARCHAR(45) NULL,
+        user_agent VARCHAR(511) NULL,
+        locale VARCHAR(15) NULL,
+
+        submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        reviewed_at DATETIME NULL DEFAULT NULL,
+        approved TINYINT DEFAULT 0
+      )
+    `);
+    db.run(`CREATE INDEX idx_guestbook_submitted_at ON guestbook(submitted_at)`);
+    db.run(`CREATE INDEX idx_guestbook_reviewed_at ON guestbook(reviewed_at)`);
+    db.run(`CREATE INDEX idx_guestbook_approved ON guestbook(approved)`);
+  })();
 
   // Insert initial guestbook entries
-  const insertEntry = db.prepare("INSERT INTO guestbook (name, message, timestamp) VALUES (?, ?, ?)");
-  
+  const insertEntry = db.prepare("INSERT INTO guestbook (name, email, message, ip, user_agent, locale, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
+
   // Three overly praising entries
   insertEntry.run(
     "WebMaster97",
+    "webmaster97@geocities.com",
     "VIBELAND is absolutely MIND-BLOWING! This is the most incredible website I've ever experienced! The dynamic effects are pure genius and the cutting-edge design is PERFECTION! You've created something truly magical here!!!",
+    "203.45.128.92",
+    "Mozilla/4.7 [en] (Win98; I)",
+    "en-US",
     "1999-08-15 14:30:22"
   );
-  
+
   insertEntry.run(
     "RetroFan2000",
+    null,
     "OH MY GOD! VIBELAND is like stepping into the future of web design! Every pixel screams excellence! This is what the internet was MEANT to be! I've bookmarked this and I'm telling EVERYONE about it! REVOLUTIONARY!!!",
+    "198.162.34.17",
+    "Mozilla/4.0 (compatible; MSIE 5.0; Windows 95)",
+    "en-GB",
     "1999-09-03 09:15:41"
   );
-  
+
   insertEntry.run(
     "DigitalDreamer",
+    "dreamer@hotmail.com",
     "VIBELAND has completely changed my life! The visual experience is transcendent and the innovative design makes every other website look ancient! This is pure ART mixed with cutting-edge technology! I'm in absolute AWE!",
+    "142.78.201.5",
+    "Mozilla/4.61 [en] (X11; I; Linux 2.2.5 i586)",
+    "en-US",
     "1999-09-12 16:45:33"
   );
-  
+
   // One dismissive negative comment
   insertEntry.run(
     "SkepticalSurfer",
+    null,
     "meh. just another flashy website with unnecessary animations. seen it all before. nothing special here, just more digital noise cluttering up cyberspace.",
+    "205.188.77.143",
+    "Mozilla/4.0 (compatible; MSIE 4.01; Windows NT)",
+    "en-US",
     "1999-09-20 11:22:15"
   );
 }

@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>VIBELAND - Pong Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong - VIBELAND</title>
     <link rel="stylesheet" type="text/css" href="../assets/styles.css">
     <style type="text/css">
         #pong {
@@ -42,37 +43,88 @@
             color: #000000;
             margin-bottom: 5px;
         }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .controls label {
+            margin-bottom: 4px;
+            color: #000000;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .controls select {
+            font-size: 14px;
+            padding: 2px 6px;
+            background-color: #ffffff;
+            border: 2px inset #c0c0c0;
+            color: #000000;
+            font-family: "Times New Roman", serif;
+            cursor: pointer;
+        }
+
+        .controls select:focus {
+            outline: none;
+            border: 2px outset #c0c0c0;
+        }
     </style>
 </head>
 
 <body>
     <div class="container wide">
-        <h1>VIBELAND PONG GAME</h1>
-        
-        <div class="score-display">
+        <div class="outer-border">
+            <div class="header">
+                <h1>🏓 PONG 🏓</h1>
+                <p>~*~ Classic Arcade Action ~*~</p>
+            </div>
+
+            <div class="ticker" aria-label="site news">
+                <div class="marquee">★ WELCOME TO VIBELAND ★ CLASSIC PONG GAME ★ BEAT THE AI ★</div>
+            </div>
+
+            <div class="content">
+                <div class="score-display">
             <div>
                 <div class="score-label">PLAYER</div>
                 <div class="player-score" id="playerScore">0</div>
+            </div>
+            <div class="controls">
+                <label for="difficulty">AI Difficulty:</label>
+                <select id="difficulty">
+                    <option value="easy" selected>Easy</option>
+                    <option value="normal">Normal</option>
+                    <option value="hard">Hard</option>
+                </select>
             </div>
             <div>
                 <div class="score-label">COMPUTER</div>
                 <div class="player-score" id="computerScore">0</div>
             </div>
-        </div>
-        
-        <div class="game-container">
-            <canvas id="pong" width="800" height="500"></canvas>
-        </div>
-        
-        <div class="footer">
-            <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
-            <p>© 1999 VIBELAND - All Rights Reserved</p>
+                </div> 
+                <div class="game-container">
+                    <canvas id="pong" width="800" height="500"></canvas>
+                </div>
+
+                <hr class="thick">
+
+                <div class="footer">
+                    <div><a href="../home">← Back to VIBELAND</a></div>
+                    <div>© 1999 VIBELAND - All Rights Reserved</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         const canvas = document.getElementById('pong');
         const ctx = canvas.getContext('2d');
+        const difficultySelect = document.getElementById('difficulty');
 
         // Game Settings
         const PADDLE_WIDTH = 12;
@@ -81,6 +133,14 @@
         const PADDLE_SPEED = 5;
         const AI_SPEED = 4;
         const BALL_SPEED = 6;
+
+        // AI Difficulty Settings
+        const AI_DIFFICULTY = {
+            easy:   { speed: 2, reaction: 0.15, error: 80, delay: 0.3 },
+            normal: { speed: 4, reaction: 0.4, error: 40, delay: 0.1 },
+            hard:   { speed: 6, reaction: 0.8, error: 15, delay: 0.05 }
+        };
+        let aiLevel = 'easy';
 
         // Score variables
         let playerScore = 0;
@@ -127,6 +187,11 @@
                 leftPaddle.y = canvas.height - PADDLE_HEIGHT;
         });
 
+        // Change difficulty
+        difficultySelect.addEventListener('change', function() {
+            aiLevel = this.value;
+        });
+
         // Draw Everything
         function drawRect(x, y, w, h, color) {
             ctx.fillStyle = color;
@@ -170,18 +235,64 @@
         }
 
         // AI Movement
+        let aiErrorOffset = 0; // Used for simulating error/bias
+        let aiReactionTimer = 0; // Timer for reaction delay
+        
         function moveAIPaddle() {
-            // Move towards the ball with some "slowness"
+            const ai = AI_DIFFICULTY[aiLevel];
             let paddleCenter = rightPaddle.y + PADDLE_HEIGHT/2;
-            if (ball.y + BALL_SIZE/2 < paddleCenter - 8) {
-                rightPaddle.y -= AI_SPEED;
-            } else if (ball.y + BALL_SIZE/2 > paddleCenter + 8) {
-                rightPaddle.y += AI_SPEED;
+            
+            // Only react if ball is moving towards AI paddle
+            let ballApproaching = ball.dx > 0;
+            
+            if (ballApproaching) {
+                // Increment reaction timer when ball is approaching
+                aiReactionTimer += 1/60; // Assuming 60fps
+            } else {
+                // Reset reaction timer when ball moves away
+                aiReactionTimer = 0;
             }
+            
+            // Only move after reaction delay has passed
+            if (ballApproaching && aiReactionTimer >= ai.delay) {
+                // Calculate target position with error
+                let targetY = ball.y + BALL_SIZE/2 + aiErrorOffset;
+                
+                // Add some prediction for higher difficulties
+                if (aiLevel === 'hard') {
+                    // Predict where ball will be when it reaches the paddle
+                    let timeToReach = (canvas.width - ball.x - BALL_SIZE) / Math.abs(ball.dx);
+                    targetY += ball.dy * timeToReach;
+                } else if (aiLevel === 'normal') {
+                    // Slight prediction
+                    let timeToReach = (canvas.width - ball.x - BALL_SIZE) / Math.abs(ball.dx);
+                    targetY += ball.dy * timeToReach * 0.5;
+                }
+                
+                // Calculate movement needed
+                let diff = targetY - paddleCenter;
+                
+                // Move towards target with reaction speed
+                let moveAmount = diff * ai.reaction;
+                
+                // Limit movement speed
+                let maxMove = ai.speed;
+                if (Math.abs(moveAmount) > maxMove) {
+                    moveAmount = Math.sign(moveAmount) * maxMove;
+                }
+                
+                rightPaddle.y += moveAmount;
+            }
+            
             // Clamp within bounds
             if (rightPaddle.y < 0) rightPaddle.y = 0;
             if (rightPaddle.y + PADDLE_HEIGHT > canvas.height)
                 rightPaddle.y = canvas.height - PADDLE_HEIGHT;
+            
+            // Update error offset occasionally for "inaccuracy"
+            if (Math.random() < 0.02) { // Reduced frequency
+                aiErrorOffset = (Math.random() - 0.5) * ai.error;
+            }
         }
 
         // Main Game Loop

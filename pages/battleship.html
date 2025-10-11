@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>VIBELAND - Battleship</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battleship - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
     /* Battleship page styles aligned to VIBELAND retro theme */
@@ -41,8 +42,10 @@
     .cell {
       width: 30px;
       height: 30px;
-      background: #ffffff; /* brightest */
-      border: 1px solid #808080; /* darker border for contrast */
+      background: #ffffff;
+      /* brightest */
+      border: 1px solid #808080;
+      /* darker border for contrast */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -52,25 +55,32 @@
       color: #000000;
     }
 
-    .cell.own { /* player's grid base */
-      background: #e6e6e6; /* clearly darker than base */
+    .cell.own {
+      /* player's grid base */
+      background: #e6e6e6;
+      /* clearly darker than base */
       cursor: default;
     }
 
-    .cell.ship { /* reveal ships on player board */
-      background: #bfbfbf; /* significantly darker */
+    .cell.ship {
+      /* reveal ships on player board */
+      background: #bfbfbf;
+      /* significantly darker */
       border-color: #808080;
     }
 
     .cell.hit {
-      background: #ff0000; /* strong red */
+      background: #ff0000;
+      /* strong red */
       color: #ffffff;
       cursor: default;
-      border-color: #800000; /* darker red border */
+      border-color: #800000;
+      /* darker red border */
     }
 
     .cell.miss {
-      background: #ffffcc; /* pale yellow for clear contrast */
+      background: #ffffcc;
+      /* pale yellow for clear contrast */
       color: #000000;
       cursor: default;
       border-color: #c0c0c0;
@@ -106,18 +116,29 @@
     }
 
     @media (max-width: 768px) {
-      .boards { gap: 16px; }
+      .boards {
+        gap: 16px;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="container wide">
-    <h1>VIBELAND BATTLESHIP</h1>
+  <div class="container">
+    <div class="outer-border">
+      <div class="header">
+        <h1>⚓ BATTLESHIP ⚓</h1>
+        <p>~*~ Sink the Enemy Fleet! ~*~</p>
+      </div>
 
-    <div class="instructions" id="ai-greeting"></div>
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ ENGAGE IN NAVAL WARFARE ★ CHOOSE YOUR AI DIFFICULTY ★</div>
+      </div>
 
-    <div class="boards">
+      <div class="content">
+        <div class="instructions" id="ai-greeting"></div>
+
+        <div class="boards">
       <div class="board-wrapper">
         <div class="board-label">Your Board</div>
         <div id="player-board" class="board"></div>
@@ -138,11 +159,15 @@
       <button id="restart-btn">Restart Game</button>
     </div>
 
-    <div id="message"></div>
+        <div id="message"></div>
 
-    <div class="footer">
-      <p><a href="../index.html" class="home-link">← Back to VIBELAND</a></p>
-      <p>© 1999 VIBELAND - All Rights Reserved</p>
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
     </div>
   </div>
 
