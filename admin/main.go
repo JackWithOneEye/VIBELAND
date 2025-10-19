@@ -39,6 +39,8 @@ type model struct {
 	menuList        list.Model
 	entries         []GuestbookEntry
 	selectedIndex   int
+	scrollOffset    int
+	termHeight      int
 	db              *sql.DB
 	quitting        bool
 	feedbackMsg     string
@@ -126,6 +128,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case reviewSubmittedMsg:
 		m.entries = msg.entries
 		m.selectedIndex = 0
+		m.scrollOffset = 0
 		if msg.count > 0 {
 			m.feedbackMsg = fmt.Sprintf("✓ Reviewed %d %s", msg.count, map[bool]string{true: "entry", false: "entries"}[msg.count == 1])
 			return m, tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
@@ -140,6 +143,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		m.menuList.SetSize(msg.Width, msg.Height)
+		m.termHeight = msg.Height
 		return m, nil
 
 	case tea.KeyMsg:
@@ -168,6 +172,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 						m.entries = entries
 						m.selectedIndex = 0
+						m.scrollOffset = 0
 						m.currentView = guestbookView
 						return m, nil
 					}
@@ -179,11 +184,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "up", "k":
 			if m.currentView == guestbookView && m.selectedIndex > 0 {
 				m.selectedIndex--
+				if m.selectedIndex < m.scrollOffset {
+					m.scrollOffset = m.selectedIndex
+				}
 			}
 
 		case "down", "j":
 			if m.currentView == guestbookView && m.selectedIndex < len(m.entries)-1 {
 				m.selectedIndex++
+				entriesPerPage := m.getVisibleEntries()
+				if m.selectedIndex >= m.scrollOffset+entriesPerPage {
+					m.scrollOffset = m.selectedIndex - entriesPerPage + 1
+				}
 			}
 
 		case "a":
@@ -210,6 +222,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+func (m model) getVisibleEntries() int {
+	linesPerEntry := 13
+	headerLines := 5
+	controlsLines := 2
+	availableLines := m.termHeight - headerLines - controlsLines
+	if availableLines < linesPerEntry {
+		return 1
+	}
+	return availableLines / linesPerEntry
 }
 
 func (m model) View() string {
@@ -242,7 +265,14 @@ func (m model) renderGuestbookView() string {
 		return s
 	}
 
-	for i, entry := range m.entries {
+	entriesPerPage := m.getVisibleEntries()
+	endIndex := m.scrollOffset + entriesPerPage
+	if endIndex > len(m.entries) {
+		endIndex = len(m.entries)
+	}
+
+	for i := m.scrollOffset; i < endIndex; i++ {
+		entry := m.entries[i]
 		isSelected := i == m.selectedIndex
 		boxStyle := entryBoxStyle
 		if isSelected {
@@ -346,10 +376,11 @@ func getUnreviewedCount(db *sql.DB) int {
 
 func loadUnreviewedEntries(db *sql.DB) ([]GuestbookEntry, error) {
 	rows, err := db.Query(`
-		SELECT id, name, email, message, ip, user_agent, locale, submitted_at, reviewed_at, approved 
-		FROM guestbook 
-		WHERE reviewed_at IS NULL 
-		ORDER BY submitted_at ASC 
+		SELECT g.id, g.name, g.email, g.message, g.ip, ua.value, g.locale, g.submitted_at, g.reviewed_at, g.approved 
+		FROM guestbook g
+		LEFT JOIN user_agent ua ON g.user_agent_id = ua.id
+		WHERE g.reviewed_at IS NULL 
+		ORDER BY g.submitted_at ASC 
 		LIMIT 100
 	`)
 	if err != nil {

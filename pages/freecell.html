@@ -343,7 +343,7 @@
 </head>
 
 <body>
-  <div class="container">
+  <div class="container wide">
     <div class="outer-border">
       <div class="header">
         <h1>🃏 FREECELL 🃏</h1>
@@ -356,39 +356,39 @@
 
       <div class="content">
         <div class="freecell-game">
-      <div id="victory-overlay">
-        <div id="victory-message">
-          Congratulations!<br>You've won FreeCell!
-          <br><br>
-          <button class="button" onclick="window.location.reload()">Play Again</button>
-        </div>
-      </div>
-      <div id="game-container">
-        <div id="title-bar">
-          FreeCell
-        </div>
-        <div id="info-bar">
-          <div>
-            <button class="button" id="new-game-btn">New Game</button>
-            <span id="game-number-label">Game #: <span id="game-number"></span></span>
+          <div id="victory-overlay">
+            <div id="victory-message">
+              Congratulations!<br>You've won FreeCell!
+              <br><br>
+              <button class="button" onclick="window.location.reload()">Play Again</button>
+            </div>
           </div>
-          <div>
-            <span id="move-count-label">Moves: <span id="move-count">0</span></span>
-            <span style="margin-left:20px;">Time: <span id="timer">0:00</span></span>
+          <div id="game-container">
+            <div id="title-bar">
+              FreeCell
+            </div>
+            <div id="info-bar">
+              <div>
+                <button class="button" id="new-game-btn">New Game</button>
+                <span id="game-number-label">Game #: <span id="game-number"></span></span>
+              </div>
+              <div>
+                <span id="move-count-label">Moves: <span id="move-count">0</span></span>
+                <span style="margin-left:20px;">Time: <span id="timer">0:00</span></span>
+              </div>
+            </div>
+            <div id="top-row">
+              <div class="cells-group" id="freecells">
+                <!-- Freecells inserted here -->
+              </div>
+              <div class="cells-group" id="foundations">
+                <!-- Foundations inserted here -->
+              </div>
+            </div>
+            <div id="tableau-row">
+              <!-- Tableau columns inserted here -->
+            </div>
           </div>
-        </div>
-        <div id="top-row">
-          <div class="cells-group" id="freecells">
-            <!-- Freecells inserted here -->
-          </div>
-          <div class="cells-group" id="foundations">
-            <!-- Foundations inserted here -->
-          </div>
-        </div>
-        <div id="tableau-row">
-          <!-- Tableau columns inserted here -->
-        </div>
-      </div>
         </div>
 
         <hr class="thick">

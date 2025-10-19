@@ -14,6 +14,10 @@
       --z-elev-y: 3px;
     }
 
+    .container {
+      width: 1080px;
+    }
+
     .game-section {
       background-color: #2d6b3f;
       border: 2px inset #c0c0c0;
@@ -191,7 +195,7 @@
 </head>
 
 <body>
-  <div class="container extra-wide">
+  <div class="container">
     <div class="outer-border">
       <div class="header">
         <h1>🀄 MAHJONG SOLITAIRE 🀄</h1>
@@ -204,30 +208,30 @@
 
       <div class="content">
         <div class="game-section">
-      <div id="difficulty-select">
-        <button class="diff-btn active" data-diff="easy">Easy</button>
-        <button class="diff-btn" data-diff="normal">Normal</button>
-        <button class="diff-btn" data-diff="hard">Hard</button>
-      </div>
+          <div id="difficulty-select">
+            <button class="diff-btn active" data-diff="easy">Easy</button>
+            <button class="diff-btn" data-diff="normal">Normal</button>
+            <button class="diff-btn" data-diff="hard">Hard</button>
+          </div>
 
-      <div id="hud">
-        <div class="stat">Score: <strong id="score">0</strong></div>
-        <div class="stat">Moves: <strong id="moves">0</strong></div>
-        <div class="stat">Pairs Left: <strong id="pairs-left">0</strong></div>
-        <div class="stat">Removable Pairs: <strong id="available-pairs">0</strong></div>
-        <div class="stat">Time: <strong id="timer">0:00</strong></div>
-      </div>
+          <div id="hud">
+            <div class="stat">Score: <strong id="score">0</strong></div>
+            <div class="stat">Moves: <strong id="moves">0</strong></div>
+            <div class="stat">Pairs Left: <strong id="pairs-left">0</strong></div>
+            <div class="stat">Removable Pairs: <strong id="available-pairs">0</strong></div>
+            <div class="stat">Time: <strong id="timer">0:00</strong></div>
+          </div>
 
-      <div id="controls">
-        <button id="new-game">New Game</button>
-        <button id="hint">Hint (-50pts)</button>
-        <button id="shuffle">Shuffle (-100pts)</button>
-        <button id="undo">Undo</button>
-      </div>
+          <div id="controls">
+            <button id="new-game">New Game</button>
+            <button id="hint">Hint (-50pts)</button>
+            <button id="shuffle">Shuffle (-100pts)</button>
+            <button id="undo">Undo</button>
+          </div>
 
-      <div id="game-container">
-        <div id="board"></div>
-      </div>
+          <div id="game-container">
+            <div id="board"></div>
+          </div>
         </div>
 
         <hr class="thick">
@@ -244,223 +248,223 @@
 
   <svg id="sprite" xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden">
     <defs>
-        <!-- Bamboo Suit 1-9 -->
-        <symbol id="bamboo-1" viewBox="0 0 100 120">
-            <circle cx="50" cy="60" r="15" fill="#2d5016" stroke="#1a3010" stroke-width="2"/>
-        </symbol>
-        <symbol id="bamboo-2" viewBox="0 0 100 120">
-            <circle cx="35" cy="50" r="12" fill="#2d5016" stroke="#1a3010" stroke-width="2"/>
-            <circle cx="65" cy="70" r="12" fill="#2d5016" stroke="#1a3010" stroke-width="2"/>
-        </symbol>
-        <symbol id="bamboo-3" viewBox="0 0 100 120">
-            <circle cx="50" cy="40" r="10" fill="#2d5016"/>
-            <circle cx="35" cy="70" r="10" fill="#2d5016"/>
-            <circle cx="65" cy="70" r="10" fill="#2d5016"/>
-        </symbol>
-        <symbol id="bamboo-4" viewBox="0 0 100 120">
-            <circle cx="30" cy="40" r="9" fill="#2d5016"/>
-            <circle cx="70" cy="40" r="9" fill="#2d5016"/>
-            <circle cx="30" cy="80" r="9" fill="#2d5016"/>
-            <circle cx="70" cy="80" r="9" fill="#2d5016"/>
-        </symbol>
-        <symbol id="bamboo-5" viewBox="0 0 100 120">
-            <circle cx="30" cy="35" r="8" fill="#2d5016"/>
-            <circle cx="70" cy="35" r="8" fill="#2d5016"/>
-            <circle cx="50" cy="60" r="8" fill="#2d5016"/>
-            <circle cx="30" cy="85" r="8" fill="#2d5016"/>
-            <circle cx="70" cy="85" r="8" fill="#2d5016"/>
-        </symbol>
-        <symbol id="bamboo-6" viewBox="0 0 100 120">
-            <circle cx="30" cy="30" r="7" fill="#2d5016"/>
-            <circle cx="70" cy="30" r="7" fill="#2d5016"/>
-            <circle cx="30" cy="60" r="7" fill="#2d5016"/>
-            <circle cx="70" cy="60" r="7" fill="#2d5016"/>
-            <circle cx="30" cy="90" r="7" fill="#2d5016"/>
-            <circle cx="70" cy="90" r="7" fill="#2d5016"/>
-        </symbol>
-        <symbol id="bamboo-7" viewBox="0 0 100 120">
-            <circle cx="25" cy="25" r="6" fill="#2d5016"/>
-            <circle cx="50" cy="25" r="6" fill="#2d5016"/>
-            <circle cx="75" cy="25" r="6" fill="#2d5016"/>
-            <circle cx="25" cy="60" r="6" fill="#2d5016"/>
-            <circle cx="50" cy="60" r="6" fill="#2d5016"/>
-            <circle cx="75" cy="60" r="6" fill="#2d5016"/>
-            <circle cx="50" cy="95" r="6" fill="#2d5016"/>
-        </symbol>
-        <symbol id="bamboo-8" viewBox="0 0 100 120">
-            <circle cx="25" cy="25" r="6" fill="#2d5016"/>
-            <circle cx="50" cy="25" r="6" fill="#2d5016"/>
-            <circle cx="75" cy="25" r="6" fill="#2d5016"/>
-            <circle cx="25" cy="60" r="6" fill="#2d5016"/>
-            <circle cx="75" cy="60" r="6" fill="#2d5016"/>
-            <circle cx="25" cy="95" r="6" fill="#2d5016"/>
-            <circle cx="50" cy="95" r="6" fill="#2d5016"/>
-            <circle cx="75" cy="95" r="6" fill="#2d5016"/>
-        </symbol>
-        <symbol id="bamboo-9" viewBox="0 0 100 120">
-            <circle cx="25" cy="25" r="5" fill="#2d5016"/>
-            <circle cx="50" cy="25" r="5" fill="#2d5016"/>
-            <circle cx="75" cy="25" r="5" fill="#2d5016"/>
-            <circle cx="25" cy="50" r="5" fill="#2d5016"/>
-            <circle cx="50" cy="50" r="5" fill="#2d5016"/>
-            <circle cx="75" cy="50" r="5" fill="#2d5016"/>
-            <circle cx="25" cy="95" r="5" fill="#2d5016"/>
-            <circle cx="50" cy="95" r="5" fill="#2d5016"/>
-            <circle cx="75" cy="95" r="5" fill="#2d5016"/>
-        </symbol>
+      <!-- Bamboo Suit 1-9 -->
+      <symbol id="bamboo-1" viewBox="0 0 100 120">
+        <circle cx="50" cy="60" r="15" fill="#2d5016" stroke="#1a3010" stroke-width="2" />
+      </symbol>
+      <symbol id="bamboo-2" viewBox="0 0 100 120">
+        <circle cx="35" cy="50" r="12" fill="#2d5016" stroke="#1a3010" stroke-width="2" />
+        <circle cx="65" cy="70" r="12" fill="#2d5016" stroke="#1a3010" stroke-width="2" />
+      </symbol>
+      <symbol id="bamboo-3" viewBox="0 0 100 120">
+        <circle cx="50" cy="40" r="10" fill="#2d5016" />
+        <circle cx="35" cy="70" r="10" fill="#2d5016" />
+        <circle cx="65" cy="70" r="10" fill="#2d5016" />
+      </symbol>
+      <symbol id="bamboo-4" viewBox="0 0 100 120">
+        <circle cx="30" cy="40" r="9" fill="#2d5016" />
+        <circle cx="70" cy="40" r="9" fill="#2d5016" />
+        <circle cx="30" cy="80" r="9" fill="#2d5016" />
+        <circle cx="70" cy="80" r="9" fill="#2d5016" />
+      </symbol>
+      <symbol id="bamboo-5" viewBox="0 0 100 120">
+        <circle cx="30" cy="35" r="8" fill="#2d5016" />
+        <circle cx="70" cy="35" r="8" fill="#2d5016" />
+        <circle cx="50" cy="60" r="8" fill="#2d5016" />
+        <circle cx="30" cy="85" r="8" fill="#2d5016" />
+        <circle cx="70" cy="85" r="8" fill="#2d5016" />
+      </symbol>
+      <symbol id="bamboo-6" viewBox="0 0 100 120">
+        <circle cx="30" cy="30" r="7" fill="#2d5016" />
+        <circle cx="70" cy="30" r="7" fill="#2d5016" />
+        <circle cx="30" cy="60" r="7" fill="#2d5016" />
+        <circle cx="70" cy="60" r="7" fill="#2d5016" />
+        <circle cx="30" cy="90" r="7" fill="#2d5016" />
+        <circle cx="70" cy="90" r="7" fill="#2d5016" />
+      </symbol>
+      <symbol id="bamboo-7" viewBox="0 0 100 120">
+        <circle cx="25" cy="25" r="6" fill="#2d5016" />
+        <circle cx="50" cy="25" r="6" fill="#2d5016" />
+        <circle cx="75" cy="25" r="6" fill="#2d5016" />
+        <circle cx="25" cy="60" r="6" fill="#2d5016" />
+        <circle cx="50" cy="60" r="6" fill="#2d5016" />
+        <circle cx="75" cy="60" r="6" fill="#2d5016" />
+        <circle cx="50" cy="95" r="6" fill="#2d5016" />
+      </symbol>
+      <symbol id="bamboo-8" viewBox="0 0 100 120">
+        <circle cx="25" cy="25" r="6" fill="#2d5016" />
+        <circle cx="50" cy="25" r="6" fill="#2d5016" />
+        <circle cx="75" cy="25" r="6" fill="#2d5016" />
+        <circle cx="25" cy="60" r="6" fill="#2d5016" />
+        <circle cx="75" cy="60" r="6" fill="#2d5016" />
+        <circle cx="25" cy="95" r="6" fill="#2d5016" />
+        <circle cx="50" cy="95" r="6" fill="#2d5016" />
+        <circle cx="75" cy="95" r="6" fill="#2d5016" />
+      </symbol>
+      <symbol id="bamboo-9" viewBox="0 0 100 120">
+        <circle cx="25" cy="25" r="5" fill="#2d5016" />
+        <circle cx="50" cy="25" r="5" fill="#2d5016" />
+        <circle cx="75" cy="25" r="5" fill="#2d5016" />
+        <circle cx="25" cy="50" r="5" fill="#2d5016" />
+        <circle cx="50" cy="50" r="5" fill="#2d5016" />
+        <circle cx="75" cy="50" r="5" fill="#2d5016" />
+        <circle cx="25" cy="95" r="5" fill="#2d5016" />
+        <circle cx="50" cy="95" r="5" fill="#2d5016" />
+        <circle cx="75" cy="95" r="5" fill="#2d5016" />
+      </symbol>
 
-        <!-- Character Suit 1-9 -->
-        <symbol id="char-1" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">一</text>
-        </symbol>
-        <symbol id="char-2" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">二</text>
-        </symbol>
-        <symbol id="char-3" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">三</text>
-        </symbol>
-        <symbol id="char-4" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">四</text>
-        </symbol>
-        <symbol id="char-5" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">五</text>
-        </symbol>
-        <symbol id="char-6" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">六</text>
-        </symbol>
-        <symbol id="char-7" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">七</text>
-        </symbol>
-        <symbol id="char-8" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">八</text>
-        </symbol>
-        <symbol id="char-9" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">九</text>
-        </symbol>
+      <!-- Character Suit 1-9 -->
+      <symbol id="char-1" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">一</text>
+      </symbol>
+      <symbol id="char-2" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">二</text>
+      </symbol>
+      <symbol id="char-3" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">三</text>
+      </symbol>
+      <symbol id="char-4" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">四</text>
+      </symbol>
+      <symbol id="char-5" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">五</text>
+      </symbol>
+      <symbol id="char-6" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">六</text>
+      </symbol>
+      <symbol id="char-7" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">七</text>
+      </symbol>
+      <symbol id="char-8" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">八</text>
+      </symbol>
+      <symbol id="char-9" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="70" text-anchor="middle" fill="#c41e3a" font-weight="bold">九</text>
+      </symbol>
 
-        <!-- Circle Suit 1-9 -->
-        <symbol id="circle-1" viewBox="0 0 100 120">
-            <circle cx="50" cy="60" r="25" fill="none" stroke="#1e3a8a" stroke-width="6"/>
-        </symbol>
-        <symbol id="circle-2" viewBox="0 0 100 120">
-            <circle cx="35" cy="50" r="18" fill="none" stroke="#1e3a8a" stroke-width="5"/>
-            <circle cx="65" cy="70" r="18" fill="none" stroke="#1e3a8a" stroke-width="5"/>
-        </symbol>
-        <symbol id="circle-3" viewBox="0 0 100 120">
-            <circle cx="50" cy="35" r="13" fill="none" stroke="#1e3a8a" stroke-width="4"/>
-            <circle cx="33" cy="75" r="13" fill="none" stroke="#1e3a8a" stroke-width="4"/>
-            <circle cx="67" cy="75" r="13" fill="none" stroke="#1e3a8a" stroke-width="4"/>
-        </symbol>
-        <symbol id="circle-4" viewBox="0 0 100 120">
-            <circle cx="30" cy="40" r="12" fill="none" stroke="#1e3a8a" stroke-width="4"/>
-            <circle cx="70" cy="40" r="12" fill="none" stroke="#1e3a8a" stroke-width="4"/>
-            <circle cx="30" cy="80" r="12" fill="none" stroke="#1e3a8a" stroke-width="4"/>
-            <circle cx="70" cy="80" r="12" fill="none" stroke="#1e3a8a" stroke-width="4"/>
-        </symbol>
-        <symbol id="circle-5" viewBox="0 0 100 120">
-            <circle cx="28" cy="35" r="10" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="72" cy="35" r="10" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="50" cy="60" r="10" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="28" cy="85" r="10" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="72" cy="85" r="10" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-        </symbol>
-        <symbol id="circle-6" viewBox="0 0 100 120">
-            <circle cx="28" cy="30" r="9" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="72" cy="30" r="9" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="28" cy="60" r="9" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="72" cy="60" r="9" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="28" cy="90" r="9" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="72" cy="90" r="9" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-        </symbol>
-        <symbol id="circle-7" viewBox="0 0 100 120">
-            <circle cx="23" cy="25" r="8" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="50" cy="25" r="8" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="77" cy="25" r="8" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="23" cy="60" r="8" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="50" cy="60" r="8" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="77" cy="60" r="8" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="50" cy="95" r="8" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-        </symbol>
-        <symbol id="circle-8" viewBox="0 0 100 120">
-            <circle cx="23" cy="25" r="7" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="50" cy="25" r="7" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="77" cy="25" r="7" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="23" cy="60" r="7" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="77" cy="60" r="7" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="23" cy="95" r="7" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="50" cy="95" r="7" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-            <circle cx="77" cy="95" r="7" fill="none" stroke="#1e3a8a" stroke-width="3"/>
-        </symbol>
-        <symbol id="circle-9" viewBox="0 0 100 120">
-            <circle cx="23" cy="25" r="6" fill="none" stroke="#1e3a8a" stroke-width="2"/>
-            <circle cx="50" cy="25" r="6" fill="none" stroke="#1e3a8a" stroke-width="2"/>
-            <circle cx="77" cy="25" r="6" fill="none" stroke="#1e3a8a" stroke-width="2"/>
-            <circle cx="23" cy="50" r="6" fill="none" stroke="#1e3a8a" stroke-width="2"/>
-            <circle cx="50" cy="50" r="6" fill="none" stroke="#1e3a8a" stroke-width="2"/>
-            <circle cx="77" cy="50" r="6" fill="none" stroke="#1e3a8a" stroke-width="2"/>
-            <circle cx="23" cy="95" r="6" fill="none" stroke="#1e3a8a" stroke-width="2"/>
-            <circle cx="50" cy="95" r="6" fill="none" stroke="#1e3a8a" stroke-width="2"/>
-            <circle cx="77" cy="95" r="6" fill="none" stroke="#1e3a8a" stroke-width="2"/>
-        </symbol>
+      <!-- Circle Suit 1-9 -->
+      <symbol id="circle-1" viewBox="0 0 100 120">
+        <circle cx="50" cy="60" r="25" fill="none" stroke="#1e3a8a" stroke-width="6" />
+      </symbol>
+      <symbol id="circle-2" viewBox="0 0 100 120">
+        <circle cx="35" cy="50" r="18" fill="none" stroke="#1e3a8a" stroke-width="5" />
+        <circle cx="65" cy="70" r="18" fill="none" stroke="#1e3a8a" stroke-width="5" />
+      </symbol>
+      <symbol id="circle-3" viewBox="0 0 100 120">
+        <circle cx="50" cy="35" r="13" fill="none" stroke="#1e3a8a" stroke-width="4" />
+        <circle cx="33" cy="75" r="13" fill="none" stroke="#1e3a8a" stroke-width="4" />
+        <circle cx="67" cy="75" r="13" fill="none" stroke="#1e3a8a" stroke-width="4" />
+      </symbol>
+      <symbol id="circle-4" viewBox="0 0 100 120">
+        <circle cx="30" cy="40" r="12" fill="none" stroke="#1e3a8a" stroke-width="4" />
+        <circle cx="70" cy="40" r="12" fill="none" stroke="#1e3a8a" stroke-width="4" />
+        <circle cx="30" cy="80" r="12" fill="none" stroke="#1e3a8a" stroke-width="4" />
+        <circle cx="70" cy="80" r="12" fill="none" stroke="#1e3a8a" stroke-width="4" />
+      </symbol>
+      <symbol id="circle-5" viewBox="0 0 100 120">
+        <circle cx="28" cy="35" r="10" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="72" cy="35" r="10" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="50" cy="60" r="10" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="28" cy="85" r="10" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="72" cy="85" r="10" fill="none" stroke="#1e3a8a" stroke-width="3" />
+      </symbol>
+      <symbol id="circle-6" viewBox="0 0 100 120">
+        <circle cx="28" cy="30" r="9" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="72" cy="30" r="9" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="28" cy="60" r="9" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="72" cy="60" r="9" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="28" cy="90" r="9" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="72" cy="90" r="9" fill="none" stroke="#1e3a8a" stroke-width="3" />
+      </symbol>
+      <symbol id="circle-7" viewBox="0 0 100 120">
+        <circle cx="23" cy="25" r="8" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="50" cy="25" r="8" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="77" cy="25" r="8" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="23" cy="60" r="8" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="50" cy="60" r="8" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="77" cy="60" r="8" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="50" cy="95" r="8" fill="none" stroke="#1e3a8a" stroke-width="3" />
+      </symbol>
+      <symbol id="circle-8" viewBox="0 0 100 120">
+        <circle cx="23" cy="25" r="7" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="50" cy="25" r="7" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="77" cy="25" r="7" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="23" cy="60" r="7" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="77" cy="60" r="7" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="23" cy="95" r="7" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="50" cy="95" r="7" fill="none" stroke="#1e3a8a" stroke-width="3" />
+        <circle cx="77" cy="95" r="7" fill="none" stroke="#1e3a8a" stroke-width="3" />
+      </symbol>
+      <symbol id="circle-9" viewBox="0 0 100 120">
+        <circle cx="23" cy="25" r="6" fill="none" stroke="#1e3a8a" stroke-width="2" />
+        <circle cx="50" cy="25" r="6" fill="none" stroke="#1e3a8a" stroke-width="2" />
+        <circle cx="77" cy="25" r="6" fill="none" stroke="#1e3a8a" stroke-width="2" />
+        <circle cx="23" cy="50" r="6" fill="none" stroke="#1e3a8a" stroke-width="2" />
+        <circle cx="50" cy="50" r="6" fill="none" stroke="#1e3a8a" stroke-width="2" />
+        <circle cx="77" cy="50" r="6" fill="none" stroke="#1e3a8a" stroke-width="2" />
+        <circle cx="23" cy="95" r="6" fill="none" stroke="#1e3a8a" stroke-width="2" />
+        <circle cx="50" cy="95" r="6" fill="none" stroke="#1e3a8a" stroke-width="2" />
+        <circle cx="77" cy="95" r="6" fill="none" stroke="#1e3a8a" stroke-width="2" />
+      </symbol>
 
-        <!-- Winds -->
-        <symbol id="wind-east" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="75" text-anchor="middle" fill="#0a5f38" font-weight="bold">東</text>
-        </symbol>
-        <symbol id="wind-south" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="75" text-anchor="middle" fill="#0a5f38" font-weight="bold">南</text>
-        </symbol>
-        <symbol id="wind-west" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="75" text-anchor="middle" fill="#0a5f38" font-weight="bold">西</text>
-        </symbol>
-        <symbol id="wind-north" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="75" text-anchor="middle" fill="#0a5f38" font-weight="bold">北</text>
-        </symbol>
+      <!-- Winds -->
+      <symbol id="wind-east" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="75" text-anchor="middle" fill="#0a5f38" font-weight="bold">東</text>
+      </symbol>
+      <symbol id="wind-south" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="75" text-anchor="middle" fill="#0a5f38" font-weight="bold">南</text>
+      </symbol>
+      <symbol id="wind-west" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="75" text-anchor="middle" fill="#0a5f38" font-weight="bold">西</text>
+      </symbol>
+      <symbol id="wind-north" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="75" text-anchor="middle" fill="#0a5f38" font-weight="bold">北</text>
+      </symbol>
 
-        <!-- Dragons -->
-        <symbol id="dragon-red" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="75" text-anchor="middle" fill="#c41e3a" font-weight="bold">中</text>
-        </symbol>
-        <symbol id="dragon-green" viewBox="0 0 100 120">
-            <text x="50" y="85" font-size="75" text-anchor="middle" fill="#0a5f38" font-weight="bold">發</text>
-        </symbol>
-        <symbol id="dragon-white" viewBox="0 0 100 120">
-            <rect x="25" y="45" width="50" height="30" fill="none" stroke="#333" stroke-width="6" rx="4"/>
-        </symbol>
+      <!-- Dragons -->
+      <symbol id="dragon-red" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="75" text-anchor="middle" fill="#c41e3a" font-weight="bold">中</text>
+      </symbol>
+      <symbol id="dragon-green" viewBox="0 0 100 120">
+        <text x="50" y="85" font-size="75" text-anchor="middle" fill="#0a5f38" font-weight="bold">發</text>
+      </symbol>
+      <symbol id="dragon-white" viewBox="0 0 100 120">
+        <rect x="25" y="45" width="50" height="30" fill="none" stroke="#333" stroke-width="6" rx="4" />
+      </symbol>
 
-        <!-- Flowers/Seasons -->
-        <symbol id="flower-1" viewBox="0 0 100 120">
-            <circle cx="50" cy="45" r="8" fill="#e94560"/>
-            <circle cx="38" cy="55" r="6" fill="#e94560"/>
-            <circle cx="62" cy="55" r="6" fill="#e94560"/>
-            <circle cx="42" cy="68" r="6" fill="#e94560"/>
-            <circle cx="58" cy="68" r="6" fill="#e94560"/>
-            <text x="50" y="100" font-size="16" text-anchor="middle" fill="#333">1</text>
-        </symbol>
-        <symbol id="flower-2" viewBox="0 0 100 120">
-            <circle cx="50" cy="45" r="8" fill="#9b59b6"/>
-            <circle cx="38" cy="55" r="6" fill="#9b59b6"/>
-            <circle cx="62" cy="55" r="6" fill="#9b59b6"/>
-            <circle cx="42" cy="68" r="6" fill="#9b59b6"/>
-            <circle cx="58" cy="68" r="6" fill="#9b59b6"/>
-            <text x="50" y="100" font-size="16" text-anchor="middle" fill="#333">2</text>
-        </symbol>
-        <symbol id="flower-3" viewBox="0 0 100 120">
-            <circle cx="50" cy="45" r="8" fill="#3498db"/>
-            <circle cx="38" cy="55" r="6" fill="#3498db"/>
-            <circle cx="62" cy="55" r="6" fill="#3498db"/>
-            <circle cx="42" cy="68" r="6" fill="#3498db"/>
-            <circle cx="58" cy="68" r="6" fill="#3498db"/>
-            <text x="50" y="100" font-size="16" text-anchor="middle" fill="#333">3</text>
-        </symbol>
-        <symbol id="flower-4" viewBox="0 0 100 120">
-            <circle cx="50" cy="45" r="8" fill="#f39c12"/>
-            <circle cx="38" cy="55" r="6" fill="#f39c12"/>
-            <circle cx="62" cy="55" r="6" fill="#f39c12"/>
-            <circle cx="42" cy="68" r="6" fill="#f39c12"/>
-            <circle cx="58" cy="68" r="6" fill="#f39c12"/>
-            <text x="50" y="100" font-size="16" text-anchor="middle" fill="#333">4</text>
-        </symbol>
+      <!-- Flowers/Seasons -->
+      <symbol id="flower-1" viewBox="0 0 100 120">
+        <circle cx="50" cy="45" r="8" fill="#e94560" />
+        <circle cx="38" cy="55" r="6" fill="#e94560" />
+        <circle cx="62" cy="55" r="6" fill="#e94560" />
+        <circle cx="42" cy="68" r="6" fill="#e94560" />
+        <circle cx="58" cy="68" r="6" fill="#e94560" />
+        <text x="50" y="100" font-size="16" text-anchor="middle" fill="#333">1</text>
+      </symbol>
+      <symbol id="flower-2" viewBox="0 0 100 120">
+        <circle cx="50" cy="45" r="8" fill="#9b59b6" />
+        <circle cx="38" cy="55" r="6" fill="#9b59b6" />
+        <circle cx="62" cy="55" r="6" fill="#9b59b6" />
+        <circle cx="42" cy="68" r="6" fill="#9b59b6" />
+        <circle cx="58" cy="68" r="6" fill="#9b59b6" />
+        <text x="50" y="100" font-size="16" text-anchor="middle" fill="#333">2</text>
+      </symbol>
+      <symbol id="flower-3" viewBox="0 0 100 120">
+        <circle cx="50" cy="45" r="8" fill="#3498db" />
+        <circle cx="38" cy="55" r="6" fill="#3498db" />
+        <circle cx="62" cy="55" r="6" fill="#3498db" />
+        <circle cx="42" cy="68" r="6" fill="#3498db" />
+        <circle cx="58" cy="68" r="6" fill="#3498db" />
+        <text x="50" y="100" font-size="16" text-anchor="middle" fill="#333">3</text>
+      </symbol>
+      <symbol id="flower-4" viewBox="0 0 100 120">
+        <circle cx="50" cy="45" r="8" fill="#f39c12" />
+        <circle cx="38" cy="55" r="6" fill="#f39c12" />
+        <circle cx="62" cy="55" r="6" fill="#f39c12" />
+        <circle cx="42" cy="68" r="6" fill="#f39c12" />
+        <circle cx="58" cy="68" r="6" fill="#f39c12" />
+        <text x="50" y="100" font-size="16" text-anchor="middle" fill="#333">4</text>
+      </symbol>
     </defs>
   </svg>
 

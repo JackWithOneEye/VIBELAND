@@ -304,6 +304,7 @@
             <strong><a href="mahjong">Mahjong</a></strong><br>
             <strong><a href="paint">Paint</a></strong><br>
             <strong><a href="pong">Pong</a></strong><br>
+            <strong><a href="snake">Snake</a></strong><br>
             <strong><a href="solitaire">Solitaire</a></strong><br>
             <strong><a href="sudoku">Sudoku</a></strong>
           </div>
@@ -335,12 +336,26 @@
 
         <div class="footer">
           <div>© 1999 VIBELAND - All Rights Reserved</div>
-          <div>Last updated: October 11, 2025</div>
+          <div>Last updated: October 19, 2025</div>
+          <div class="counter" id="hit-counter" aria-label="unique visitors today">000000</div>
           <div style="margin-top: 8px; font-size: 10px;">Best viewed at 800×600, 256 colors</div>
         </div>
       </div>
     </div>
   </div>
+
+  <script>
+    (function () {
+      var el = document.getElementById("hit-counter");
+      if (!el || !window.fetch) return;
+      fetch("/api/hit", {method: "POST"})
+        .then(function (r) {return r.text();})
+        .then(function (hits) {
+          el.textContent = String(hits).padStart(6, "0");
+        })
+        .catch(function () { });
+    })();
+  </script>
 </body>
 
 </html>

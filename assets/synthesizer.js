@@ -1,7 +1,7 @@
 // VIBELAND Monophonic Synthesizer
-// Uses Web Audio API with a single voice: Osc -> Filter -> Amp -> Master -> Destination
-// Features: last-note priority, optional legato, ADSR, filter with env routing, waveform selector, octave shift, master volume.
-// UI: one-octave piano (C to C) and circular knobs (no external dependencies).
+// Uses Web Audio API with a single voice: Osc -> Filter -> Amp -> Delay (Dry+Wet) -> Panner -> Master -> Destination
+// Features: last-note priority, optional legato, ADSR, filter with env routing, delay with warmth, LFOs, waveform selector, octave shift, master volume.
+// UI: two-octave piano and circular knobs (no external dependencies).
 
 (() => {
   // Utility helpers
@@ -134,6 +134,25 @@
       this.amp = ctx.createGain();
       this.amp.gain.value = 0.0001; // > 0 to avoid denormals/clicks
 
+      // Delay effect (inserted after amp, before panner)
+      this.dryGain = ctx.createGain();
+      this.dryGain.gain.value = 0.75;
+      this.wetGain = ctx.createGain();
+      this.wetGain.gain.value = 0.25;
+
+      this.delayIn = ctx.createGain();
+      this.delay = ctx.createDelay(2.5);
+      this.delay.delayTime.value = 0.35;
+
+      // Warmth: low-pass filter in feedback loop
+      this.fbTone = ctx.createBiquadFilter();
+      this.fbTone.type = "lowpass";
+      this.fbTone.frequency.value = 6500;
+      this.fbTone.Q.value = 0.2;
+
+      this.fbGain = ctx.createGain();
+      this.fbGain.gain.value = 0.35;
+
       // Filter
       this.filter = ctx.createBiquadFilter();
       this.filter.type = 'lowpass';
@@ -159,10 +178,26 @@
       this.osc.detune.value = 0; // base detune in cents
       this.osc.start();
 
-      // Wire path with panner
+      // Wire path: Osc -> Filter -> Amp -> (Dry + Delay) -> Panner -> Master
       this.osc.connect(this.filter);
       this.filter.connect(this.amp);
-      this.amp.connect(this.panner);
+
+      // Split into dry and wet paths
+      this.amp.connect(this.dryGain);
+      this.amp.connect(this.delayIn);
+
+      // Delay feedback loop
+      this.delayIn.connect(this.delay);
+      this.delay.connect(this.fbTone);
+      this.fbTone.connect(this.fbGain);
+      this.fbGain.connect(this.delayIn);
+
+      // Wet output
+      this.delay.connect(this.wetGain);
+
+      // Merge dry and wet
+      this.dryGain.connect(this.panner);
+      this.wetGain.connect(this.panner);
       this.panner.connect(this.master);
 
       // Envelope params (seconds and 0..1)
@@ -256,6 +291,27 @@
     setFilterEnvAmount(amountHz) {
       const now = this.ctx.currentTime;
       this.filterEnvAmount.offset.setTargetAtTime(amountHz, now, 0.01);
+    }
+
+    // Delay controls
+    setDelayLevel(u) {
+      const now = this.ctx.currentTime;
+      const dry = 1 - clamp(u, 0, 1);
+      const wet = clamp(u, 0, 1);
+      smoothSetTarget(this.dryGain.gain, dry, now, 0.01);
+      smoothSetTarget(this.wetGain.gain, wet, now, 0.01);
+    }
+
+    setDelayTime(seconds) {
+      const now = this.ctx.currentTime;
+      const t = clamp(seconds, 0.05, 2.0);
+      smoothSetTarget(this.delay.delayTime, t, now, 0.01);
+    }
+
+    setDelayFeedback(u) {
+      const now = this.ctx.currentTime;
+      const f = clamp(u, 0, 0.9);
+      smoothSetTarget(this.fbGain.gain, f, now, 0.01);
     }
 
     setADSR(a, d, s, r) {
@@ -880,14 +936,17 @@
         detune: v => Math.round(v) + ' ¢',
         lfo1Freq: v => v.toFixed(2) + ' Hz',
         lfo2Freq: v => v.toFixed(2) + ' Hz',
-        lfoAmount: v => Math.round(v) + ' Hz',
+        lfoAmount: v => Math.round(v) + ' ¢',
         lfoDetune: v => v.toFixed(2) + ' ¢',
         lfoPan: v => v.toFixed(2),
         filterGain: u => {
           if (u <= 0) return '-∞ dB';
           const db = lerp(-60, 0, u);
           return Math.round(db) + ' dB';
-        }
+        },
+        delayLevel: v => Math.round(v * 100) + '%',
+        delayTime: v => Math.round(v * 1000) + ' ms',
+        delayFeedback: v => Math.round(v * 100) + '%'
       };
     }
 
@@ -1019,6 +1078,15 @@
               break;
             case 'filterGain':
               this.synth.setFilterGainFromNorm(value);
+              break;
+            case 'delayLevel':
+              this.synth.setDelayLevel(value);
+              break;
+            case 'delayTime':
+              this.synth.setDelayTime(value);
+              break;
+            case 'delayFeedback':
+              this.synth.setDelayFeedback(value);
               break;
           }
         }, formatter);

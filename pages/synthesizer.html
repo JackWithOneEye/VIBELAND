@@ -44,9 +44,13 @@
       grid-row: 2;
     }
 
-    /* Row 3: Filter */
+    /* Row 3: Filter + Delay */
     .filter-section {
       grid-column: 1 / span 2;
+      grid-row: 3;
+    }
+    .delay-section {
+      grid-column: 3;
       grid-row: 3;
     }
     .controls-container > .control-section:nth-of-type(6) { /* LFO 2 */
@@ -764,9 +768,9 @@
                   </div>
                   <div class="knob-wrap">
                     <div class="knob" data-param="lfoAmount" data-min="-2400" data-max="2400" data-step="1" data-default="0"
-                      data-value="0" title="LFO Amount (Hz)"></div>
+                      data-value="0" title="LFO Amount (¢)"></div>
                     <div class="knob-label">LFO Amt</div>
-                    <div class="knob-value" data-for="lfoAmount">0 Hz</div>
+                    <div class="knob-value" data-for="lfoAmount">0 ¢</div>
                   </div>
                   <div class="ctrl">
                     <select class="lfo-selector" id="filter-lfo-src">
@@ -844,6 +848,31 @@
                     <button id="lfo-sync" class="sync-button">SYNC</button>
                   </div>
                 </div>
+            </div>
+
+            <!-- Delay Section -->
+            <div class="control-section delay-section">
+              <div class="section-title">Delay</div>
+              <div class="controls-grid">
+                <div class="knob-wrap">
+                  <div class="knob" data-param="delayLevel" data-min="0" data-max="1" data-step="0.01" data-default="0.25"
+                    data-value="0.25" title="Dry/Wet Mix"></div>
+                  <div class="knob-label">Level</div>
+                  <div class="knob-value" data-for="delayLevel">25%</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="delayTime" data-min="0.05" data-max="2.0" data-step="0.001" data-default="0.35"
+                    data-value="0.35" title="Delay Time (s)"></div>
+                  <div class="knob-label">Delay</div>
+                  <div class="knob-value" data-for="delayTime">350 ms</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="delayFeedback" data-min="0" data-max="0.9" data-step="0.01" data-default="0.35"
+                    data-value="0.35" title="Feedback Amount"></div>
+                  <div class="knob-label">Feedback</div>
+                  <div class="knob-value" data-for="delayFeedback">35%</div>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -1,7 +1,7 @@
-import { runMigrations } from "./migration/migrate.js";
+/** @import { GuestbookEntry } from "./types" */
+import { Database } from "bun:sqlite";
 
-// Initialize database with migrations
-const db = await runMigrations();
+const db = new Database("vibeland.db", { create: true });
 
 Bun.serve({
   port: 3000,
@@ -15,6 +15,7 @@ Bun.serve({
     "/paint": Bun.file("./pages/paint.html"),
     "/particles": Bun.file("./pages/particles.html"),
     "/pong": Bun.file("./pages/pong.html"),
+    "/snake": Bun.file("./pages/snake.html"),
     "/solitaire": Bun.file("./pages/solitaire.html"),
     "/sudoku": Bun.file("./pages/sudoku.html"),
     "/synthesizer": Bun.file("./pages/synthesizer.html"),
@@ -32,7 +33,7 @@ Bun.serve({
         const hasSuccess = url.searchParams.has("success");
 
         const acceptLanguage = req.headers.get('Accept-Language') || 'en-US';
-        const locale = acceptLanguage.split(',')[0].split(';')[0] || 'en-US';
+        const locale = acceptLanguage.split(',')[0]?.split(';')[0] || 'en-US';
 
         const html = await generateGuestbookViewHTML(entries, hasSuccess, locale);
         return new Response(html, {
@@ -51,24 +52,31 @@ Bun.serve({
         });
       },
       POST: async (req, server) => {
-        const url = new URL(req.url);
         const formData = await req.formData();
         const name = formData.get("name");
-        const email = formData.get("email") || null;
         const message = formData.get("message");
 
-        if (!name || !message) {
-          return Response.redirect(url.origin + "/guestbook/add?error=missing", 302);
+        if (typeof name !== 'string' || typeof message !== 'string') {
+          return Response.redirect("/guestbook/add?error=missing", 302);
+        }
+
+        let email = formData.get("email");
+        if (typeof email !== 'string') {
+          email = null;
+        } else {
+          email = escapeHtml(email);
         }
 
         const reqIp = server.requestIP(req);
-        const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("x-real-ip") || reqIp.address || null;
+        const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || reqIp?.address || null;
         const userAgent = req.headers.get("user-agent") || null;
         const acceptLanguage = req.headers.get("accept-language") || null;
-        const locale = acceptLanguage?.split(",")[0].split(";")[0] || null;
+        const locale = acceptLanguage?.split(",")[0]?.split(";")[0] || null;
 
-        db.prepare("INSERT INTO guestbook (name, email, message, ip, user_agent, locale) VALUES (?, ?, ?, ?, ?, ?)").run(name, email, message, ip, userAgent, locale);
-        return Response.redirect(url.origin + "/guestbook?success=1", 302);
+        db.prepare("INSERT INTO guestbook (name, email, message, ip, user_agent_id, locale) VALUES (?, ?, ?, ?, ?, ?)")
+          .run(escapeHtml(name), email, escapeHtml(message), ip, getUserAgentId(userAgent), locale);
+
+        return Response.redirect("/guestbook?success=1", 302);
       }
     },
     "/assets/:file": async req => {
@@ -84,10 +92,44 @@ Bun.serve({
         return new Response(null, { status: 404 });
       }
       return new Response(file);
+    },
+    "/api/hit": {
+      POST: async (req, server) => {
+        const reqIp = server.requestIP(req);
+        const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+          || req.headers.get("x-real-ip")
+          || reqIp?.address
+          || null;
+        const ua = req.headers.get("user-agent") || "";
+        const dnt = req.headers.get("dnt") || "0";
+        const today = new Date().toISOString().slice(0, 10);
+
+        if (dnt !== "1") {
+          const ipHash = await hashVisitor(ip, ua, process.env.VIBELAND_SALT);
+          if (ipHash) {
+            db.prepare(`
+              INSERT INTO visitors (date, ip_hash, user_agent_id)
+              VALUES (?, ?, ?)
+              ON CONFLICT(date, ip_hash) DO NOTHING
+            `).run(today, ipHash, getUserAgentId(ua));
+          }
+        }
+
+        const row = db.prepare("SELECT COUNT(*) AS c FROM visitors").get();
+        const count = row?.c ?? 0;
+
+        return new Response(count, {
+          headers: { "Content-Type": "text/plain", "Cache-Control": "no-store" }
+        });
+      }
     }
   }
 });
 
+/**
+ * @param entries {GuestbookEntry[]}
+ * @param hasSuccess {boolean}
+ */
 async function generateGuestbookViewHTML(entries, hasSuccess, locale = 'en-US') {
   const entriesHTML = entries.length === 0
     ? '<div class="loading-message">No entries yet. Be the first to sign!</div>'
@@ -117,6 +159,9 @@ async function generateGuestbookViewHTML(entries, hasSuccess, locale = 'en-US') 
     .replace("{{ successMessage }}", successMessage);
 }
 
+/**
+ * @param hasError {boolean}
+ */
 async function generateGuestbookAddHTML(hasError) {
   const errorMessage = hasError ? '<div class="error-message">⚠️ Please fill in both name and message fields.</div>' : '';
 
@@ -124,6 +169,9 @@ async function generateGuestbookAddHTML(hasError) {
   return tmpl.replace("{{ errorMessage }}", errorMessage);
 }
 
+/**
+ * @param text {string}
+ */
 function escapeHtml(text) {
   const map = {
     '&': '&amp;',
@@ -132,7 +180,39 @@ function escapeHtml(text) {
     '"': '&quot;',
     "'": '&#039;'
   };
-  return text.replace(/[&<>"']/g, function (m) { return map[m]; });
+  return text.replace(/[&<>"']/g, (m) => { return map[/** @type {keyof typeof map} */ (m)]; });
+}
+
+/**
+ * @param {string?} userAgent
+ */
+function getUserAgentId(userAgent) {
+  if (!userAgent) {
+    return null;
+  }
+  const uaHash = Bun.hash(userAgent);
+  const ua = db.prepare("SELECT id FROM user_agent WHERE hash = ?").get(uaHash);
+  if (ua === null) {
+    const { lastInsertRowid } = db.prepare("INSERT INTO user_agent (value, hash) VALUES (?, ?)").run(userAgent, uaHash);
+    return lastInsertRowid;
+  }
+  return ua.id;
+}
+
+/**
+ * @param ip {string | null}
+ * @param ua {string}
+ * @param salt {string | undefined}
+ */
+async function hashVisitor(ip, ua, salt) {
+  if (!ip) return null;
+  const s = salt || process.env.VIBELAND_SALT || "vibeland-default-salt";
+  const input = s + "|" + ip + "|" + (ua || "");
+  const data = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 console.log("🌟 VIBELAND server is running on http://localhost:3000");

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake - VIBELAND</title>
+    <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+    <style type="text/css">
+        #snake {
+            background: #000080;
+            border: 2px inset #c0c0c0;
+            cursor: crosshair;
+            width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        .game-container {
+            background-color: #ffffff;
+            border: 2px inset #c0c0c0;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .score-display {
+            background-color: #ffffff;
+            border: 2px inset #c0c0c0;
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .player-score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #000080;
+            font-family: "Courier New", monospace;
+        }
+        
+        .score-label {
+            font-size: 14px;
+            color: #000000;
+            margin-bottom: 5px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .controls label {
+            margin-bottom: 4px;
+            color: #000000;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .controls select {
+            font-size: 14px;
+            padding: 2px 6px;
+            background-color: #ffffff;
+            border: 2px inset #c0c0c0;
+            color: #000000;
+            font-family: "Times New Roman", serif;
+            cursor: pointer;
+        }
+
+        .controls select:focus {
+            outline: none;
+            border: 2px outset #c0c0c0;
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(0,0,0,0.25);
+        }
+
+        .overlay .panel {
+            background: #ffffff;
+            border: 2px outset #c0c0c0;
+            color: #000000;
+            padding: 12px 16px;
+            font-family: "Courier New", monospace;
+        }
+
+        .relative {
+            position: relative;
+        }
+
+        .hint {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #000000;
+            font-family: "Times New Roman", serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container wide">
+        <div class="outer-border">
+            <div class="header">
+                <h1>🐍 SNAKE 🐍</h1>
+                <p>~*~ Feed The Pixel Serpent ~*~</p>
+            </div>
+
+            <div class="ticker" aria-label="site news">
+                <div class="marquee">★ WELCOME TO VIBELAND ★ RETRO SNAKE ★ EAT THE FOOD ★ DON'T BITE YOUR TAIL ★</div>
+            </div>
+
+            <div class="content">
+                <div class="score-display">
+                    <div>
+                        <div class="score-label">SCORE</div>
+                        <div class="player-score" id="score">0</div>
+                    </div>
+                    <div class="controls">
+                        <label for="speed">Speed:</label>
+                        <select id="speed">
+                            <option value="chill">Chill</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="turbo">Turbo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div class="score-label">HIGH SCORE</div>
+                        <div class="player-score" id="highScore">0</div>
+                    </div>
+                </div>
+
+                <div class="game-container relative">
+                    <canvas id="snake" width="640" height="480" aria-label="Snake game area"></canvas>
+                    <div class="overlay" id="overlay">
+                        <div class="panel" id="overlayText">Press Enter or Click to Start</div>
+                    </div>
+                    <div class="hint">Controls: Arrow Keys or WASD • Space = Pause/Resume • Enter = Start/Restart</div>
+                </div>
+
+                <hr class="thick">
+
+                <div class="footer">
+                    <div><a href="../home">← Back to VIBELAND</a></div>
+                    <div>© 1999 VIBELAND - All Rights Reserved</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("snake");
+        const ctx = canvas.getContext("2d");
+        const overlay = document.getElementById("overlay");
+        const overlayText = document.getElementById("overlayText");
+        const scoreEl = document.getElementById("score");
+        const highScoreEl = document.getElementById("highScore");
+        const speedSelect = document.getElementById("speed");
+
+        const CELL = 20;
+        const COLS = 32;
+        const ROWS = 24;
+
+        const SPEEDS = {
+            chill: 150,
+            normal: 110,
+            turbo: 80
+        };
+        let stepMs = SPEEDS.normal;
+
+        const BG = "#000080";
+        const SNAKE_BODY = "#c0c0c0";
+        const SNAKE_STROKE = "#000000";
+        const SNAKE_HEAD = "#ffffff";
+        const FOOD = "#00ff00";
+        const GRID_LINE = "rgba(255,255,255,0.06)";
+
+        let snake = [];
+        let dir = {x: 1, y: 0};
+        let nextDir = {x: 1, y: 0};
+        let pendingTurn = false;
+        let food = {x: 10, y: 10};
+        let running = false;
+        let gameOver = false;
+        let score = 0;
+        let highScore = parseInt(localStorage.getItem("vibeland.snake.highscore") || "0", 10);
+
+        function setupDPR() {
+            const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+            const logicalW = COLS * CELL;
+            const logicalH = ROWS * CELL;
+            canvas.width = logicalW * dpr;
+            canvas.height = logicalH * dpr;
+            canvas.style.width = logicalW + "px";
+            canvas.style.height = logicalH + "px";
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        setupDPR();
+
+        function initSnake() {
+            snake = [];
+            const startX = Math.floor(COLS / 2);
+            const startY = Math.floor(ROWS / 2);
+            const length = 5;
+            for (let i = 0; i < length; i++) {
+                snake.push({x: startX - i, y: startY});
+            }
+            dir = {x: 1, y: 0};
+            nextDir = {x: 1, y: 0};
+            pendingTurn = false;
+        }
+
+        function cellEquals(a, b) { return a.x === b.x && a.y === b.y; }
+        function inBounds(c) { return c.x >= 0 && c.x < COLS && c.y >= 0 && c.y < ROWS; }
+        function snakeHasCell(c) { return snake.some(s => s.x === c.x && s.y === c.y); }
+
+        function placeFood() {
+            for (let tries = 0; tries < 2000; tries++) {
+                const fx = Math.floor(Math.random() * COLS);
+                const fy = Math.floor(Math.random() * ROWS);
+                if (!snakeHasCell({ x: fx, y: fy })) { food.x = fx; food.y = fy; return; }
+            }
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    if (!snakeHasCell({ x, y })) { food.x = x; food.y = y; return; }
+                }
+            }
+            food = { x: -1, y: -1 };
+        }
+
+        function updateScoreUI() {
+            scoreEl.textContent = score;
+            highScoreEl.textContent = highScore;
+        }
+
+        function bumpScore() {
+            score++;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("vibeland.snake.highscore", String(highScore));
+            }
+            updateScoreUI();
+        }
+
+        function setDirection(nx, ny) {
+            if (pendingTurn) return;
+            if (nx === -dir.x && ny === -dir.y) return;
+            nextDir = {x: nx, y: ny};
+            pendingTurn = true;
+        }
+
+        window.addEventListener("keydown", (e) => {
+            const k = e.key.toLowerCase();
+            if (["arrowup","arrowdown","arrowleft","arrowright"," "].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+            if (k === "arrowup" || k === "w") setDirection(0,-1);
+            else if (k === "arrowdown" || k === "s") setDirection(0,1);
+            else if (k === "arrowleft" || k === "a") setDirection(-1,0);
+            else if (k === "arrowright" || k === "d") setDirection(1,0);
+            else if (k === " ") togglePause();
+            else if (k === "enter") {
+                if (!running && !gameOver) startGame();
+                else if (gameOver) restartGame();
+            }
+        });
+
+        function showOverlay(text) {
+            overlayText.textContent = text;
+            overlay.style.display = "flex";
+        }
+
+        function hideOverlay() {
+            overlay.style.display = "none";
+        }
+
+        function startGame() {
+            if (gameOver) return;
+            running = true;
+            hideOverlay();
+        }
+
+        function togglePause() {
+            if (gameOver) return;
+            running = !running;
+            if (running) hideOverlay(); else showOverlay("Paused — Press Space to Resume");
+        }
+
+        function restartGame() {
+            score = 0;
+            updateScoreUI();
+            initSnake();
+            placeFood();
+            gameOver = false;
+            running = true;
+            hideOverlay();
+        }
+
+        speedSelect.addEventListener("change", () => {
+            stepMs = SPEEDS[speedSelect.value] || SPEEDS.normal;
+        });
+
+        function step() {
+            dir = nextDir;
+            const head = snake[0];
+            const newHead = { x: head.x + dir.x, y: head.y + dir.y };
+
+            const grow = cellEquals(newHead, food);
+            const tail = snake[snake.length - 1];
+            const hitsSelf = snakeHasCell(newHead) && !(cellEquals(newHead, tail) && !grow);
+
+            if (!inBounds(newHead) || hitsSelf) {
+                gameOver = true;
+                running = false;
+                showOverlay("Game Over — Press Enter or Click to Restart");
+                return;
+            }
+
+            snake.unshift(newHead);
+
+            if (grow) {
+                bumpScore();
+                placeFood();
+            } else {
+                snake.pop();
+            }
+
+            pendingTurn = false;
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = GRID_LINE;
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= COLS; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * CELL + 0.5, 0);
+                ctx.lineTo(x * CELL + 0.5, ROWS * CELL);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= ROWS; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * CELL + 0.5);
+                ctx.lineTo(COLS * CELL, y * CELL + 0.5);
+                ctx.stroke();
+            }
+        }
+
+        function drawSnake() {
+            ctx.lineWidth = 2;
+            for (let i = snake.length - 1; i >= 0; i--) {
+                const s = snake[i];
+                ctx.fillStyle = (i === 0) ? SNAKE_HEAD : SNAKE_BODY;
+                ctx.strokeStyle = SNAKE_STROKE;
+                ctx.fillRect(s.x * CELL, s.y * CELL, CELL, CELL);
+                ctx.strokeRect(s.x * CELL + 0.5, s.y * CELL + 0.5, CELL - 1, CELL - 1);
+            }
+        }
+
+        function drawFood() {
+            ctx.fillStyle = FOOD;
+            const pad = 3;
+            ctx.fillRect(food.x * CELL + pad, food.y * CELL + pad, CELL - pad * 2, CELL - pad * 2);
+        }
+
+        function render() {
+            ctx.save();
+            ctx.fillStyle = BG;
+            ctx.fillRect(0, 0, COLS * CELL, ROWS * CELL);
+            drawGrid();
+            drawFood();
+            drawSnake();
+            ctx.restore();
+        }
+
+        let last = 0;
+        let acc = 0;
+        function loop(ts) {
+            if (!last) last = ts;
+            const dt = ts - last;
+            last = ts;
+
+            if (running && !gameOver) {
+                acc += dt;
+                if (acc > 1000) acc = stepMs;
+
+                while (acc >= stepMs) {
+                    step();
+                    acc -= stepMs;
+                }
+            }
+
+            render();
+            requestAnimationFrame(loop);
+        }
+
+        function init() {
+            updateScoreUI();
+            initSnake();
+            placeFood();
+            stepMs = SPEEDS[speedSelect.value] || SPEEDS.normal;
+            showOverlay("Press Enter or Click to Start");
+        }
+
+        canvas.addEventListener("click", () => {
+            if (gameOver) restartGame();
+            else if (!running) startGame();
+        });
+
+        overlay.addEventListener("click", () => {
+            if (gameOver) restartGame();
+            else if (!running) startGame();
+        });
+
+        window.addEventListener("blur", () => {
+            if (running) togglePause();
+        });
+
+        window.addEventListener("resize", setupDPR);
+
+        init();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
