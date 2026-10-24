@@ -7,43 +7,37 @@
   <title>Paint - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
-    /* --- Windows 2000-ish look (classic) --- */
+    /* --- Classic desktop look --- */
     :root {
-      --bg: #c0c0c0;
-      --panel: #e7e7e7;
       --titlebar: #0a3ea8;
-      /* active title color */
       --titlebar-text: #fff;
       --toolbar: #d4d0c8;
       --button-face: #f0f0f0;
       --accent: #0a3ea8;
-      --shadow: rgba(0, 0, 0, 0.15);
-      --font: Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    /* Paint page wrapper */
-    .paint-wrapper {
-      background: #008080;
-      background-image: url('data:image/gif;base64,R0lGODlhCAAIAIABAC0tLf///yH5BAEKAAEALAAAAAAIAAgAAAINjB+gC+jP2ptn0WskLQA7');
-      min-height: 100vh;
-      padding: 10px;
+    /* The paint window needs more room than the standard page width */
+    .container.extra-wide {
+      width: 1240px;
+      max-width: 100%;
     }
 
     /* Window container */
     .app {
-      width: 1200px;
-      height: 760px;
-      margin: 18px auto;
+      width: 100%;
+      height: 770px;
       border: 2px solid #808080;
       box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.12);
       background: linear-gradient(#f5f5f5, #ededed);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      font-family: Tahoma, Geneva, Verdana, sans-serif;
     }
 
     /* Title bar */
     .titlebar {
+      flex: none;
       height: 30px;
       display: flex;
       align-items: center;
@@ -90,36 +84,44 @@
 
     /* Menu bar */
     .menubar {
+      flex: none;
       height: 30px;
       background: var(--toolbar);
       display: flex;
-      align-items: center;
+      align-items: stretch;
       padding: 0 6px;
       border-top: 1px solid #9a9a9a
     }
 
     .menu {
       position: relative;
-      margin-right: 8px
+      display: flex;
     }
 
     .menu>button {
       background: transparent;
       border: 0;
-      padding: 6px 8px;
+      padding: 0 10px;
+      font-family: inherit;
       font-size: 13px;
-      cursor: pointer
+      font-weight: normal;
+    }
+
+    .menu:hover>button {
+      background: var(--accent);
+      color: #fff;
     }
 
     .menu>.dropdown {
       position: absolute;
       left: 0;
-      top: 30px;
+      top: 100%;
       background: #fff;
       border: 1px solid #888;
       box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
       display: none;
       min-width: 180px;
+      padding: 2px 0;
       z-index: 50
     }
 
@@ -127,46 +129,63 @@
       display: block
     }
 
+    .menu.closed>.dropdown {
+      display: none
+    }
+
     .dropdown button {
       display: block;
       width: 100%;
       text-align: left;
-      padding: 6px 8px;
+      padding: 6px 12px;
       border: 0;
       background: transparent;
-      cursor: pointer
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: normal;
+    }
+
+    .dropdown button:hover:not(:disabled) {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .dropdown button:disabled {
+      color: #999;
+      cursor: default;
     }
 
     .dropdown hr {
-      margin: 6px 0;
-      border: 0;
-      border-top: 1px solid #ddd
+      margin: 4px 0;
+      height: 1px;
+      background: #ddd
     }
 
     /* Main area */
     .main {
       flex: 1;
+      min-height: 0;
       display: flex;
       gap: 8px;
       padding: 8px;
       background: linear-gradient(#e0e0e0, #d7d7d7)
     }
 
-    /* Left toolbar */
+    /* Left toolbar: two columns of tools, like the classic tool box */
     .toolbar {
-      width: 64px;
+      flex: none;
+      align-self: flex-start;
       background: linear-gradient(#e9e9e9, #d9d9d9);
       border: 2px solid #b0b0b0;
-      padding: 8px;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      gap: 6px
+      padding: 4px;
+      display: grid;
+      grid-template-columns: repeat(2, 28px);
+      gap: 4px
     }
 
     .tool {
-      width: 46px;
-      height: 40px;
+      width: 28px;
+      height: 28px;
       background: var(--button-face);
       border: 1px solid #8f8f8f;
       display: flex;
@@ -177,17 +196,25 @@
     }
 
     .tool.active {
-      outline: 2px solid var(--accent)
+      background: #fff;
+      outline: 2px solid var(--accent);
+      outline-offset: -2px
     }
 
     .tool svg {
-      width: 24px;
-      height: 24px
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: #000;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      overflow: visible
     }
 
-    /* Top tools (brush size etc) */
+    /* Centre column: controls above the canvas */
     .top-controls {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 6px
@@ -195,58 +222,103 @@
 
     .controls-row {
       display: flex;
-      gap: 8px;
+      flex-wrap: wrap;
+      gap: 6px;
       align-items: center
     }
 
     .control-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
       background: linear-gradient(#f6f6f6, #ededed);
-      padding: 6px;
+      padding: 4px 6px;
       border: 1px solid #bdbdbd;
       border-radius: 2px
     }
 
     .label {
       font-size: 12px;
-      margin-right: 6px
+    }
+
+    .readout {
+      font-size: 12px;
+      margin-left: auto
     }
 
     /* Canvas area */
     .canvas-wrap {
       flex: 1;
-      background: repeating-linear-gradient(0deg, #fff, #fff 20px, #f8f8f8 20px, #f8f8f8 21px);
+      min-height: 0;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px;
+      background: repeating-linear-gradient(0deg, #fff, #fff 20px, #f8f8f8 20px, #f8f8f8 21px);
+      padding: 6px;
       overflow: auto;
       border: 2px solid #9a9a9a
     }
 
+    /* margin:auto centres a small canvas but keeps every edge of a large one scrollable */
     .paper {
-      background: #fff;
-      padding: 8px;
+      margin: auto;
+      position: relative;
+      flex: none;
       border: 1px solid #b7b7b7;
-      position: relative
+      background: #fff;
+    }
+
+    /* reset the site-wide canvas border/background: overlays must be transparent and exactly cover the drawing */
+    .paper canvas {
+      display: block;
+      border: 0;
+      background: transparent;
+      image-rendering: pixelated;
+    }
+
+    .paper canvas.overlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+      pointer-events: none
+    }
+
+    #canvasMain,
+    #canvasMain:active {
+      cursor: crosshair;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .text-editor {
+      position: absolute;
+      z-index: 10;
+      min-width: 40px;
+      white-space: pre;
+      font-family: Tahoma, Geneva, Verdana, sans-serif;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px dashed #000;
+      padding: 2px;
+      outline: none
     }
 
     /* Color palette */
     .palette {
-      width: 260px;
+      flex: none;
+      width: 162px;
+      align-self: flex-start;
       background: linear-gradient(#efece8, #e8e5e1);
       padding: 8px;
       border: 2px solid #b0b0b0;
-      box-sizing: border-box
+      font-size: 12px
     }
 
     .swatches {
       display: grid;
-      grid-template-columns: repeat(8, 1fr);
-      gap: 6px
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px
     }
 
     .swatch {
-      width: 24px;
       height: 18px;
       border: 1px solid #6b6b6b;
       cursor: pointer
@@ -255,14 +327,15 @@
     .color-pair {
       display: flex;
       gap: 8px;
-      align-items: center;
-      margin-top: 10px
+      margin-top: 10px;
+      font-size: 11px
     }
 
     .color-box {
       width: 48px;
       height: 28px;
-      border: 1px solid #333
+      border: 1px solid #333;
+      cursor: pointer
     }
 
     .color-box.secondary {
@@ -271,6 +344,7 @@
 
     /* Status bar */
     .statusbar {
+      flex: none;
       height: 22px;
       background: linear-gradient(#e7e7e7, #d7d7d7);
       display: flex;
@@ -284,14 +358,10 @@
       flex: 1
     }
 
-    /* selection handles */
-    .handle {
-      width: 8px;
-      height: 8px;
-      background: #fff;
-      border: 1px solid #000;
-      position: absolute;
-      margin: -4px
+    .status-cell {
+      margin-left: 8px;
+      padding-left: 8px;
+      border-left: 1px solid #aaa
     }
 
     /* color picker modal */
@@ -316,252 +386,248 @@
 
     /* small helpers */
     button.small {
-      padding: 4px 6px;
+      padding: 3px 8px;
       font-size: 12px
     }
 
     input[type=range] {
-      width: 130px
+      width: 110px
     }
 
     .muted {
       color: #666;
       font-size: 12px
     }
-
-    img,
-    canvas {
-      user-select: none;
-      -webkit-user-drag: none;
-      cursor: crosshair;
-    }
-    
-    canvas#canvasMain {
-      cursor: crosshair !important;
-    }
   </style>
 </head>
 
 <body>
-  <div class="paint-wrapper">
-    <div class="container extra-wide">
-      <div class="outer-border">
-        <div class="header">
-          <h1>🎨 PAINT 🎨</h1>
-          <p>~*~ Create Your Masterpiece ~*~</p>
-        </div>
-
-        <div class="ticker" aria-label="site news">
-          <div class="marquee">★ WELCOME TO VIBELAND ★ DRAW, PAINT & CREATE ★ WINDOWS 2000 STYLE ★</div>
-        </div>
-
-        <div class="content">
-          <div class="app" role="application" aria-label="Paint (Windows 2000 style)" style="margin: 0 auto;">
-    <div class="titlebar">
-      <div class="title">
-        <div class="icon"></div>
-        <div class="title-text">Untitled - Paint</div>
-      </div>
-      <div class="window-controls">
-        <div class="btn-win">_</div>
-        <div class="btn-win">▢</div>
-        <div class="btn-win">✕</div>
-      </div>
-    </div>
-
-    <div class="menubar" role="menubar">
-      <div class="menu"><button>File</button>
-        <div class="dropdown" role="menu">
-          <button id="newBtn">New</button>
-          <button id="openBtn">Open...</button>
-          <button id="saveBtn">Save as PNG...</button>
-          <hr>
-          <button id="exitBtn">Exit</button>
-        </div>
-      </div>
-      <div class="menu"><button>Edit</button>
-        <div class="dropdown">
-          <button id="undoBtn">Undo</button>
-          <button id="redoBtn">Redo</button>
-          <hr>
-          <button id="cutBtn">Cut</button>
-          <button id="copyBtn">Copy</button>
-          <button id="pasteBtn">Paste</button>
-        </div>
-      </div>
-      <div class="menu"><button>View</button>
-        <div class="dropdown">
-          <button id="zoomIn">Zoom In</button>
-          <button id="zoomOut">Zoom Out</button>
-          <button id="resetZoom">Actual Size</button>
-        </div>
-      </div>
-      <div class="menu"><button>Image</button>
-        <div class="dropdown">
-          <button id="resizeBtn">Resize...</button>
-          <button id="rotateBtn">Rotate...</button>
-          <button id="flipHBtn">Flip Horizontal</button>
-          <button id="flipVBtn">Flip Vertical</button>
-        </div>
-      </div>
-      <div class="menu"><button>Colors</button>
-        <div class="dropdown">
-          <button id="editColors">Edit Colors...</button>
-        </div>
-      </div>
-      <div class="menu"><button>Help</button>
-        <div class="dropdown">
-          <button id="aboutBtn">About</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="main">
-      <div class="toolbar" role="toolbar" aria-label="tools">
-        <!-- More accurate/matching icons (SVG) -->
-        <div class="tool" data-tool="select" title="Select (S)">
-          <!-- dotted rectangle icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
-            <rect x="3" y="3" width="18" height="18" stroke-dasharray="2 2" />
-          </svg>
-        </div>
-        <div class="tool active" data-tool="pencil" title="Pencil (P)">
-          <!-- pencil icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
-            <path d="M3 21l3-1 11-11 2-2-3-3-2 2L6 17l-3 4z" />
-          </svg>
-        </div>
-        <div class="tool" data-tool="brush" title="Brush (B)">
-          <!-- brush icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
-            <path d="M4 18c0 3 4 3 8 0s8-3 8-6-4-2-8 0-8 3-8 6z" />
-          </svg>
-        </div>
-        <div class="tool" data-tool="eraser" title="Eraser (E)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
-            <path d="M3 12l5 5 9-9-5-5L3 7z" />
-          </svg>
-        </div>
-        <div class="tool" data-tool="fill" title="Fill (F)">
-          <svg viewBox="0 0 24 24" fill="#000">
-            <path d="M12 2l8 8-6 6-8-8 6-6z" />
-          </svg>
-        </div>
-        <div class="tool" data-tool="eyedrop" title="Color Picker (I)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
-            <path d="M14.5 3.5L20.5 9.5 12 18l-6-6L14.5 3.5z" />
-          </svg>
-        </div>
-        <div class="tool" data-tool="text" title="Text (T)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
-            <path d="M4 6h16M12 6v12" />
-          </svg>
-        </div>
-        <div class="tool" data-tool="line" title="Line (L)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
-            <line x1="3" y1="21" x2="21" y2="3" />
-          </svg>
-        </div>
-        <div class="tool" data-tool="curve" title="Curve (C)">
-          <!-- curve tool icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
-            <path d="M3 12c4-6 8-6 12-4s6 6 6 6" />
-          </svg>
-        </div>
-        <div class="tool" data-tool="polygon" title="Polygon (Y)">
-          <!-- polygon icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
-            <path d="M12 2l4 3 6 6-4 8-8 3-6-6 4-8 6-6z" />
-          </svg>
-        </div>
-        <div class="tool" data-tool="rect" title="Rectangle (R)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
-            <rect x="3" y="5" width="18" height="12" />
-          </svg>
-        </div>
-        <div class="tool" data-tool="ellipse" title="Ellipse (O)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.4">
-            <ellipse cx="12" cy="11" rx="8" ry="5" />
-          </svg>
-        </div>
+  <div class="container extra-wide">
+    <div class="outer-border">
+      <div class="header">
+        <h1>🎨 PAINT 🎨</h1>
+        <p>~*~ Create Your Masterpiece ~*~</p>
       </div>
 
-      <div class="top-controls">
-        <div class="controls-row">
-          <div class="control-group">
-            <span class="label">Size</span>
-            <input id="sizeRange" type="range" min="1" max="80" value="4">
-          </div>
-          <div class="control-group">
-            <span class="label">Mode</span>
-            <select id="drawMode">
-              <option value="stroke">Outline</option>
-              <option value="fill">Filled</option>
-              <option value="stroke-fill">Outline + Fill</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <button id="undoBtn2" class="small">Undo</button>
-            <button id="redoBtn2" class="small">Redo</button>
-          </div>
-          <div class="control-group">
-            <button id="openFileBtn" class="small">Open</button>
-            <button id="saveFileBtn" class="small">Save</button>
-          </div>
-        </div>
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ DRAW, PAINT & CREATE ★ RETRO STYLE ★</div>
+      </div>
 
-        <div class="controls-row" style="align-items:center">
-          <div style="font-size:13px;margin-right:8px">Tool: <strong id="currentToolName">Pencil</strong></div>
-          <div style="font-size:13px;margin-left:auto">Zoom: <strong id="zoomLabel">100%</strong></div>
-        </div>
-
-        <div style="flex:1;display:flex;align-items:center;justify-content:center">
-          <!-- Canvas area -->
-          <div class="canvas-wrap" id="canvasWrap">
-            <div class="paper" id="paper" style="position:relative;">
-              <!-- multiple canvases stacked -->
-              <canvas id="canvasMain" width="900" height="600" draggable="false"
-                style="display:block;background:#fff;border:1px solid #bdbdbd;image-rendering:pixelated"></canvas>
-              <canvas id="canvasTemp" width="900" height="600" draggable="false"
-                style="position:absolute;left:0;top:0;pointer-events:none"></canvas>
-              <canvas id="canvasSel" width="900" height="600" draggable="false"
-                style="position:absolute;left:0;top:0;pointer-events:none"></canvas>
+      <div class="content">
+        <div class="app" role="application" aria-label="Paint">
+          <div class="titlebar">
+            <div class="title">
+              <div class="icon"></div>
+              <div class="title-text">Untitled - Paint</div>
+            </div>
+            <div class="window-controls">
+              <div class="btn-win">_</div>
+              <div class="btn-win">▢</div>
+              <div class="btn-win">✕</div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div class="palette" aria-label="colors">
-        <div style="font-size:13px;margin-bottom:8px">Colors</div>
-        <div class="swatches" id="swatches"></div>
-        <div class="color-pair">
-          <div>
-            <div style="font-size:11px">Primary</div>
-            <div id="primaryColor" class="color-box" title="Primary color"></div>
+          <div class="menubar" role="menubar">
+            <div class="menu"><button>File</button>
+              <div class="dropdown" role="menu">
+                <button id="newBtn">New</button>
+                <button id="openBtn">Open...</button>
+                <button id="saveBtn">Save as PNG...</button>
+                <hr>
+                <button id="exitBtn">Exit</button>
+              </div>
+            </div>
+            <div class="menu"><button>Edit</button>
+              <div class="dropdown" role="menu">
+                <button id="undoBtn">Undo</button>
+                <button id="redoBtn">Redo</button>
+                <hr>
+                <button id="cutBtn">Cut</button>
+                <button id="copyBtn">Copy</button>
+                <button id="pasteBtn">Paste</button>
+              </div>
+            </div>
+            <div class="menu"><button>View</button>
+              <div class="dropdown" role="menu">
+                <button id="zoomIn">Zoom In</button>
+                <button id="zoomOut">Zoom Out</button>
+                <button id="resetZoom">Actual Size</button>
+              </div>
+            </div>
+            <div class="menu"><button>Image</button>
+              <div class="dropdown" role="menu">
+                <button id="resizeBtn">Resize...</button>
+                <button id="rotateBtn">Rotate...</button>
+                <button id="flipHBtn">Flip Horizontal</button>
+                <button id="flipVBtn">Flip Vertical</button>
+              </div>
+            </div>
+            <div class="menu"><button>Colors</button>
+              <div class="dropdown" role="menu">
+                <button id="editColors">Edit Colors...</button>
+              </div>
+            </div>
+            <div class="menu"><button>Help</button>
+              <div class="dropdown" role="menu">
+                <button id="aboutBtn">About</button>
+              </div>
+            </div>
           </div>
-          <div>
-            <div style="font-size:11px">Secondary</div>
-            <div id="secondaryColor" class="color-box secondary" title="Secondary color"></div>
+
+          <div class="main">
+            <div class="toolbar" role="toolbar" aria-label="tools">
+              <!-- Icons are drawn on a 20×20 grid at 1 unit = 1 CSS px so strokes stay crisp -->
+              <div class="tool" data-tool="select" title="Select (S)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <rect x="2.5" y="3.5" width="15" height="13" stroke-width="1" stroke-dasharray="2 2" stroke-linecap="butt" />
+                </svg>
+              </div>
+              <div class="tool active" data-tool="pencil" title="Pencil (P)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <g transform="rotate(-45 10 10)" stroke-width="1">
+                    <path d="M15 7.5H6L1.5 10 6 12.5H15Z" fill="#f6c343" />
+                    <path d="M6 7.5 1.5 10 6 12.5Z" fill="#f3d6a8" />
+                    <path d="M1.5 10 3.3 9V11Z" fill="#000" stroke="none" />
+                    <path d="M6.5 10H14.5" stroke="#c98f12" stroke-width="0.8" />
+                    <path d="M15 7.5H17.5A1 1 0 0 1 18.5 8.5V11.5A1 1 0 0 1 17.5 12.5H15Z" fill="#f08ca0" />
+                  </g>
+                </svg>
+              </div>
+              <div class="tool" data-tool="brush" title="Brush (B)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <g transform="rotate(-45 10 10)" stroke-width="1">
+                    <path d="M9.5 8.9H17.4A1.1 1.1 0 0 1 17.4 11.1H9.5Z" fill="#b8742e" />
+                    <path d="M6.5 7.2C3.6 7.2 1.5 8.4 1 10 1.5 11.6 3.6 12.8 6.5 12.8Z" fill="#2f6fd8" />
+                    <rect x="6.5" y="7.4" width="3" height="5.2" rx="0.5" fill="#d4d4d4" />
+                  </g>
+                </svg>
+              </div>
+              <div class="tool" data-tool="eraser" title="Eraser (E)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <g transform="rotate(-35 10 9)" stroke-width="1">
+                    <rect x="3" y="5.75" width="14" height="6.5" rx="1" fill="#fff" />
+                    <path d="M8.5 5.75H4A1 1 0 0 0 3 6.75V11.25A1 1 0 0 0 4 12.25H8.5Z" fill="#f08ca0" />
+                  </g>
+                  <path d="M2 18.5H18" stroke-width="1" />
+                </svg>
+              </div>
+              <div class="tool" data-tool="fill" title="Fill (F)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <g transform="rotate(35 8.5 11)" stroke-width="1">
+                    <path d="M4 8C4 3.6 13 3.6 13 8" stroke-width="0.9" />
+                    <path d="M3.5 8.5H13.5V15.5A1.5 1.5 0 0 1 12 17H5A1.5 1.5 0 0 1 3.5 15.5Z" fill="#e6e6e6" />
+                    <ellipse cx="8.5" cy="8.5" rx="5" ry="1.25" fill="#2f6fd8" />
+                  </g>
+                  <path d="M16.5 10.5C17.6 12.1 18.5 13.4 18.5 14.6A2 2 0 0 1 14.5 14.6C14.5 13.4 15.4 12.1 16.5 10.5Z" fill="#2f6fd8" stroke-width="1" />
+                </svg>
+              </div>
+              <div class="tool" data-tool="eyedrop" title="Color Picker (I)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <g transform="rotate(45 10 10)" stroke-width="1">
+                    <path d="M8.25 2.5A1.75 1.75 0 0 1 11.75 2.5V6.5H8.25Z" fill="#333" />
+                    <rect x="6.5" y="6.5" width="7" height="1.75" rx="0.6" fill="#888" />
+                    <path d="M8.75 8.25H11.25V15L10 18 8.75 15Z" fill="#fff" />
+                    <path d="M9.25 12.5H10.75V15L10 16.8 9.25 15Z" fill="#2f6fd8" stroke="none" />
+                  </g>
+                </svg>
+              </div>
+              <div class="tool" data-tool="text" title="Text (T)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4.5 16.5 10 3.5 15.5 16.5M6.6 11.5H13.4M2.75 16.5H6.25M13.75 16.5H17.25" stroke-width="1.5" />
+                </svg>
+              </div>
+              <div class="tool" data-tool="line" title="Line (L)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M3.5 16.5 16.5 3.5" stroke-width="1.5" />
+                </svg>
+              </div>
+              <div class="tool" data-tool="curve" title="Curve (C)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M2.75 15.5C4.5 6 8 4 10 10S15.5 14 17.25 4.5" stroke-width="1.5" />
+                </svg>
+              </div>
+              <div class="tool" data-tool="polygon" title="Polygon (Y)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M3.25 7.25 10.25 2.75 16.75 7.75 14.25 16.75 5.75 15.25Z" stroke-width="1.5" />
+                </svg>
+              </div>
+              <div class="tool" data-tool="rect" title="Rectangle (R)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <rect x="2.75" y="4.75" width="14.5" height="10.5" stroke-width="1.5" />
+                </svg>
+              </div>
+              <div class="tool" data-tool="ellipse" title="Ellipse (O)">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <ellipse cx="10" cy="10" rx="7.25" ry="5.25" stroke-width="1.5" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="top-controls">
+              <div class="controls-row">
+                <div class="control-group">
+                  <span class="label">Size</span>
+                  <input id="sizeRange" type="range" min="1" max="80" value="4">
+                </div>
+                <div class="control-group">
+                  <span class="label">Mode</span>
+                  <select id="drawMode">
+                    <option value="stroke">Outline</option>
+                    <option value="fill">Filled</option>
+                    <option value="stroke-fill">Outline + Fill</option>
+                  </select>
+                </div>
+                <div class="control-group">
+                  <button id="undoBtn2" class="small">Undo</button>
+                  <button id="redoBtn2" class="small">Redo</button>
+                </div>
+                <div class="control-group">
+                  <button id="openFileBtn" class="small">Open</button>
+                  <button id="saveFileBtn" class="small">Save</button>
+                </div>
+                <div class="readout">Tool: <strong id="currentToolName">Pencil</strong> &nbsp; Zoom: <strong id="zoomLabel">100%</strong></div>
+              </div>
+
+              <div class="canvas-wrap" id="canvasWrap">
+                <div class="paper" id="paper">
+                  <canvas id="canvasMain" draggable="false"></canvas>
+                  <canvas id="canvasTemp" class="overlay"></canvas>
+                  <canvas id="canvasSel" class="overlay"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="palette" aria-label="colors">
+              <div style="font-size:13px;margin-bottom:8px">Colors</div>
+              <div class="swatches" id="swatches"></div>
+              <div class="color-pair">
+                <div>
+                  <div>Primary</div>
+                  <div id="primaryColor" class="color-box" title="Primary color (click to swap)"></div>
+                </div>
+                <div>
+                  <div>Secondary</div>
+                  <div id="secondaryColor" class="color-box secondary" title="Secondary color (click to swap)"></div>
+                </div>
+              </div>
+              <div style="margin-top:10px">
+                <button id="editColorsBtn" class="small">Edit Colors...</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="statusbar">
+            <div class="status-left" id="statusLeft">Ready</div>
+            <div id="statusRight">0,0</div>
+            <div class="status-cell"><span id="zoomLabel2">100%</span></div>
           </div>
         </div>
-        <div style="margin-top:10px">
-          <button id="editColorsBtn" class="small">Edit Colors...</button>
-        </div>
-      </div>
-    </div>
 
-    <div class="statusbar">
-      <div class="status-left" id="statusLeft">Ready</div>
-      <div id="statusRight">0,0</div>
-      <div style="margin-left:8px;padding-left:8px;border-left:1px solid #aaa"><span id="zoomLabel2">100%</span></div>
-    </div>
+        <hr class="thick">
 
-          <hr class="thick">
-
-          <div class="footer">
-            <div><a href="../home">← Back to VIBELAND</a></div>
-            <div>© 1999 VIBELAND - All Rights Reserved</div>
-          </div>
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
         </div>
       </div>
     </div>
@@ -570,7 +636,7 @@
   <!-- Hidden file input for opening images -->
   <input id="fileInput" type="file" accept="image/*" style="display:none" />
 
-  <!-- Color Picker Modal template -->
+  <!-- Color Picker Modal -->
   <div id="colorModal" class="modal" style="display:none">
     <div style="font-weight:bold;margin-bottom:6px">Edit Colors</div>
     <div class="row">
@@ -589,472 +655,661 @@
   </div>
 
   <script>
-    // ====== Paint clone logic (extended) ======
     (function () {
-      // Elements
-      const canvasMain = document.getElementById('canvasMain');
-      const canvasTemp = document.getElementById('canvasTemp');
-      const canvasSel = document.getElementById('canvasSel');
-      const swatchesEl = document.getElementById('swatches');
-      const primaryBox = document.getElementById('primaryColor');
-      const secondaryBox = document.getElementById('secondaryColor');
-      const currentToolName = document.getElementById('currentToolName');
-      const statusLeft = document.getElementById('statusLeft');
-      const statusRight = document.getElementById('statusRight');
-      const zoomLabel = document.getElementById('zoomLabel');
-      const canvasWrap = document.getElementById('canvasWrap');
-      const paper = document.getElementById('paper');
+      const $ = id => document.getElementById(id);
+      const canvasMain = $("canvasMain");
+      const canvasTemp = $("canvasTemp");
+      const canvasSel = $("canvasSel");
+      const canvasWrap = $("canvasWrap");
+      const paper = $("paper");
+      const primaryBox = $("primaryColor");
+      const secondaryBox = $("secondaryColor");
+      const statusLeft = $("statusLeft");
+      const statusRight = $("statusRight");
+      const colorModal = $("colorModal");
+      const colorInput = $("colorInput");
+      const hexInput = $("hexInput");
+      const rRange = $("rRange");
+      const gRange = $("gRange");
+      const bRange = $("bRange");
+      const fileInput = $("fileInput");
+      const sizeRange = $("sizeRange");
+      const drawModeSel = $("drawMode");
 
-      // Modal elements
-      const colorModal = document.getElementById('colorModal');
-      const colorInput = document.getElementById('colorInput');
-      const hexInput = document.getElementById('hexInput');
-      const rRange = document.getElementById('rRange');
-      const gRange = document.getElementById('gRange');
-      const bRange = document.getElementById('bRange');
-      const colorOk = document.getElementById('colorOk');
-      const colorCancel = document.getElementById('colorCancel');
+      // Every canvas has a backing store of (logical size × DPR); all drawing uses logical coordinates.
+      const DPR = window.devicePixelRatio || 1;
+      const ctx = canvasMain.getContext("2d", { willReadFrequently: true });
+      const tctx = canvasTemp.getContext("2d");
+      const sctx = canvasSel.getContext("2d");
 
-      // Internal state
-      let tool = 'pencil';
-      let drawing = false;
-      let start = {x: 0, y: 0};
-      let last = {x: 0, y: 0};
-      let primary = '#000000';
-      let secondary = '#ffffff';
-      let size = 4;
-      let drawMode = 'stroke';
+      let W = 900, H = 600; // logical canvas size
       let zoom = 1;
-      let selection = null; // {x,y,w,h,imageData,angle}
-      let copied = null; // copied imageData
+      let tool = "pencil";
+      let primary = "#000000";
+      let secondary = "#ffffff";
+      let size = 4;
+      let drawMode = "stroke";
 
-      // For polygon/curve tools
-      let polygonPoints = [];
-      let curvePoints = [];
+      let activePointer = null; // pointer id of the drag in progress
+      let strokeColor = primary; // colour chosen by the mouse button that started the drag
+      let start = { x: 0, y: 0 };
+      let last = { x: 0, y: 0 };
+      let polyPoints = []; // polygon / curve points in progress
+      let polyColor = primary;
+      let selection = null; // {x, y, w, h, angle, img: device-resolution canvas, floating}
+      let selDrag = null; // {type: "new"|"move"|"handle"|"rotate", handle, startPos, startSel}
+      let copied = null; // {img, w, h}
+      let textEditor = null;
 
-      // Undo/redo stack (store ImageData objects)
       const undoStack = [];
       const redoStack = [];
       const MAX_UNDO = 60;
 
-      // HiDPI helpers
-      const DPR = window.devicePixelRatio || 1;
-
-      // HiDPI setup
-      function setupCanvas(c) {
-        const ratio = window.devicePixelRatio || 1;
-        const w = c.width; const h = c.height;
-        c.width = Math.round(w * ratio);
-        c.height = Math.round(h * ratio);
-        c.style.width = w + 'px';
-        c.style.height = h + 'px';
-        const g = c.getContext('2d', { willReadFrequently: true });
-        g.setTransform(ratio, 0, 0, ratio, 0, 0);
-        return g;
+      // ---------- canvas sizing & zoom ----------
+      function setSize(w, h) {
+        W = w; H = h;
+        for (const c of [canvasMain, canvasTemp, canvasSel]) {
+          c.width = Math.round(w * DPR);
+          c.height = Math.round(h * DPR);
+          c.getContext("2d").setTransform(DPR, 0, 0, DPR, 0, 0);
+        }
+        applyZoom();
       }
-      const ctxMainHi = setupCanvas(canvasMain);
-      const ctxTempHi = setupCanvas(canvasTemp);
-      const ctxSelHi = setupCanvas(canvasSel);
+      function applyZoom() {
+        for (const c of [canvasMain, canvasTemp, canvasSel]) {
+          c.style.width = W * zoom + "px";
+          c.style.height = H * zoom + "px";
+        }
+      }
+      function setZoom(z) {
+        zoom = Math.max(0.25, Math.min(4, z));
+        applyZoom();
+        $("zoomLabel").textContent = $("zoomLabel2").textContent = Math.round(zoom * 100) + "%";
+      }
+      function clearCanvas(g) { g.clearRect(0, 0, W, H); }
+      function fillWhite(x = 0, y = 0, w = W, h = H) { ctx.fillStyle = "#ffffff"; ctx.fillRect(x, y, w, h); }
+      // Copy of the main canvas (or a region of it) at full device resolution
+      function snapshotCanvas(x = 0, y = 0, w = W, h = H) {
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(w * DPR));
+        c.height = Math.max(1, Math.round(h * DPR));
+        c.getContext("2d").drawImage(canvasMain, Math.round(x * DPR), Math.round(y * DPR), c.width, c.height, 0, 0, c.width, c.height);
+        return c;
+      }
 
-      // Fill initial background white
-      ctxMainHi.fillStyle = '#ffffff';
-      ctxMainHi.fillRect(0, 0, canvasMain.width / (window.devicePixelRatio || 1), canvasMain.height / (window.devicePixelRatio || 1));
+      setSize(W, H);
+      fillWhite();
 
-      // Utilities
-      function updateStatus(text) {statusLeft.textContent = text;}
+      function updateStatus(text) { statusLeft.textContent = text; }
       function getPos(e) {
-        const rect = canvasMain.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / zoom;
-        const y = (e.clientY - rect.top) / zoom;
-        return {x: Math.max(0, Math.min(canvasMain.width / (window.devicePixelRatio || 1), x)), y: Math.max(0, Math.min(canvasMain.height / (window.devicePixelRatio || 1), y))};
+        const r = canvasMain.getBoundingClientRect();
+        return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height };
       }
+      const clampX = x => Math.max(0, Math.min(W, x));
+      const clampY = y => Math.max(0, Math.min(H, y));
 
-      // Colors
-      const defaultColors = ['#000000', '#808080', '#800000', '#ff0000', '#808000', '#ffff00', '#008000', '#00ff00', '#008080', '#00ffff', '#000080', '#0000ff', '#800080', '#ff00ff', '#808040', '#ffffff', '#c0c0c0', '#ffb6c1', '#ffd700', '#f0e68c', '#add8e6', '#87ceeb', '#98fb98', '#90ee90', '#ffe4b5', '#ffdead', '#ffe4e1', '#faf0e6', '#f5f5dc', '#dcdcdc', '#e6e6fa', '#fffacd', '#e0ffff', '#f0fff0', '#fff0f5', '#f5f5f5'];
-      function buildSwatches() {swatchesEl.innerHTML = ''; defaultColors.forEach(c => {const d = document.createElement('div'); d.className = 'swatch'; d.style.background = c; d.title = c; d.addEventListener('click', () => setPrimary(c)); d.addEventListener('contextmenu', (ev) => {ev.preventDefault(); setSecondary(c)}); swatchesEl.appendChild(d);});}
-      buildSwatches();
-      function setPrimary(c) {primary = c; primaryBox.style.background = c; colorInput.value = c; hexInput.value = c;}
-      function setSecondary(c) {secondary = c; secondaryBox.style.background = c;}
+      // ---------- colours ----------
+      const defaultColors = ["#000000", "#808080", "#800000", "#ff0000", "#808000", "#ffff00", "#008000", "#00ff00", "#008080", "#00ffff", "#000080", "#0000ff", "#800080", "#ff00ff", "#808040", "#ffffff", "#c0c0c0", "#ffb6c1", "#ffd700", "#f0e68c", "#add8e6", "#87ceeb", "#98fb98", "#90ee90", "#ffe4b5", "#ffdead", "#ffe4e1", "#faf0e6", "#f5f5dc", "#dcdcdc", "#e6e6fa", "#fffacd", "#e0ffff", "#f0fff0", "#fff0f5", "#f5f5f5"];
+      for (const c of defaultColors) {
+        const d = document.createElement("div");
+        d.className = "swatch";
+        d.style.background = c;
+        d.title = c;
+        d.addEventListener("click", () => setPrimary(c));
+        d.addEventListener("contextmenu", ev => { ev.preventDefault(); setSecondary(c); });
+        $("swatches").appendChild(d);
+      }
+      function setPrimary(c) { primary = c; primaryBox.style.background = c; }
+      function setSecondary(c) { secondary = c; secondaryBox.style.background = c; }
       setPrimary(primary); setSecondary(secondary);
+      function swapColors() { const tmp = primary; setPrimary(secondary); setSecondary(tmp); }
+      primaryBox.addEventListener("click", swapColors);
+      secondaryBox.addEventListener("click", swapColors);
 
-      // Tool UI
-      document.querySelectorAll('.tool').forEach(el => {
-        el.addEventListener('click', () => {
-          document.querySelectorAll('.tool').forEach(t => t.classList.remove('active'));
-          el.classList.add('active');
-          tool = el.dataset.tool;
-          currentToolName.textContent = el.title.split(' ')[0];
-          // reset polygon/curve mode when switching tools
-          polygonPoints = []; curvePoints = [];
+      // ---------- tools ----------
+      function setTool(name) {
+        commitSelection();
+        cancelPoly();
+        tool = name;
+        document.querySelectorAll(".tool").forEach(t => t.classList.toggle("active", t.dataset.tool === name));
+        $("currentToolName").textContent = document.querySelector(`.tool[data-tool='${name}']`).title.replace(/\s*\(.*\)$/, "");
+      }
+      document.querySelectorAll(".tool").forEach(el => el.addEventListener("click", () => setTool(el.dataset.tool)));
+      sizeRange.addEventListener("input", () => { size = parseInt(sizeRange.value, 10); });
+      drawModeSel.addEventListener("change", () => { drawMode = drawModeSel.value; });
+
+      // ---------- undo / redo (snapshots remember the canvas size) ----------
+      function snapshot() { return { w: W, h: H, data: ctx.getImageData(0, 0, canvasMain.width, canvasMain.height) }; }
+      function restore(s) {
+        if (s.w !== W || s.h !== H) setSize(s.w, s.h);
+        ctx.putImageData(s.data, 0, 0);
+      }
+      function pushUndo() {
+        if (undoStack.length >= MAX_UNDO) undoStack.shift();
+        undoStack.push(snapshot());
+        redoStack.length = 0;
+        updateUndoButtons();
+      }
+      function undo() {
+        commitSelection();
+        cancelPoly();
+        if (!undoStack.length) return;
+        redoStack.push(snapshot());
+        restore(undoStack.pop());
+        updateStatus("Undid");
+        updateUndoButtons();
+      }
+      function redo() {
+        commitSelection();
+        cancelPoly();
+        if (!redoStack.length) return;
+        undoStack.push(snapshot());
+        restore(redoStack.pop());
+        updateStatus("Redid");
+        updateUndoButtons();
+      }
+      function updateUndoButtons() {
+        $("undoBtn").disabled = $("undoBtn2").disabled = undoStack.length === 0;
+        $("redoBtn").disabled = $("redoBtn2").disabled = redoStack.length === 0;
+      }
+      $("undoBtn").addEventListener("click", undo); $("undoBtn2").addEventListener("click", undo);
+      $("redoBtn").addEventListener("click", redo); $("redoBtn2").addEventListener("click", redo);
+
+      // ---------- file ----------
+      function openFile() { fileInput.click(); }
+      $("openBtn").addEventListener("click", openFile);
+      $("openFileBtn").addEventListener("click", openFile);
+      fileInput.addEventListener("change", () => {
+        const f = fileInput.files[0];
+        fileInput.value = ""; // allow re-opening the same file
+        if (!f) return;
+        const url = URL.createObjectURL(f);
+        const img = new Image();
+        img.onload = () => {
+          commitSelection();
+          pushUndo();
+          fillWhite();
+          const scale = Math.min(W / img.width, H / img.height, 1);
+          ctx.drawImage(img, 0, 0, img.width * scale, img.height * scale);
+          URL.revokeObjectURL(url);
+          updateStatus("Image opened");
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); updateStatus("Could not open that file"); };
+        img.src = url;
+      });
+      function saveAsPNG() {
+        commitSelection();
+        const tmp = document.createElement("canvas");
+        tmp.width = W; tmp.height = H;
+        tmp.getContext("2d").drawImage(canvasMain, 0, 0, W, H);
+        const link = document.createElement("a");
+        link.download = "painting.png";
+        link.href = tmp.toDataURL("image/png");
+        link.click();
+      }
+      $("saveBtn").addEventListener("click", saveAsPNG);
+      $("saveFileBtn").addEventListener("click", saveAsPNG);
+
+      $("newBtn").addEventListener("click", () => {
+        if (!confirm("Create new image? Unsaved changes will be lost.")) return;
+        clearSelection();
+        cancelPoly();
+        pushUndo();
+        fillWhite();
+      });
+      $("exitBtn").addEventListener("click", () => { if (confirm("Close Paint?")) location.href = "../home"; });
+      $("aboutBtn").addEventListener("click", () => alert("VIBELAND Paint — a retro paint program in HTML/JS"));
+
+      // Close a dropdown after choosing an item (it reopens on the next hover)
+      document.querySelectorAll(".menu").forEach(m => {
+        m.querySelector(".dropdown").addEventListener("click", () => m.classList.add("closed"));
+        m.addEventListener("mouseleave", () => m.classList.remove("closed"));
+      });
+
+      // ---------- view ----------
+      $("zoomIn").addEventListener("click", () => setZoom(zoom * 1.25));
+      $("zoomOut").addEventListener("click", () => setZoom(zoom / 1.25));
+      $("resetZoom").addEventListener("click", () => setZoom(1));
+
+      // ---------- image ----------
+      function flip(horizontal) {
+        commitSelection();
+        pushUndo();
+        const src = snapshotCanvas();
+        ctx.save();
+        ctx.setTransform(horizontal ? -1 : 1, 0, 0, horizontal ? 1 : -1, horizontal ? canvasMain.width : 0, horizontal ? 0 : canvasMain.height);
+        ctx.drawImage(src, 0, 0);
+        ctx.restore();
+      }
+      $("flipHBtn").addEventListener("click", () => flip(true));
+      $("flipVBtn").addEventListener("click", () => flip(false));
+      $("resizeBtn").addEventListener("click", () => {
+        const w = parseInt(prompt("New width (px):", W), 10);
+        const h = parseInt(prompt("New height (px):", H), 10);
+        if (!(w > 0 && h > 0 && w <= 4000 && h <= 4000)) return;
+        commitSelection();
+        pushUndo();
+        const src = snapshotCanvas();
+        setSize(w, h);
+        fillWhite();
+        ctx.drawImage(src, 0, 0, w, h);
+      });
+      $("rotateBtn").addEventListener("click", () => {
+        const angle = parseFloat(prompt("Rotate (degrees, positive = clockwise):", "90"));
+        if (isNaN(angle)) return;
+        commitSelection();
+        pushUndo();
+        const rad = angle * Math.PI / 180;
+        const sin = Math.abs(Math.sin(rad)), cos = Math.abs(Math.cos(rad));
+        const w = W, h = H;
+        const src = snapshotCanvas();
+        setSize(Math.ceil(w * cos + h * sin - 1e-6), Math.ceil(w * sin + h * cos - 1e-6));
+        fillWhite();
+        ctx.save();
+        ctx.translate(W / 2, H / 2);
+        ctx.rotate(rad);
+        ctx.drawImage(src, -w / 2, -h / 2, w, h);
+        ctx.restore();
+      });
+
+      // ---------- drawing helpers ----------
+      function drawLine(g, x1, y1, x2, y2, color, width) {
+        g.save();
+        g.lineCap = "round"; g.lineJoin = "round";
+        g.strokeStyle = color; g.lineWidth = width;
+        g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+        g.restore();
+      }
+      // Rectangle / ellipse / closed polygon honouring the Mode setting
+      function paintShape(g, color, buildPath) {
+        g.save();
+        g.lineWidth = size; g.lineJoin = "round";
+        g.strokeStyle = g.fillStyle = color;
+        g.beginPath(); buildPath(g);
+        if (drawMode !== "stroke") g.fill();
+        if (drawMode !== "fill") g.stroke();
+        g.restore();
+      }
+      function drawShape(g, kind, a, b, color) {
+        const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+        if (kind === "line") drawLine(g, a.x, a.y, b.x, b.y, color, size);
+        else if (kind === "rect") paintShape(g, color, p => p.rect(x, y, w, h));
+        else paintShape(g, color, p => p.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2));
+      }
+      // Polyline (polygon) or smooth Catmull-Rom curve through the points
+      function tracePath(g, pts, smooth) {
+        g.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 0; i < pts.length - 1; i++) {
+          const p1 = pts[i], p2 = pts[i + 1];
+          if (!smooth) { g.lineTo(p2[0], p2[1]); continue; }
+          const p0 = pts[i - 1] || p1, p3 = pts[i + 2] || p2;
+          g.bezierCurveTo(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6, p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6, p2[0], p2[1]);
+        }
+      }
+      function hexToRgba(hex) {
+        let c = hex.replace("#", "");
+        if (c.length === 3) c = c.split("").map(ch => ch + ch).join("");
+        const n = parseInt(c, 16);
+        return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 255];
+      }
+
+      // Flood fill with a small colour tolerance so anti-aliased edges don't leave a light halo
+      function floodFill(x, y, fillColor) {
+        const w = canvasMain.width, h = canvasMain.height;
+        const px = Math.floor(x * DPR), py = Math.floor(y * DPR);
+        if (px < 0 || py < 0 || px >= w || py >= h) return;
+        const img = ctx.getImageData(0, 0, w, h), d = img.data;
+        const s = (py * w + px) * 4;
+        const target = [d[s], d[s + 1], d[s + 2], d[s + 3]];
+        const fill = hexToRgba(fillColor);
+        if (target.every((v, i) => v === fill[i])) return;
+        const TOL = 64;
+        const matches = p => Math.abs(d[p] - target[0]) <= TOL && Math.abs(d[p + 1] - target[1]) <= TOL && Math.abs(d[p + 2] - target[2]) <= TOL && Math.abs(d[p + 3] - target[3]) <= TOL;
+        const seen = new Uint8Array(w * h);
+        const stack = new Int32Array(w * h);
+        let top = 0;
+        const visit = n => { if (!seen[n]) { seen[n] = 1; if (matches(n * 4)) stack[top++] = n; } };
+        visit(py * w + px);
+        while (top) {
+          const i = stack[--top], p = i * 4, cx = i % w;
+          d[p] = fill[0]; d[p + 1] = fill[1]; d[p + 2] = fill[2]; d[p + 3] = 255;
+          if (cx > 0) visit(i - 1);
+          if (cx < w - 1) visit(i + 1);
+          if (i >= w) visit(i - w);
+          if (i < w * (h - 1)) visit(i + w);
+        }
+        pushUndo();
+        ctx.putImageData(img, 0, 0);
+      }
+
+      function pickColor(x, y, which) {
+        if (x < 0 || y < 0 || x >= W || y >= H) return;
+        const d = ctx.getImageData(Math.floor(x * DPR), Math.floor(y * DPR), 1, 1).data;
+        const hex = "#" + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, "0")).join("");
+        if (which === "secondary") setSecondary(hex); else setPrimary(hex);
+      }
+
+      // ---------- polygon & curve (click to add points, double-click to finish) ----------
+      function cancelPoly() { polyPoints = []; clearCanvas(tctx); }
+      function previewPoly(cursor) {
+        clearCanvas(tctx);
+        if (!polyPoints.length) return;
+        const pts = cursor ? [...polyPoints, [cursor.x, cursor.y]] : polyPoints;
+        tctx.save();
+        tctx.strokeStyle = polyColor;
+        tctx.lineWidth = tool === "curve" ? size : 1;
+        tctx.lineCap = tctx.lineJoin = "round";
+        tctx.beginPath(); tracePath(tctx, pts, tool === "curve"); tctx.stroke();
+        tctx.restore();
+      }
+      function finishPoly() {
+        const pts = polyPoints;
+        if (tool === "polygon" ? pts.length < 3 : pts.length < 2) return;
+        pushUndo();
+        if (tool === "polygon") {
+          paintShape(ctx, polyColor, g => { tracePath(g, pts, false); g.closePath(); });
+          updateStatus("Polygon finished");
+        } else {
+          ctx.save();
+          ctx.strokeStyle = polyColor; ctx.lineWidth = size; ctx.lineCap = ctx.lineJoin = "round";
+          ctx.beginPath(); tracePath(ctx, pts, true); ctx.stroke();
+          ctx.restore();
+          updateStatus("Curve drawn");
+        }
+        cancelPoly();
+      }
+      function addPolyPoint(pos, color) {
+        const near = (p, r) => p && Math.hypot(pos.x - p[0], pos.y - p[1]) <= r / zoom;
+        if (tool === "polygon" && polyPoints.length >= 3 && near(polyPoints[0], 8)) { finishPoly(); return; }
+        if (!polyPoints.length) polyColor = color;
+        if (!near(polyPoints[polyPoints.length - 1], 3)) polyPoints.push([pos.x, pos.y]);
+        previewPoly(pos);
+      }
+      canvasMain.addEventListener("dblclick", () => { if (tool === "polygon" || tool === "curve") finishPoly(); });
+
+      // ---------- selection (floating, like classic Paint) ----------
+      function selCenter(s) { return { x: s.x + s.w / 2, y: s.y + s.h / 2 }; }
+      // Point in the selection's own (unrotated) frame
+      function toLocal(s, p) {
+        const c = selCenter(s), a = -s.angle * Math.PI / 180, dx = p.x - c.x, dy = p.y - c.y;
+        return { x: c.x + dx * Math.cos(a) - dy * Math.sin(a), y: c.y + dx * Math.sin(a) + dy * Math.cos(a) };
+      }
+      function getHandles(s) {
+        const c = selCenter(s);
+        return [
+          { x: s.x, y: s.y, name: "nw" }, { x: s.x + s.w, y: s.y, name: "ne" }, { x: s.x, y: s.y + s.h, name: "sw" }, { x: s.x + s.w, y: s.y + s.h, name: "se" },
+          { x: c.x, y: s.y, name: "n" }, { x: c.x, y: s.y + s.h, name: "s" }, { x: s.x, y: c.y, name: "w" }, { x: s.x + s.w, y: c.y, name: "e" },
+          { x: c.x, y: s.y >= 20 ? s.y - 20 : s.y + s.h + 20, name: "rotate" }];
+      }
+      function hitTest(s, p) {
+        const l = toLocal(s, p), r = 6 / zoom;
+        const h = getHandles(s).find(h => Math.abs(l.x - h.x) <= r && Math.abs(l.y - h.y) <= r);
+        if (h) return h.name;
+        return l.x >= s.x && l.y >= s.y && l.x <= s.x + s.w && l.y <= s.y + s.h ? "move" : null;
+      }
+      function withSelTransform(g, s, draw) {
+        const c = selCenter(s);
+        g.save(); g.translate(c.x, c.y); g.rotate(s.angle * Math.PI / 180); g.translate(-c.x, -c.y);
+        draw(); g.restore();
+      }
+      function drawSelectionImage(g, s) { withSelTransform(g, s, () => g.drawImage(s.img, s.x, s.y, s.w, s.h)); }
+      function renderSelection() {
+        clearCanvas(sctx); clearCanvas(tctx);
+        const s = selection;
+        if (!s) return;
+        if (s.floating) drawSelectionImage(tctx, s);
+        withSelTransform(sctx, s, () => {
+          sctx.lineWidth = 1 / zoom;
+          sctx.setLineDash([4 / zoom, 3 / zoom]); sctx.strokeStyle = "#000";
+          sctx.strokeRect(s.x, s.y, s.w, s.h);
+          sctx.setLineDash([]);
+          const r = 4 / zoom;
+          for (const h of getHandles(s)) {
+            sctx.fillStyle = "#fff"; sctx.fillRect(h.x - r, h.y - r, 2 * r, 2 * r);
+            sctx.strokeRect(h.x - r, h.y - r, 2 * r, 2 * r);
+          }
         });
-      });
+      }
+      // Pick the pixels up off the canvas (leaving white behind) the first time a selection is transformed
+      function liftSelection() {
+        if (selection.floating) return;
+        pushUndo();
+        fillWhite(selection.x, selection.y, selection.w, selection.h);
+        selection.floating = true;
+      }
+      function commitSelection() {
+        if (selection && selection.floating) drawSelectionImage(ctx, selection);
+        clearSelection();
+      }
+      function clearSelection() { selection = null; selDrag = null; clearCanvas(sctx); clearCanvas(tctx); }
+      // The selection as it currently looks, cropped to its bounding box
+      function selectionBitmap() {
+        const s = selection, c = selCenter(s), a = s.angle * Math.PI / 180;
+        const bw = Math.abs(s.w * Math.cos(a)) + Math.abs(s.h * Math.sin(a)), bh = Math.abs(s.w * Math.sin(a)) + Math.abs(s.h * Math.cos(a));
+        const img = document.createElement("canvas");
+        img.width = Math.max(1, Math.round(bw * DPR)); img.height = Math.max(1, Math.round(bh * DPR));
+        const g = img.getContext("2d");
+        g.setTransform(DPR, 0, 0, DPR, 0, 0);
+        g.translate(bw / 2 - c.x, bh / 2 - c.y);
+        drawSelectionImage(g, s);
+        return { img, w: bw, h: bh };
+      }
+      function copySelection() { if (!selection) return; copied = selectionBitmap(); updateStatus("Copied selection"); }
+      function cutSelection() {
+        if (!selection) return;
+        copied = selectionBitmap();
+        liftSelection();
+        clearSelection();
+        updateStatus("Cut selection");
+      }
+      function pasteSelection() {
+        if (!copied) return;
+        setTool("select");
+        pushUndo();
+        // paste at the top-left corner of the visible part of the canvas
+        const r = canvasMain.getBoundingClientRect(), v = canvasWrap.getBoundingClientRect();
+        const x = Math.round(clampX((v.left - r.left) / zoom)), y = Math.round(clampY((v.top - r.top) / zoom));
+        selection = { x, y, w: copied.w, h: copied.h, angle: 0, img: copied.img, floating: true };
+        renderSelection();
+        updateStatus("Pasted");
+      }
+      $("copyBtn").addEventListener("click", copySelection);
+      $("cutBtn").addEventListener("click", cutSelection);
+      $("pasteBtn").addEventListener("click", pasteSelection);
 
-      // Size & mode
-      const sizeRange = document.getElementById('sizeRange');
-      sizeRange.addEventListener('input', () => {size = parseInt(sizeRange.value, 10);});
-      const drawModeSel = document.getElementById('drawMode');
-      drawModeSel.addEventListener('change', () => {drawMode = drawModeSel.value;});
-
-      // Prevent context menu and drag on canvases
-      [canvasMain, canvasTemp, canvasSel].forEach(c => {
-        c.addEventListener('contextmenu', (e) => e.preventDefault());
-        c.addEventListener('dragstart', (e) => e.preventDefault());
-        c.addEventListener('drag', (e) => e.preventDefault());
-      });
-
-      // Undo/Redo
-      function pushUndo() {try {if (undoStack.length >= MAX_UNDO) undoStack.shift(); const data = ctxMainHi.getImageData(0, 0, canvasMain.width, canvasMain.height); undoStack.push(data); redoStack.length = 0; updateUndoButtons();} catch (e) {console.warn(e)} }
-      function undo() {if (!undoStack.length) return; try {const img = undoStack.pop(); const cur = ctxMainHi.getImageData(0, 0, canvasMain.width, canvasMain.height); redoStack.push(cur); ctxMainHi.putImageData(img, 0, 0); updateStatus('Undid');} catch (e) {console.warn(e)} updateUndoButtons();}
-      function redo() {if (!redoStack.length) return; try {const img = redoStack.pop(); const cur = ctxMainHi.getImageData(0, 0, canvasMain.width, canvasMain.height); undoStack.push(cur); ctxMainHi.putImageData(img, 0, 0); updateStatus('Redid');} catch (e) {console.warn(e)} updateUndoButtons();}
-      function updateUndoButtons() {document.getElementById('undoBtn').disabled = undoStack.length === 0; document.getElementById('undoBtn2').disabled = undoStack.length === 0; document.getElementById('redoBtn').disabled = redoStack.length === 0; document.getElementById('redoBtn2').disabled = redoStack.length === 0;}
-      document.getElementById('undoBtn').addEventListener('click', undo); document.getElementById('undoBtn2').addEventListener('click', undo);
-      document.getElementById('redoBtn').addEventListener('click', redo); document.getElementById('redoBtn2').addEventListener('click', redo);
-
-      // File open/save
-      const fileInput = document.getElementById('fileInput');
-      document.getElementById('openBtn').addEventListener('click', () => fileInput.click());
-      document.getElementById('openFileBtn').addEventListener('click', () => fileInput.click());
-      fileInput.addEventListener('change', (e) => {const f = e.target.files[0]; if (!f) return; const url = URL.createObjectURL(f); const img = new Image(); img.onload = () => {pushUndo(); ctxMainHi.clearRect(0, 0, canvasMain.width / DPR, canvasMain.height / DPR); const scale = Math.min((canvasMain.width / DPR) / img.width, (canvasMain.height / DPR) / img.height, 1); const w = img.width * scale; const h = img.height * scale; ctxMainHi.drawImage(img, 0, 0, w, h); URL.revokeObjectURL(url); updateStatus('Image opened');}; img.src = url;});
-      function saveAsPNG() {const link = document.createElement('a'); link.download = 'painting.png'; const tmp = document.createElement('canvas'); tmp.width = canvasMain.width / (window.devicePixelRatio || 1); tmp.height = canvasMain.height / (window.devicePixelRatio || 1); const g = tmp.getContext('2d'); g.drawImage(canvasMain, 0, 0, tmp.width, tmp.height); link.href = tmp.toDataURL('image/png'); link.click();}
-      document.getElementById('saveBtn').addEventListener('click', saveAsPNG); document.getElementById('saveFileBtn').addEventListener('click', saveAsPNG);
-
-      // New / Exit / About
-      document.getElementById('newBtn').addEventListener('click', () => {if (confirm('Create new image? Unsaved changes will be lost.')) {pushUndo(); ctxMainHi.fillStyle = '#ffffff'; ctxMainHi.fillRect(0, 0, canvasMain.width / (window.devicePixelRatio || 1), canvasMain.height / (window.devicePixelRatio || 1));} });
-      document.getElementById('exitBtn').addEventListener('click', () => {if (confirm('Close Paint?')) window.close();});
-      document.getElementById('aboutBtn').addEventListener('click', () => {alert('Windows 2000 Paint — recreation (HTML/JS) — extended');});
-
-      // Zoom
-      function setZoom(z) {zoom = Math.max(0.25, Math.min(4, z)); paper.style.transform = `scale(${zoom})`; paper.style.transformOrigin = '0 0'; zoomLabel.textContent = Math.round(zoom * 100) + '%';}
-      document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.25));
-      document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.25));
-      document.getElementById('resetZoom').addEventListener('click', () => setZoom(1));
-
-      // Resize/Flip/Rotate
-      document.getElementById('flipHBtn').addEventListener('click', () => {pushUndo(); const w = canvasMain.width / (window.devicePixelRatio || 1); const h = canvasMain.height / (window.devicePixelRatio || 1); const tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h; const g = tmp.getContext('2d'); g.translate(w, 0); g.scale(-1, 1); g.drawImage(canvasMain, 0, 0, w, h); ctxMainHi.clearRect(0, 0, w, h); ctxMainHi.drawImage(tmp, 0, 0);});
-      document.getElementById('flipVBtn').addEventListener('click', () => {pushUndo(); const w = canvasMain.width / (window.devicePixelRatio || 1); const h = canvasMain.height / (window.devicePixelRatio || 1); const tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h; const g = tmp.getContext('2d'); g.translate(0, h); g.scale(1, -1); g.drawImage(canvasMain, 0, 0, w, h); ctxMainHi.clearRect(0, 0, w, h); ctxMainHi.drawImage(tmp, 0, 0);});
-      document.getElementById('resizeBtn').addEventListener('click', () => {const w = parseInt(prompt('New width (px):', canvasMain.width / (window.devicePixelRatio || 1)), 10); const h = parseInt(prompt('New height (px):', canvasMain.height / (window.devicePixelRatio || 1)), 10); if (!w || !h) return; pushUndo(); const tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h; const g = tmp.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); g.drawImage(canvasMain, 0, 0, w, h); canvasMain.width = w; canvasMain.height = h; canvasTemp.width = w; canvasTemp.height = h; canvasSel.width = w; canvasSel.height = h; setupCanvas(canvasMain); setupCanvas(canvasTemp); setupCanvas(canvasSel); ctxMainHi.drawImage(tmp, 0, 0);});
-
-      // Rotate dialog
-      document.getElementById('rotateBtn').addEventListener('click', () => {
-        const angle = parseFloat(prompt('Rotate (degrees, positive = clockwise):', '90'));
-        if (isNaN(angle)) return; pushUndo(); rotateCanvas(angle);
-      });
-      function rotateCanvas(angle) {
-        const w = canvasMain.width / (window.devicePixelRatio || 1); const h = canvasMain.height / (window.devicePixelRatio || 1);
-        const radians = angle * Math.PI / 180;
-        // compute new bounds
-        const sin = Math.abs(Math.sin(radians)); const cos = Math.abs(Math.cos(radians));
-        const nw = Math.ceil(w * cos + h * sin); const nh = Math.ceil(w * sin + h * cos);
-        const tmp = document.createElement('canvas'); tmp.width = nw; tmp.height = nh; const g = tmp.getContext('2d');
-        g.fillStyle = '#ffffff'; g.fillRect(0, 0, nw, nh);
-        g.translate(nw / 2, nh / 2); g.rotate(radians); g.drawImage(canvasMain, -w / 2, -h / 2);
-        canvasMain.width = nw; canvasMain.height = nh; canvasTemp.width = nw; canvasTemp.height = nh; canvasSel.width = nw; canvasSel.height = nh; setupCanvas(canvasMain); setupCanvas(canvasTemp); setupCanvas(canvasSel);
-        ctxMainHi.drawImage(tmp, 0, 0);
+      function updateSelDrag(pos) {
+        const s = selection, d = selDrag, o = d.startSel;
+        if (d.type === "new") {
+          const x1 = clampX(start.x), y1 = clampY(start.y), x2 = clampX(pos.x), y2 = clampY(pos.y);
+          Object.assign(s, { x: Math.min(x1, x2), y: Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1) });
+        } else if (d.type === "move") {
+          s.x = o.x + pos.x - d.startPos.x; s.y = o.y + pos.y - d.startPos.y;
+        } else if (d.type === "rotate") {
+          const c = selCenter(o);
+          const delta = Math.atan2(pos.y - c.y, pos.x - c.x) - Math.atan2(d.startPos.y - c.y, d.startPos.x - c.x);
+          s.angle = o.angle + delta * 180 / Math.PI;
+        } else { // resize handle, measured in the selection's own frame
+          const a = -o.angle * Math.PI / 180, mx = pos.x - d.startPos.x, my = pos.y - d.startPos.y;
+          const dx = mx * Math.cos(a) - my * Math.sin(a), dy = mx * Math.sin(a) + my * Math.cos(a);
+          const n = d.handle;
+          let { x, y, w, h } = o;
+          if (n.includes("w")) { x += dx; w -= dx; }
+          if (n.includes("e")) w += dx;
+          if (n.includes("n")) { y += dy; h -= dy; }
+          if (n.includes("s")) h += dy;
+          Object.assign(s, { x, y, w: Math.max(1, w), h: Math.max(1, h) });
+        }
+        renderSelection();
+      }
+      function endSelDrag() {
+        if (selDrag.type === "new") {
+          const s = selection;
+          s.x = Math.round(s.x); s.y = Math.round(s.y); s.w = Math.round(s.w); s.h = Math.round(s.h);
+          if (s.w < 1 || s.h < 1) { clearSelection(); return; }
+          s.img = snapshotCanvas(s.x, s.y, s.w, s.h);
+          updateStatus("Selection created");
+        } else updateStatus("Selection transformed");
+        selDrag = null;
+        renderSelection();
       }
 
-      // Drawing helpers
-      function drawLine(g, x1, y1, x2, y2, strokeClr, width) {g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = strokeClr; g.lineWidth = width; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.restore();}
-      function drawBrushStroke(g, fromX, fromY, toX, toY, color, w) {drawLine(g, fromX, fromY, toX, toY, color, w);}
-
-      // Flood fill (iterative)
-      function floodFill(x, y, fillColor) {const w = canvasMain.width; const h = canvasMain.height; const img = ctxMainHi.getImageData(0, 0, w, h); const data = img.data; const px = Math.floor(x * DPR); const py = Math.floor(y * DPR); const idx = (py * w + px) * 4; const target = [data[idx], data[idx + 1], data[idx + 2], data[idx + 3]]; const fill = hexToRgba(fillColor); if (target[0] === fill[0] && target[1] === fill[1] && target[2] === fill[2] && target[3] === fill[3]) return; const stack = [[px, py]]; while (stack.length) {const [cx, cy] = stack.pop(); let nx = cx; while (nx >= 0) {const k = (cy * w + nx) * 4; if (k < 0 || k >= data.length) break; if (data[k] === target[0] && data[k + 1] === target[1] && data[k + 2] === target[2] && data[k + 3] === target[3]) nx--; else break;} nx++; let spanUp = false, spanDown = false; for (let tx = nx; tx < w; tx++) {const k = (cy * w + tx) * 4; if (!(data[k] === target[0] && data[k + 1] === target[1] && data[k + 2] === target[2] && data[k + 3] === target[3])) break; data[k] = fill[0]; data[k + 1] = fill[1]; data[k + 2] = fill[2]; data[k + 3] = fill[3]; if (cy > 0) {const ku = ((cy - 1) * w + tx) * 4; if (data[ku] === target[0] && data[ku + 1] === target[1] && data[ku + 2] === target[2] && data[ku + 3] === target[3]) {if (!spanUp) {stack.push([tx, cy - 1]); spanUp = true;} } else spanUp = false;} if (cy < h - 1) {const kd = ((cy + 1) * w + tx) * 4; if (data[kd] === target[0] && data[kd + 1] === target[1] && data[kd + 2] === target[2] && data[kd + 3] === target[3]) {if (!spanDown) {stack.push([tx, cy + 1]); spanDown = true;} } else spanDown = false;} } } ctxMainHi.putImageData(img, 0, 0);}
-      function hexToRgba(hex) {const c = hex.replace('#', ''); const bigint = parseInt(c, 16); if (c.length === 6) {return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255, 255];} if (c.length === 3) {const r = parseInt(c[0] + c[0], 16); const g = parseInt(c[1] + c[1], 16); const b = parseInt(c[2] + c[2], 16); return [r, g, b, 255];} return [0, 0, 0, 255];}
-
-      // Eyedropper
-      function pickColor(x, y, which) {const w = canvasMain.width / DPR; const h = canvasMain.height / DPR; if (x < 0 || y < 0 || x >= w || y >= h) return; const data = ctxMainHi.getImageData(Math.floor(x * DPR), Math.floor(y * DPR), 1, 1).data; const hex = '#' + [data[0], data[1], data[2]].map(v => v.toString(16).padStart(2, '0')).join(''); if (which === 'primary') setPrimary(hex); else setSecondary(hex);}
-
-      // Selection drawing (with transform handles and rotation)
-      function drawSelectionVisual(sel) {
-        ctxSelHi.clearRect(0, 0, canvasSel.width / (window.devicePixelRatio || 1), canvasSel.height / (window.devicePixelRatio || 1)); if (!sel) return; ctxSelHi.save(); ctxSelHi.setLineDash([4, 3]); ctxSelHi.strokeStyle = '#000'; ctxSelHi.strokeRect(sel.x + 0.5, sel.y + 0.5, sel.w, sel.h); // handles
-        const handles = getHandles(sel);
-        handles.forEach(h => {ctxSelHi.fillStyle = '#fff'; ctxSelHi.strokeStyle = '#000'; ctxSelHi.fillRect(h.x - 4, h.y - 4, 8, 8); ctxSelHi.strokeRect(h.x - 4, h.y - 4, 8, 8);}); ctxSelHi.restore();
-      }
-      function getHandles(sel) {
-        const cx = sel.x + sel.w / 2; const cy = sel.y + sel.h / 2; return [ // corners
-          {x: sel.x, y: sel.y, name: 'nw'}, {x: sel.x + sel.w, y: sel.y, name: 'ne'}, {x: sel.x, y: sel.y + sel.h, name: 'sw'}, {x: sel.x + sel.w, y: sel.y + sel.h, name: 'se'}, // edges
-          {x: cx, y: sel.y, name: 'n'}, {x: cx, y: sel.y + sel.h, name: 's'}, {x: sel.x, y: cy, name: 'w'}, {x: sel.x + sel.w, y: cy, name: 'e'}, // rotate handle above
-          {x: cx, y: sel.y - 20, name: 'rotate'}];
-      }
-
-      // Selection copy/cut/paste
-      function copySelection() {if (!selection) return; copied = selection.imageData; updateStatus('Copied selection');}
-      function cutSelection() {if (!selection) return; pushUndo(); copied = selection.imageData; ctxMainHi.clearRect(selection.x, selection.y, selection.w, selection.h); selection = null; drawSelectionVisual(null); updateStatus('Cut selection');}
-      function pasteSelection(x = 10, y = 10) {if (!copied) return; pushUndo(); ctxMainHi.putImageData(copied, x * DPR, y * DPR); updateStatus('Pasted');}
-      document.getElementById('copyBtn').addEventListener('click', copySelection); document.getElementById('cutBtn').addEventListener('click', cutSelection); document.getElementById('pasteBtn').addEventListener('click', () => pasteSelection(10, 10));
-
-      // Keyboard
-      window.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {e.preventDefault(); undo();}
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {e.preventDefault(); redo();}
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {e.preventDefault(); fileInput.click();}
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {e.preventDefault(); saveAsPNG();}
-        if (!e.ctrlKey && !e.metaKey) {const k = e.key.toLowerCase(); const mapping = {'p': 'pencil', 'b': 'brush', 'e': 'eraser', 'f': 'fill', 'i': 'eyedrop', 't': 'text', 'l': 'line', 'r': 'rect', 'o': 'ellipse', 's': 'select', 'c': 'curve', 'y': 'polygon'}; if (mapping[k]) {const el = document.querySelector(`.tool[data-tool='${mapping[k]}']`); if (el) el.click();} }
-      });
-
-      // Mouse events
-      let selDrag = null; // {type:'move'|'handle'|'rotate', handleName, startMouse, startSel}
-      canvasMain.addEventListener('mousedown', (e) => {
-        const pos = getPos(e); const btn = e.button; const color = btn === 2 ? secondary : primary; drawing = true; start = {...pos}; last = {...pos};
-        if (['pencil', 'brush', 'eraser', 'line', 'rect', 'ellipse', 'fill', 'text', 'curve', 'polygon'].includes(tool)) pushUndo();
-
-        if (tool === 'pencil') {drawBrushStroke(ctxMainHi, start.x, start.y, start.x + 0.01, start.y + 0.01, color, size);}
-        else if (tool === 'brush') {drawBrushStroke(ctxMainHi, start.x, start.y, start.x + 0.01, start.y + 0.01, color, size * 2);}
-        else if (tool === 'eraser') {drawBrushStroke(ctxMainHi, start.x, start.y, start.x + 0.01, start.y + 0.01, '#ffffff', size * 2);}
-        else if (tool === 'fill') {floodFill(start.x, start.y, color); drawing = false;}
-        else if (tool === 'eyedrop') {pickColor(start.x, start.y, btn === 2 ? 'secondary' : 'primary'); drawing = false;}
-        else if (tool === 'select') {
-          // check if clicked inside selection handles
-          if (selection) {
-            const h = hitTestHandles(selection, pos); if (h) { // start transform
-              selDrag = {type: h === 'rotate' ? 'rotate' : 'handle', handleName: h, startMouse: pos, startSel: {...selection}}; drawing = false; return;
-            }
-            // click inside selection to move
-            if (pointInSel(selection, pos)) {selDrag = {type: 'move', startMouse: pos, startSel: {...selection}}; drawing = false; return;}
-          }
-          // otherwise begin new selection
-          selection = {x: start.x, y: start.y, w: 0, h: 0, imageData: null, angle: 0}; drawSelectionVisual(selection);
-        }
-        else if (tool === 'text') {createTextEditor(start.x, start.y, color); drawing = false;}
-        else if (tool === 'line' || tool === 'rect' || tool === 'ellipse' || tool === 'curve' || tool === 'polygon') {
-          // start drawing, preview on temp
-          if (tool === 'polygon') {
-            // add point, double-click to finish
-            polygonPoints.push([start.x, start.y]); drawPolygonPreview(); drawing = false; // polygon uses clicks not drags
-          } else if (tool === 'curve') {
-            // curve drawing collects points by clicks; for simplicity use mouse move to draw cubic via points
-            curvePoints.push([start.x, start.y]); drawing = false; // clicks
-          }
-        }
-        e.preventDefault();
-      });
-
-      canvasMain.addEventListener('mousemove', (e) => {
-        const pos = getPos(e); statusRight.textContent = Math.round(pos.x) + ',' + Math.round(pos.y);
-        if (selDrag) { // handle selection transform
-          if (selDrag.type === 'move') {const dx = pos.x - selDrag.startMouse.x; const dy = pos.y - selDrag.startMouse.y; selection.x = selDrag.startSel.x + dx; selection.y = selDrag.startSel.y + dy; drawSelectionVisual(selection); drawSelectionPreview();}
-          else if (selDrag.type === 'handle') { // resize
-            const name = selDrag.handleName; const s = selDrag.startSel; const dx = pos.x - selDrag.startMouse.x; const dy = pos.y - selDrag.startMouse.y; // basic handles (no rotation)
-            if (name === 'nw') {selection.x = s.x + dx; selection.y = s.y + dy; selection.w = s.w - dx; selection.h = s.h - dy;}
-            else if (name === 'ne') {selection.y = s.y + dy; selection.w = s.w + dx; selection.h = s.h - dy;}
-            else if (name === 'sw') {selection.x = s.x + dx; selection.w = s.w - dx; selection.h = s.h + dy;}
-            else if (name === 'se') {selection.w = s.w + dx; selection.h = s.h + dy;}
-            else if (name === 'n') {selection.y = s.y + dy; selection.h = s.h - dy;}
-            else if (name === 's') {selection.h = s.h + dy;}
-            else if (name === 'w') {selection.x = s.x + dx; selection.w = s.w - dx;}
-            else if (name === 'e') {selection.w = s.w + dx;}
-            // clamp
-            if (selection.w < 1) selection.w = 1; if (selection.h < 1) selection.h = 1;
-            drawSelectionVisual(selection);
-            drawSelectionPreview();
-          }
-          else if (selDrag.type === 'rotate') {const cx = selDrag.startSel.x + selDrag.startSel.w / 2; const cy = selDrag.startSel.y + selDrag.startSel.h / 2; const a1 = Math.atan2(selDrag.startMouse.y - cy, selDrag.startMouse.x - cx); const a2 = Math.atan2(pos.y - cy, pos.x - cx); const delta = (a2 - a1) * 180 / Math.PI; selection.angle = (selDrag.startSel.angle || 0) + delta; drawSelectionVisual(selection); drawSelectionPreview();}
-          return;
-        }
-
-        if (!drawing) return;
-        if (tool === 'pencil') {drawBrushStroke(ctxMainHi, last.x, last.y, pos.x, pos.y, primary, size); last = {...pos};}
-        else if (tool === 'brush') {drawBrushStroke(ctxMainHi, last.x, last.y, pos.x, pos.y, primary, size * 2); last = {...pos};}
-        else if (tool === 'eraser') {drawBrushStroke(ctxMainHi, last.x, last.y, pos.x, pos.y, '#ffffff', size * 2); last = {...pos};}
-        else if (tool === 'select') {
-          // Update selection dimensions while dragging
-          const x = Math.min(start.x, pos.x);
-          const y = Math.min(start.y, pos.y);
-          const w = Math.abs(pos.x - start.x);
-          const h = Math.abs(pos.y - start.y);
-          selection.x = x;
-          selection.y = y;
-          selection.w = w;
-          selection.h = h;
-          drawSelectionVisual(selection);
-        }
-        else if (['line', 'rect', 'ellipse'].includes(tool)) {
-          ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); ctxTempHi.save(); ctxTempHi.lineWidth = size; ctxTempHi.lineCap = 'round'; ctxTempHi.strokeStyle = primary; ctxTempHi.fillStyle = primary;
-          if (tool === 'line') {ctxTempHi.beginPath(); ctxTempHi.moveTo(start.x, start.y); ctxTempHi.lineTo(pos.x, pos.y); ctxTempHi.stroke();}
-          else if (tool === 'rect') {const x = Math.min(start.x, pos.x); const y = Math.min(start.y, pos.y); const w = Math.abs(pos.x - start.x); const h = Math.abs(pos.y - start.y); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxTempHi.fillRect(x, y, w, h); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxTempHi.strokeRect(x + 0.5, y + 0.5, w, h);}
-          else if (tool === 'ellipse') {const x = (start.x + pos.x) / 2, y = (start.y + pos.y) / 2, rx = Math.abs(pos.x - start.x) / 2, ry = Math.abs(pos.y - start.y) / 2; ctxTempHi.beginPath(); ctxTempHi.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxTempHi.fill(); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxTempHi.stroke();}
-          ctxTempHi.restore();
-        }
-      });
-
-      canvasMain.addEventListener('mouseup', (e) => {
-        const pos = getPos(e); drawing = false; if (selDrag) { // commit transform
-          applySelectionTransform();
-          ctxTempHi.clearRect(0, 0, canvasTemp.width / DPR, canvasTemp.height / DPR);
-          selDrag = null;
-          return;
-        }
-        if (tool === 'line') {ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); drawLine(ctxMainHi, start.x, start.y, pos.x, pos.y, primary, size);}
-        else if (tool === 'rect') {ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); const x = Math.min(start.x, pos.x); const y = Math.min(start.y, pos.y); const w = Math.abs(pos.x - start.x); const h = Math.abs(pos.y - start.y); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxMainHi.fillStyle = primary, ctxMainHi.fillRect(x, y, w, h); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxMainHi.strokeStyle = primary, ctxMainHi.lineWidth = size, ctxMainHi.strokeRect(x + 0.5, y + 0.5, w, h);}
-        else if (tool === 'ellipse') {ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); const x = (start.x + pos.x) / 2, y = (start.y + pos.y) / 2, rx = Math.abs(pos.x - start.x) / 2, ry = Math.abs(pos.y - start.y) / 2; ctxMainHi.beginPath(); ctxMainHi.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxMainHi.fillStyle = primary, ctxMainHi.fill(); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxMainHi.strokeStyle = primary, ctxMainHi.lineWidth = size, ctxMainHi.stroke();}
-        else if (tool === 'select') {if (selection && selection.w > 0 && selection.h > 0) {selection.imageData = ctxMainHi.getImageData(selection.x * DPR, selection.y * DPR, selection.w * DPR, selection.h * DPR); selection.angle = selection.angle || 0; updateStatus('Selection created'); drawSelectionVisual(selection);} else {selection = null; drawSelectionVisual(null);} }
-        else if (tool === 'polygon') { // polygonPoints handled by clicks; finish if near start
-          if (polygonPoints.length > 1) {
-            const first = polygonPoints[0]; const lastP = polygonPoints[polygonPoints.length - 1]; const dx = pos.x - first[0], dy = pos.y - first[1]; if (Math.hypot(dx, dy) < 8) { // finish
-              // draw polygon
-              pushUndo(); ctxMainHi.beginPath(); ctxMainHi.moveTo(polygonPoints[0][0], polygonPoints[0][1]); for (let i = 1; i < polygonPoints.length; i++) ctxMainHi.lineTo(polygonPoints[i][0], polygonPoints[i][1]); ctxMainHi.closePath(); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxMainHi.fillStyle = primary, ctxMainHi.fill(); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxMainHi.strokeStyle = primary, ctxMainHi.lineWidth = size, ctxMainHi.stroke(); polygonPoints = []; ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); updateStatus('Polygon created');
-            }
-          }
-        }
-      });
-
-      // Helpers for polygon preview
-      function drawPolygonPreview() {ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); if (polygonPoints.length === 0) return; ctxTempHi.save(); ctxTempHi.beginPath(); ctxTempHi.moveTo(polygonPoints[0][0], polygonPoints[0][1]); polygonPoints.slice(1).forEach(p => ctxTempHi.lineTo(p[0], p[1])); ctxTempHi.strokeStyle = primary; ctxTempHi.lineWidth = 1; ctxTempHi.stroke(); ctxTempHi.restore();}
-
-      // Curve tool: click to add control points, double-click to finish with a smooth cubic bezier through points
-      function finishCurve() {
-        if (curvePoints.length < 2) {curvePoints = []; return;} pushUndo(); ctxMainHi.save(); ctxMainHi.beginPath(); ctxMainHi.moveTo(curvePoints[0][0], curvePoints[0][1]); if (curvePoints.length === 2) {ctxMainHi.lineTo(curvePoints[1][0], curvePoints[1][1]);} else {
-          // draw Catmull-Rom to Bezier approximation
-          for (let i = 0; i < curvePoints.length - 1; i++) {
-            const p0 = i > 0 ? curvePoints[i - 1] : curvePoints[i];
-            const p1 = curvePoints[i];
-            const p2 = curvePoints[i + 1];
-            const p3 = i + 2 < curvePoints.length ? curvePoints[i + 2] : p2;
-            const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
-            const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
-            const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
-            const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
-            ctxMainHi.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2[0], p2[1]);
-          }
-        }
-        ctxMainHi.strokeStyle = primary; ctxMainHi.lineWidth = size; ctxMainHi.stroke(); ctxMainHi.restore(); curvePoints = []; ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); updateStatus('Curve drawn');
-      }
-
-      // Hit test handles
-      function hitTestHandles(sel, pt) {if (!sel) return null; const hs = getHandles(sel); for (const h of hs) {if (Math.abs(pt.x - h.x) <= 6 && Math.abs(pt.y - h.y) <= 6) return h.name;} return null;}
-      function pointInSel(sel, pt) {return sel && pt.x >= sel.x && pt.y >= sel.y && pt.x <= sel.x + sel.w && pt.y <= sel.y + sel.h;}
-      
-      // Draw selection preview on temp canvas during transform
-      function drawSelectionPreview() {
-        if (!selection || !selection.imageData) return;
-        ctxTempHi.clearRect(0, 0, canvasTemp.width / DPR, canvasTemp.height / DPR);
-        const offscreen = document.createElement('canvas');
-        offscreen.width = selection.imageData.width;
-        offscreen.height = selection.imageData.height;
-        const g = offscreen.getContext('2d');
-        g.putImageData(selection.imageData, 0, 0);
-        
-        ctxTempHi.save();
-        ctxTempHi.globalAlpha = 0.7;
-        ctxTempHi.imageSmoothingEnabled = false;
-        const angle = selection.angle || 0;
-        const cx = selection.x + selection.w / 2;
-        const cy = selection.y + selection.h / 2;
-        ctxTempHi.translate(cx, cy);
-        ctxTempHi.rotate(angle * Math.PI / 180);
-        ctxTempHi.drawImage(offscreen, -selection.w / 2, -selection.h / 2, selection.w, selection.h);
-        ctxTempHi.restore();
-      }
-
-      // Apply selection transform (resize/rotate/move) by drawing selection image data onto a tmp canvas and then compositing
-      function applySelectionTransform() {
-        if (!selection) return; pushUndo(); const img = selection.imageData; if (!img) return;
-        // Create offscreen canvas with original imageData size
-        const offscreen = document.createElement('canvas');
-        offscreen.width = img.width;
-        offscreen.height = img.height;
-        const g = offscreen.getContext('2d');
-        g.putImageData(img, 0, 0);
-        
-        // Disable image smoothing for crisp pixel art
-        ctxMainHi.imageSmoothingEnabled = false;
-        
-        // Clear original area
-        ctxMainHi.clearRect(selection.x, selection.y, selection.w, selection.h);
-        
-        // Apply rotation and scaling
-        const angle = selection.angle || 0;
-        ctxMainHi.save();
-        const cx = selection.x + selection.w / 2;
-        const cy = selection.y + selection.h / 2;
-        ctxMainHi.translate(cx, cy);
-        ctxMainHi.rotate(angle * Math.PI / 180);
-        
-        // Draw offscreen canvas scaled to new selection size
-        ctxMainHi.drawImage(offscreen, -selection.w / 2, -selection.h / 2, selection.w, selection.h);
-        ctxMainHi.restore();
-        
-        // Update selection imageData with DPR correction
-        selection.imageData = ctxMainHi.getImageData(selection.x * DPR, selection.y * DPR, selection.w * DPR, selection.h * DPR);
-        drawSelectionVisual(selection);
-        updateStatus('Selection transformed');
-      }
-
-      // Text editor overlay
+      // ---------- text ----------
       function createTextEditor(x, y, color) {
-        const editor = document.createElement('div');
-        editor.contentEditable = 'true';
-        editor.className = 'text-editor';
-        editor.style.position = 'absolute';
-        editor.style.left = (x * zoom) + 'px';
-        editor.style.top = (y * zoom) + 'px';
-        editor.style.color = color;
-        editor.style.font = '16px Tahoma';
-        editor.style.minWidth = '40px';
-        editor.style.minHeight = '20px';
-        editor.style.zIndex = 1000;
-        editor.style.background = 'rgba(255,255,255,0.9)';
-        editor.style.border = '1px dashed #000';
-        editor.style.padding = '2px';
-        editor.style.outline = 'none';
-        paper.appendChild(editor);
-        editor.focus();
-        
-        function finalize() {
-          const text = editor.innerText;
-          if (text.trim().length) {
+        const ed = document.createElement("div");
+        ed.contentEditable = "true";
+        ed.className = "text-editor";
+        // position so the editor's text starts exactly at (x, y): 2px padding + 1px border
+        ed.style.left = x * zoom - 3 + "px";
+        ed.style.top = y * zoom - 3 + "px";
+        ed.style.color = color;
+        ed.style.fontSize = 16 * zoom + "px";
+        ed.style.lineHeight = 20 * zoom + "px";
+        ed.style.minHeight = 20 * zoom + "px";
+        paper.appendChild(ed);
+        textEditor = ed;
+        let done = false;
+        function finish(keep) {
+          if (done) return;
+          done = true;
+          const lines = ed.innerText.replace(/\n$/, "").split("\n");
+          if (keep && lines.join("").trim()) {
             pushUndo();
-            ctxMainHi.fillStyle = color;
-            ctxMainHi.font = '16px Tahoma';
-            ctxMainHi.fillText(text, x, y + 12);
+            ctx.save();
+            ctx.fillStyle = color; ctx.font = "16px Tahoma, Geneva, Verdana, sans-serif"; ctx.textBaseline = "middle";
+            lines.forEach((line, i) => ctx.fillText(line, x, y + 10 + i * 20));
+            ctx.restore();
+            updateStatus("Text added");
           }
-          editor.remove();
+          ed.remove();
+          if (textEditor === ed) textEditor = null;
         }
-        
-        editor.addEventListener('blur', finalize);
-        editor.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            editor.blur();
-          }
+        ed.finish = finish;
+        ed.addEventListener("blur", () => finish(true));
+        ed.addEventListener("keydown", e => {
+          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); finish(true); }
+          else if (e.key === "Escape") finish(false);
         });
+        ed.focus();
       }
 
-      // Color modal wiring
-      document.getElementById('editColorsBtn').addEventListener('click', () => showColorModal()); document.getElementById('editColors').addEventListener('click', () => showColorModal());
-      function showColorModal() {colorModal.style.display = 'block'; colorInput.value = primary; hexInput.value = primary; const rgb = hexToRgba(primary); rRange.value = rgb[0]; gRange.value = rgb[1]; bRange.value = rgb[2];}
-      function hideColorModal() {colorModal.style.display = 'none';}
-      colorInput.addEventListener('input', () => {hexInput.value = colorInput.value; const c = hexToRgba(hexInput.value); rRange.value = c[0]; gRange.value = c[1]; bRange.value = c[2];});
-      hexInput.addEventListener('input', () => {try {const v = hexInput.value; if (/^#?[0-9a-fA-F]{6}$/.test(v)) {const hex = v.startsWith('#') ? v : '#' + v; colorInput.value = hex; const c = hexToRgba(hex); rRange.value = c[0]; gRange.value = c[1]; bRange.value = c[2];} } catch (e) { } });
-      function updateFromRGB() {const hex = '#' + [parseInt(rRange.value, 10), parseInt(gRange.value, 10), parseInt(bRange.value, 10)].map(n => n.toString(16).padStart(2, '0')).join(''); colorInput.value = hex; hexInput.value = hex;}
-      [rRange, gRange, bRange].forEach(i => i.addEventListener('input', () => updateFromRGB()));
-      colorOk.addEventListener('click', () => {setPrimary(colorInput.value); hideColorModal();}); colorCancel.addEventListener('click', hideColorModal);
+      // ---------- pointer input ----------
+      canvasMain.addEventListener("contextmenu", e => e.preventDefault());
+      canvasMain.addEventListener("mousedown", e => e.preventDefault()); // no text selection / focus stealing
+      canvasMain.addEventListener("pointerdown", e => {
+        if (activePointer !== null || (e.button !== 0 && e.button !== 2)) return;
+        const pos = getPos(e);
+        const right = e.button === 2;
+        const color = right ? secondary : primary;
+        start = { ...pos }; last = { ...pos };
+        if (textEditor) { textEditor.finish(true); return; } // first click outside the text box just commits it
 
-      // Primary/secondary swap
-      primaryBox.addEventListener('click', () => {const tmp = primary; setPrimary(secondary); setSecondary(tmp);}); secondaryBox.addEventListener('click', () => {const tmp = primary; setPrimary(secondary); setSecondary(tmp);});
+        if (tool === "fill") { floodFill(pos.x, pos.y, color); return; }
+        if (tool === "eyedrop") { pickColor(pos.x, pos.y, right ? "secondary" : "primary"); return; }
+        if (tool === "text") { createTextEditor(pos.x, pos.y, color); return; }
+        if (tool === "polygon" || tool === "curve") { addPolyPoint(pos, color); return; }
 
-      // Simple clipboard support (internal)
-      document.addEventListener('copy', (e) => {if (selection && selection.imageData) {copied = selection.imageData; updateStatus('Copied to internal clipboard'); e.preventDefault();} });
-
-      // Curve/polygon mouse clicks handling for adding points and finishing
-      canvasMain.addEventListener('dblclick', (e) => {
-        const pos = getPos(e); if (tool === 'curve') {curvePoints.push([pos.x, pos.y]); finishCurve();} else if (tool === 'polygon') { // finish polygon
-          if (polygonPoints.length > 2) {pushUndo(); ctxMainHi.beginPath(); ctxMainHi.moveTo(polygonPoints[0][0], polygonPoints[0][1]); for (let i = 1; i < polygonPoints.length; i++) ctxMainHi.lineTo(polygonPoints[i][0], polygonPoints[i][1]); ctxMainHi.closePath(); if (drawMode === 'fill' || drawMode === 'stroke-fill') ctxMainHi.fillStyle = primary, ctxMainHi.fill(); if (drawMode === 'stroke' || drawMode === 'stroke-fill') ctxMainHi.strokeStyle = primary, ctxMainHi.lineWidth = size, ctxMainHi.stroke(); polygonPoints = []; ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); updateStatus('Polygon finished');}
+        activePointer = e.pointerId;
+        canvasMain.setPointerCapture(e.pointerId);
+        strokeColor = color;
+        if (tool === "pencil" || tool === "brush" || tool === "eraser") {
+          pushUndo();
+          stroke(pos);
+        } else if (tool === "select") {
+          const hit = selection && hitTest(selection, pos);
+          if (hit) {
+            liftSelection();
+            selDrag = { type: hit === "move" || hit === "rotate" ? hit : "handle", handle: hit, startPos: pos, startSel: { ...selection } };
+          } else {
+            commitSelection();
+            selection = { x: pos.x, y: pos.y, w: 0, h: 0, angle: 0, img: null, floating: false };
+            selDrag = { type: "new" };
+          }
         }
       });
-      canvasMain.addEventListener('click', (e) => {
-        const pos = getPos(e); if (tool === 'polygon') {polygonPoints.push([pos.x, pos.y]); drawPolygonPreview();} else if (tool === 'curve') {
-          curvePoints.push([pos.x, pos.y]); // preview polyline
-          ctxTempHi.clearRect(0, 0, canvasTemp.width / (window.devicePixelRatio || 1), canvasTemp.height / (window.devicePixelRatio || 1)); if (curvePoints.length > 0) {ctxTempHi.beginPath(); ctxTempHi.moveTo(curvePoints[0][0], curvePoints[0][1]); for (let i = 1; i < curvePoints.length; i++) ctxTempHi.lineTo(curvePoints[i][0], curvePoints[i][1]); ctxTempHi.strokeStyle = primary; ctxTempHi.stroke();}
+      function stroke(pos) {
+        const color = tool === "eraser" ? "#ffffff" : strokeColor;
+        const width = tool === "pencil" ? size : size * 2;
+        // a zero-length segment would draw nothing, so nudge the very first dab
+        drawLine(ctx, last.x, last.y, pos.x === last.x && pos.y === last.y ? pos.x + 0.01 : pos.x, pos.y, color, width);
+        last = { ...pos };
+      }
+      canvasMain.addEventListener("pointermove", e => {
+        const pos = getPos(e);
+        statusRight.textContent = Math.floor(clampX(pos.x)) + "," + Math.floor(clampY(pos.y));
+        if (activePointer === null) {
+          if ((tool === "polygon" || tool === "curve") && polyPoints.length) previewPoly(pos);
+          return;
+        }
+        if (e.pointerId !== activePointer) return;
+        if (tool === "pencil" || tool === "brush" || tool === "eraser") stroke(pos);
+        else if (tool === "select" && selDrag) updateSelDrag(pos);
+        else if (tool === "line" || tool === "rect" || tool === "ellipse") {
+          clearCanvas(tctx);
+          drawShape(tctx, tool, start, pos, strokeColor);
         }
       });
+      function endPointer(e) {
+        if (e.pointerId !== activePointer) return;
+        activePointer = null;
+        const pos = getPos(e);
+        if (tool === "select" && selDrag) endSelDrag();
+        else if (tool === "line" || tool === "rect" || tool === "ellipse") {
+          clearCanvas(tctx);
+          pushUndo();
+          drawShape(ctx, tool, start, pos, strokeColor);
+        }
+      }
+      canvasMain.addEventListener("pointerup", endPointer);
+      canvasMain.addEventListener("pointercancel", endPointer);
 
-      window.addEventListener('mouseup', () => {if (selDrag) {applySelectionTransform(); ctxTempHi.clearRect(0, 0, canvasTemp.width / DPR, canvasTemp.height / DPR); selDrag = null;} });
+      // ---------- keyboard ----------
+      window.addEventListener("keydown", e => {
+        const t = e.target;
+        if (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return; // typing, not a shortcut
+        const k = e.key.toLowerCase();
+        if (e.ctrlKey || e.metaKey) {
+          const actions = { z: undo, y: redo, o: openFile, s: saveAsPNG, c: copySelection, x: cutSelection, v: pasteSelection };
+          if (actions[k]) { e.preventDefault(); actions[k](); }
+          return;
+        }
+        if (e.altKey) return;
+        const mapping = { p: "pencil", b: "brush", e: "eraser", f: "fill", i: "eyedrop", t: "text", l: "line", r: "rect", o: "ellipse", s: "select", c: "curve", y: "polygon" };
+        if (mapping[k]) setTool(mapping[k]);
+      });
 
-      // Update status
-      updateStatus('Ready'); updateUndoButtons();
+      // ---------- colour dialog ----------
+      function showColorModal() {
+        colorModal.style.display = "block";
+        colorInput.value = primary; hexInput.value = primary;
+        const rgb = hexToRgba(primary);
+        rRange.value = rgb[0]; gRange.value = rgb[1]; bRange.value = rgb[2];
+      }
+      function hideColorModal() { colorModal.style.display = "none"; }
+      $("editColorsBtn").addEventListener("click", showColorModal);
+      $("editColors").addEventListener("click", showColorModal);
+      colorInput.addEventListener("input", () => {
+        hexInput.value = colorInput.value;
+        const c = hexToRgba(colorInput.value);
+        rRange.value = c[0]; gRange.value = c[1]; bRange.value = c[2];
+      });
+      hexInput.addEventListener("input", () => {
+        const v = hexInput.value.trim();
+        if (!/^#?[0-9a-fA-F]{6}$/.test(v)) return;
+        const hex = (v.startsWith("#") ? v : "#" + v).toLowerCase();
+        colorInput.value = hex;
+        const c = hexToRgba(hex);
+        rRange.value = c[0]; gRange.value = c[1]; bRange.value = c[2];
+      });
+      [rRange, gRange, bRange].forEach(i => i.addEventListener("input", () => {
+        const hex = "#" + [rRange, gRange, bRange].map(r => parseInt(r.value, 10).toString(16).padStart(2, "0")).join("");
+        colorInput.value = hex; hexInput.value = hex;
+      }));
+      $("colorOk").addEventListener("click", () => { setPrimary(colorInput.value); hideColorModal(); });
+      $("colorCancel").addEventListener("click", hideColorModal);
 
-      window.paintApp = {canvasMain, ctxMainHi, pushUndo};
-
+      updateStatus("Ready");
+      updateUndoButtons();
+      window.paintApp = { canvasMain, ctxMainHi: ctx, pushUndo };
     })();
   </script>
 </body>
