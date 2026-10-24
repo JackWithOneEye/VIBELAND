@@ -57,6 +57,8 @@ warm_admin() {
 
 step "Bun" install_bun
 step "Bun dependencies" bun install --frozen-lockfile
+# The server does not migrate on start; this creates vibeland.db and applies pending migrations.
+step "Database migrations" bun migration/migrate.js
 step "C toolchain" install_c_toolchain
 step "Go $GO_VERSION" install_go
 step "Admin Go modules and build cache" warm_admin
