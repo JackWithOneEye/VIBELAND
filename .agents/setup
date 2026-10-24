@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Prepares a fresh Amp orb: Bun for the web server, Go (with cgo) for the admin TUI.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+GO_VERSION="1.27.3"
+
+step() {
+  local label="$1"
+  shift
+  local start=$SECONDS
+  echo "==> $label"
+  "$@"
+  echo "    done in $((SECONDS - start))s"
+}
+
+install_bun() {
+  if command -v bun >/dev/null 2>&1; then
+    echo "    bun $(bun --version) already installed"
+    return
+  fi
+  curl -fsSL https://bun.sh/install | bash
+  sudo ln -sf "$HOME/.bun/bin/bun" /usr/local/bin/bun
+}
+
+install_go() {
+  if [ "$(/usr/local/go/bin/go env GOVERSION 2>/dev/null || true)" = "go$GO_VERSION" ]; then
+    echo "    go $GO_VERSION already installed"
+  else
+    local arch
+    arch="$(dpkg --print-architecture)"
+    curl -fsSL "https://go.dev/dl/go$GO_VERSION.linux-$arch.tar.gz" -o /tmp/go.tar.gz
+    sudo rm -rf /usr/local/go
+    sudo tar -C /usr/local -xzf /tmp/go.tar.gz
+    rm -f /tmp/go.tar.gz
+  fi
+  # Symlinks make go available to every shell, including non-login service shells.
+  sudo ln -sf /usr/local/go/bin/go /usr/local/bin/go
+  sudo ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
+}
+
+install_c_toolchain() {
+  # mattn/go-sqlite3 needs cgo.
+  if command -v gcc >/dev/null 2>&1; then
+    echo "    gcc already installed"
+    return
+  fi
+  sudo apt-get update
+  sudo apt-get install -y build-essential
+}
+
+warm_admin() {
+  # Downloads modules and compiles go-sqlite3 once so later builds hit the cache.
+  (cd admin && go mod download && go build -o /dev/null .)
+}
+
+step "Bun" install_bun
+step "Bun dependencies" bun install --frozen-lockfile
+step "C toolchain" install_c_toolchain
+step "Go $GO_VERSION" install_go
+step "Admin Go modules and build cache" warm_admin

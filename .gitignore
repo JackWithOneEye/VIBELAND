@@ -18,3 +18,6 @@ yarn-error.log*
 
 # Bun
 bun.lockb
+
+# Amp orb generated portal state
+.amp/portals/

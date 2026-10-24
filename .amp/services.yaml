@@ -1,0 +1,6 @@
+services:
+  web:
+    command: bun server.js
+    port: 3000
+    portal:
+      title: VIBELAND
