@@ -11,6 +11,7 @@ Bun.serve({
     "/battleship": Bun.file("./pages/battleship.html"),
     "/calculator": Bun.file("./pages/calculator.html"),
     "/freecell": Bun.file("./pages/freecell.html"),
+    "/graph-calculator": Bun.file("./pages/graph-calculator.html"),
     "/mahjong": Bun.file("./pages/mahjong.html"),
     "/minesweeper": Bun.file("./pages/minesweeper.html"),
     "/paint": Bun.file("./pages/paint.html"),
