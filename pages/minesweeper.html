@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minesweeper - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style>
+    .ms-stage {
+      display: flex;
+      justify-content: center;
+      padding: 16px 0;
+    }
+
+    .ms-window {
+      background: #c0c0c0;
+      border: 2px solid;
+      border-color: #dfdfdf #000000 #000000 #dfdfdf;
+      box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #808080;
+      padding: 3px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .ms-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 28px;
+      background: #ffffff;
+      border: 2px inset #c0c0c0;
+      padding: 10px 15px;
+      margin: 10px 0 0 0;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .ms-controls select {
+      font-size: 14px;
+      padding: 2px 6px;
+      margin-left: 6px;
+      background-color: #ffffff;
+      border: 2px inset #c0c0c0;
+      font-family: "Times New Roman", serif;
+      cursor: pointer;
+    }
+
+    .ms-controls input {
+      margin: 0 6px 0 0;
+      vertical-align: middle;
+    }
+
+    .ms-body {
+      padding: 6px;
+      border: 3px solid;
+      border-color: #ffffff #808080 #808080 #ffffff;
+    }
+
+    .ms-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 5px;
+      margin-bottom: 6px;
+      border: 2px solid;
+      border-color: #808080 #ffffff #ffffff #808080;
+    }
+
+    .ms-led {
+      display: flex;
+      background: #000000;
+      padding: 1px;
+      border: 1px solid;
+      border-color: #808080 #ffffff #ffffff #808080;
+    }
+
+    .ms-led svg {
+      width: 13px;
+      height: 23px;
+      display: block;
+    }
+
+    #ms-face {
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #c0c0c0;
+      border: 2px solid;
+      border-color: #ffffff #808080 #808080 #ffffff;
+      outline: 1px solid #808080;
+    }
+
+    #ms-face:active,
+    #ms-face.down {
+      border-color: #808080 #ffffff #ffffff #808080;
+    }
+
+    #ms-face:hover {
+      background: #c0c0c0;
+    }
+
+    #ms-face svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+
+    #ms-face:active svg,
+    #ms-face.down svg {
+      transform: translate(1px, 1px);
+    }
+
+    .ms-board {
+      display: grid;
+      border: 3px solid;
+      border-color: #808080 #ffffff #ffffff #808080;
+      cursor: default;
+    }
+
+    .cell {
+      width: 24px;
+      height: 24px;
+      box-sizing: border-box;
+      background: #c0c0c0;
+      border: 3px solid;
+      border-color: #ffffff #808080 #808080 #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Arial Black', Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .cell svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+
+    .cell.open,
+    .cell.pressed {
+      border-width: 1px 0 0 1px;
+      border-color: #808080;
+    }
+
+    .cell.boom {
+      background: #ff0000;
+    }
+
+    .cell.n1 { color: #0000ff; }
+    .cell.n2 { color: #008000; }
+    .cell.n3 { color: #ff0000; }
+    .cell.n4 { color: #000080; }
+    .cell.n5 { color: #800000; }
+    .cell.n6 { color: #008080; }
+    .cell.n7 { color: #000000; }
+    .cell.n8 { color: #808080; }
+
+    .ms-help {
+      width: fit-content;
+      margin: 0 auto 10px auto;
+      background: #ffffff;
+      border: 2px inset #c0c0c0;
+      padding: 10px 14px;
+      font-size: 12px;
+    }
+
+    .ms-help h3 {
+      margin: 0 0 6px 0;
+      color: #000080;
+      font-size: 13px;
+    }
+
+    .ms-help ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container wide">
+    <div class="outer-border">
+      <div class="header">
+        <h1>💣 MINESWEEPER 💣</h1>
+        <p>~*~ Sweep The Field &bull; Dodge The Mines ~*~</p>
+      </div>
+
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ MINESWEEPER ★ FLAG THE MINES ★ CLEAR THE FIELD ★ DON'T BLOW UP ★</div>
+      </div>
+
+      <div class="content">
+        <div class="ms-controls">
+          <label>Level:<select id="ms-level">
+            <option value="beginner">Beginner (9×9, 10 mines)</option>
+            <option value="intermediate">Intermediate (16×16, 40 mines)</option>
+            <option value="expert">Expert (30×16, 99 mines)</option>
+          </select></label>
+          <label><input type="checkbox" id="ms-marks">Marks (?)</label>
+        </div>
+
+        <div class="ms-stage">
+          <div class="ms-window">
+            <div class="ms-body">
+              <div class="ms-panel">
+                <div class="ms-led" id="ms-mines" aria-label="mines remaining"></div>
+                <button type="button" id="ms-face" aria-label="new game"></button>
+                <div class="ms-led" id="ms-time" aria-label="seconds elapsed"></div>
+              </div>
+              <div class="ms-board" id="ms-board" role="grid" aria-label="minefield"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ms-help">
+          <h3>❓ How To Play</h3>
+          <ul>
+            <li><b>Left click</b> a square to uncover it</li>
+            <li><b>Right click</b> to place a flag (or ? mark)</li>
+            <li><b>Left+Right</b> or <b>middle click</b> a number to clear around it</li>
+            <li>Click the <b>smiley</b> or press <b>F2</b> for a new game</li>
+          </ul>
+        </div>
+
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LEVELS = {
+      beginner: { rows: 9, cols: 9, mines: 10 },
+      intermediate: { rows: 16, cols: 16, mines: 40 },
+      expert: { rows: 16, cols: 30, mines: 99 }
+    };
+    const STORE = "vibeland.minesweeper";
+    const HIDDEN = 0;
+    const OPEN = 1;
+    const FLAG = 2;
+    const QUESTION = 3;
+
+    // ---------- pixel art ----------
+    const MINE_SVG = "<svg viewBox=\"0 0 16 16\"><g stroke=\"#000\" stroke-width=\"1.4\"><line x1=\"8\" y1=\"1.5\" x2=\"8\" y2=\"14.5\"/><line x1=\"1.5\" y1=\"8\" x2=\"14.5\" y2=\"8\"/><line x1=\"3.6\" y1=\"3.6\" x2=\"12.4\" y2=\"12.4\"/><line x1=\"12.4\" y1=\"3.6\" x2=\"3.6\" y2=\"12.4\"/></g><circle cx=\"8\" cy=\"8\" r=\"4.6\" fill=\"#000\"/><rect x=\"5.6\" y=\"5.6\" width=\"2\" height=\"2\" fill=\"#fff\"/></svg>";
+    const FLAG_SVG = "<svg viewBox=\"0 0 16 16\"><polygon points=\"9.6,2 9.6,8 3.5,5\" fill=\"#f00\"/><rect x=\"8.6\" y=\"2\" width=\"1.4\" height=\"9\" fill=\"#000\"/><rect x=\"6\" y=\"10.5\" width=\"6.5\" height=\"1.5\" fill=\"#000\"/><rect x=\"4\" y=\"12\" width=\"10.5\" height=\"2\" fill=\"#000\"/></svg>";
+    const WRONG_SVG = MINE_SVG.replace("</svg>", "<g stroke=\"#f00\" stroke-width=\"1.6\"><line x1=\"2\" y1=\"2\" x2=\"14\" y2=\"14\"/><line x1=\"14\" y1=\"2\" x2=\"2\" y2=\"14\"/></g></svg>");
+
+    function face(kind) {
+      let eyes = "<rect x=\"6\" y=\"6.5\" width=\"2\" height=\"2\"/><rect x=\"10\" y=\"6.5\" width=\"2\" height=\"2\"/>";
+      let mouth = "<path d=\"M5.5 11 Q9 14.5 12.5 11\" fill=\"none\" stroke=\"#000\" stroke-width=\"1.2\"/>";
+      if (kind === "oh") {
+        mouth = "<circle cx=\"9\" cy=\"12.3\" r=\"1.6\" fill=\"none\" stroke=\"#000\" stroke-width=\"1.2\"/>";
+      } else if (kind === "cool") {
+        eyes = "<path d=\"M3.5 6.2 H14.5 V7 L12.8 9.2 H10.6 L9.5 7.4 H8.5 L7.4 9.2 H5.2 L3.5 7 Z\"/>";
+      } else if (kind === "dead") {
+        eyes = "<g stroke=\"#000\" stroke-width=\"1.1\"><line x1=\"5.5\" y1=\"5.5\" x2=\"8\" y2=\"8\"/><line x1=\"8\" y1=\"5.5\" x2=\"5.5\" y2=\"8\"/><line x1=\"10\" y1=\"5.5\" x2=\"12.5\" y2=\"8\"/><line x1=\"12.5\" y1=\"5.5\" x2=\"10\" y2=\"8\"/></g>";
+        mouth = "<path d=\"M5.5 13.2 Q9 10 12.5 13.2\" fill=\"none\" stroke=\"#000\" stroke-width=\"1.2\"/>";
+      }
+      return "<svg viewBox=\"0 0 18 18\"><circle cx=\"9\" cy=\"9\" r=\"8\" fill=\"#ff0\" stroke=\"#000\" stroke-width=\"1\"/><g fill=\"#000\">" + eyes + "</g>" + mouth + "</svg>";
+    }
+
+    // Seven-segment LED digits: segments a b c d e f g.
+    const SEGMENTS = [
+      "2,0.6 11,0.6 9,2.6 4,2.6",
+      "12.4,1.6 12.4,10.6 10.4,9.6 10.4,3.6",
+      "12.4,12.4 12.4,21.4 10.4,19.4 10.4,13.4",
+      "2,22.4 11,22.4 9,20.4 4,20.4",
+      "0.6,12.4 2.6,13.4 2.6,19.4 0.6,21.4",
+      "0.6,1.6 2.6,3.6 2.6,9.6 0.6,10.6",
+      "1.6,11.5 3,10.5 10,10.5 11.4,11.5 10,12.5 3,12.5"
+    ];
+    const DIGITS = {
+      "0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc",
+      "5": "afgcd", "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg", "-": "g"
+    };
+
+    function led(el, value) {
+      const n = Math.max(-99, Math.min(999, value));
+      const text = n < 0 ? "-" + String(-n).padStart(2, "0") : String(n).padStart(3, "0");
+      el.dataset.value = String(n);
+      el.innerHTML = text.split("").map(function (ch) {
+        const lit = DIGITS[ch];
+        return "<svg viewBox=\"0 0 13 23\">" + SEGMENTS.map(function (points, i) {
+          const on = lit.includes("abcdefg"[i]);
+          return "<polygon points=\"" + points + "\" fill=\"" + (on ? "#ff0000" : "#3d0000") + "\"/>";
+        }).join("") + "</svg>";
+      }).join("");
+    }
+
+    // ---------- state ----------
+    const boardEl = document.getElementById("ms-board");
+    const minesEl = document.getElementById("ms-mines");
+    const timeEl = document.getElementById("ms-time");
+    const faceEl = document.getElementById("ms-face");
+    const levelEl = document.getElementById("ms-level");
+    const marksEl = document.getElementById("ms-marks");
+
+    const saved = JSON.parse(localStorage.getItem(STORE) || "{}");
+    let level = LEVELS[saved.level] ? saved.level : "beginner";
+    let marks = saved.marks !== false;
+
+    // ?seed=N makes mine placement reproducible, which helps when testing or sharing a board.
+    const seedParam = new URLSearchParams(location.search).get("seed");
+    let random = Math.random;
+
+    let rows = 0;
+    let cols = 0;
+    let mineCount = 0;
+    let cells = [];
+    let cellEls = [];
+    let status = "ready";
+    let flags = 0;
+    let opened = 0;
+    let startedAt = 0;
+    let timerId = 0;
+
+    function save() {
+      localStorage.setItem(STORE, JSON.stringify({ level: level, marks: marks }));
+    }
+
+    function mulberry32(seed) {
+      return function () {
+        seed = (seed + 0x6D2B79F5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function newGame() {
+      const cfg = LEVELS[level];
+      rows = cfg.rows;
+      cols = cfg.cols;
+      mineCount = cfg.mines;
+      status = "ready";
+      flags = 0;
+      opened = 0;
+      clearInterval(timerId);
+      random = seedParam === null ? Math.random : mulberry32(Number(seedParam) | 0);
+
+      cells = [];
+      for (let i = 0; i < rows * cols; i++) {
+        cells.push({ mine: false, adj: 0, state: HIDDEN });
+      }
+
+      boardEl.style.gridTemplateColumns = "repeat(" + cols + ", 24px)";
+      boardEl.dataset.status = status;
+      boardEl.innerHTML = "";
+      cellEls = [];
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < cells.length; i++) {
+        const el = document.createElement("div");
+        el.className = "cell";
+        el.dataset.index = String(i);
+        el.dataset.state = "hidden";
+        el.setAttribute("role", "gridcell");
+        frag.appendChild(el);
+        cellEls.push(el);
+      }
+      boardEl.appendChild(frag);
+
+      led(minesEl, mineCount);
+      led(timeEl, 0);
+      setFace("smile");
+    }
+
+    function neighbours(i) {
+      const r = Math.floor(i / cols);
+      const c = i % cols;
+      const out = [];
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = r + dr;
+          const nc = c + dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) out.push(nr * cols + nc);
+        }
+      }
+      return out;
+    }
+
+    // Mines are placed on the first click, so the first square uncovered is never a mine.
+    function layMines(safe) {
+      let placed = 0;
+      while (placed < mineCount) {
+        const i = Math.floor(random() * cells.length);
+        if (i === safe || cells[i].mine) continue;
+        cells[i].mine = true;
+        placed++;
+      }
+      for (let i = 0; i < cells.length; i++) {
+        cells[i].adj = neighbours(i).filter(function (n) { return cells[n].mine; }).length;
+      }
+    }
+
+    function render(i) {
+      const cell = cells[i];
+      const el = cellEls[i];
+      el.className = "cell";
+      el.innerHTML = "";
+      if (cell.state === OPEN) {
+        el.classList.add("open");
+        if (cell.mine) {
+          el.innerHTML = MINE_SVG;
+          if (cell.boom) el.classList.add("boom");
+          el.dataset.state = cell.boom ? "boom" : "mine";
+        } else {
+          if (cell.adj > 0) {
+            el.textContent = String(cell.adj);
+            el.classList.add("n" + cell.adj);
+          }
+          el.dataset.state = "open-" + cell.adj;
+        }
+      } else if (cell.state === FLAG) {
+        if (status === "lost" && !cell.mine) {
+          el.classList.add("open");
+          el.innerHTML = WRONG_SVG;
+          el.dataset.state = "wrong-flag";
+        } else {
+          el.innerHTML = FLAG_SVG;
+          el.dataset.state = "flag";
+        }
+      } else if (cell.state === QUESTION) {
+        el.textContent = "?";
+        el.dataset.state = "question";
+      } else {
+        el.dataset.state = "hidden";
+      }
+    }
+
+    function setFace(kind) {
+      faceEl.innerHTML = face(kind);
+      faceEl.dataset.face = kind;
+    }
+
+    function setStatus(next) {
+      status = next;
+      boardEl.dataset.status = next;
+    }
+
+    function elapsed() {
+      return Math.min(999, Math.floor((performance.now() - startedAt) / 1000) + 1);
+    }
+
+    function startTimer() {
+      startedAt = performance.now();
+      led(timeEl, 1);
+      timerId = setInterval(function () {
+        led(timeEl, elapsed());
+      }, 200);
+    }
+
+    function open(i) {
+      if (status === "won" || status === "lost") return;
+      const cell = cells[i];
+      if (cell.state === OPEN || cell.state === FLAG) return;
+      if (status === "ready") {
+        layMines(i);
+        setStatus("playing");
+        startTimer();
+      }
+      if (cell.mine) {
+        cell.boom = true;
+        lose();
+        return;
+      }
+      // Flood-fill outward from blank squares.
+      const stack = [i];
+      while (stack.length) {
+        const j = stack.pop();
+        const c = cells[j];
+        if (c.state === OPEN || c.state === FLAG || c.mine) continue;
+        c.state = OPEN;
+        opened++;
+        render(j);
+        if (c.adj === 0) {
+          neighbours(j).forEach(function (n) { stack.push(n); });
+        }
+      }
+      if (opened === cells.length - mineCount) win();
+    }
+
+    function chord(i) {
+      const cell = cells[i];
+      if (status !== "playing" || cell.state !== OPEN || cell.adj === 0) return;
+      const around = neighbours(i);
+      const flagged = around.filter(function (n) { return cells[n].state === FLAG; }).length;
+      if (flagged !== cell.adj) return;
+      around.forEach(function (n) { open(n); });
+    }
+
+    function toggleMark(i) {
+      if (status === "won" || status === "lost") return;
+      const cell = cells[i];
+      if (cell.state === OPEN) return;
+      if (cell.state === HIDDEN) {
+        cell.state = FLAG;
+        flags++;
+      } else if (cell.state === FLAG) {
+        cell.state = marks ? QUESTION : HIDDEN;
+        flags--;
+      } else {
+        cell.state = HIDDEN;
+      }
+      render(i);
+      led(minesEl, mineCount - flags);
+    }
+
+    function stopTimer() {
+      clearInterval(timerId);
+      led(timeEl, elapsed());
+    }
+
+    function lose() {
+      stopTimer();
+      setStatus("lost");
+      setFace("dead");
+      cells.forEach(function (cell, i) {
+        if (cell.mine && cell.state !== FLAG) cell.state = OPEN;
+        render(i);
+      });
+    }
+
+    function win() {
+      stopTimer();
+      setStatus("won");
+      setFace("cool");
+      cells.forEach(function (cell, i) {
+        if (cell.mine && cell.state !== FLAG) {
+          cell.state = FLAG;
+          render(i);
+        }
+      });
+      flags = mineCount;
+      led(minesEl, 0);
+    }
+
+    // ---------- mouse: press, release, and chord ----------
+    let pressMode = null;
+    let hoverIndex = -1;
+    let pressedEls = [];
+
+    function indexOf(target) {
+      const el = target && target.closest ? target.closest(".cell") : null;
+      return el && boardEl.contains(el) ? Number(el.dataset.index) : -1;
+    }
+
+    function showPressed() {
+      pressedEls.forEach(function (el) { el.classList.remove("pressed"); });
+      pressedEls = [];
+      if ((pressMode !== "open" && pressMode !== "chord") || hoverIndex < 0 || status === "won" || status === "lost") return;
+      const targets = pressMode === "chord" ? [hoverIndex].concat(neighbours(hoverIndex)) : [hoverIndex];
+      targets.forEach(function (i) {
+        const st = cells[i].state;
+        if (st === HIDDEN || st === QUESTION) {
+          cellEls[i].classList.add("pressed");
+          pressedEls.push(cellEls[i]);
+        }
+      });
+    }
+
+    function endPress() {
+      pressMode = null;
+      showPressed();
+      if (status === "ready" || status === "playing") setFace("smile");
+    }
+
+    boardEl.addEventListener("contextmenu", function (e) {
+      e.preventDefault();
+    });
+
+    boardEl.addEventListener("mousedown", function (e) {
+      e.preventDefault();
+      if (status === "won" || status === "lost") return;
+      hoverIndex = indexOf(e.target);
+      if (e.button === 1 || (e.buttons & 3) === 3) {
+        pressMode = "chord";
+      } else if (e.button === 0) {
+        pressMode = "open";
+      } else if (e.button === 2) {
+        if (hoverIndex >= 0) toggleMark(hoverIndex);
+        return;
+      }
+      setFace("oh");
+      showPressed();
+    });
+
+    boardEl.addEventListener("mouseover", function (e) {
+      hoverIndex = indexOf(e.target);
+      if (pressMode) showPressed();
+    });
+
+    boardEl.addEventListener("mouseleave", function () {
+      hoverIndex = -1;
+      if (pressMode) showPressed();
+    });
+
+    document.addEventListener("mouseup", function (e) {
+      if (!pressMode) return;
+      if (pressMode === "done") {
+        if ((e.buttons & 3) === 0) endPress();
+        return;
+      }
+      const i = indexOf(e.target);
+      const mode = pressMode;
+      // Releasing the first of two held buttons fires the chord; the second release is ignored.
+      if (mode === "chord" && (e.buttons & 3) !== 0) {
+        pressMode = "done";
+        showPressed();
+      } else {
+        endPress();
+      }
+      if (i < 0) return;
+      if (mode === "chord") {
+        chord(i);
+      } else {
+        open(i);
+      }
+    });
+
+    faceEl.addEventListener("click", newGame);
+
+    // ---------- controls ----------
+    levelEl.value = level;
+    marksEl.checked = marks;
+
+    levelEl.addEventListener("change", function () {
+      level = levelEl.value;
+      save();
+      newGame();
+    });
+
+    marksEl.addEventListener("change", function () {
+      marks = marksEl.checked;
+      save();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "F2") {
+        e.preventDefault();
+        newGame();
+      }
+    });
+
+    newGame();
+  </script>
+</body>
+</html>
