@@ -6,21 +6,25 @@
   <title>The Orb - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
-    .orb {
-      height: 280px;
-      margin-left: auto;
-      margin-right: auto;
-      font-family: monospace;
-      font-size: 0.8rem;
-      line-height: 1.1;
-      text-align: center;
-      display: flex;
-      align-items: center;
+    .space {
+      background: #000000;
+      border: 3px inset #808080;
+      line-height: 0;
     }
 
-    #orb-display {
-      white-space: pre;
-      margin: 0;
+    #orb-canvas {
+      display: block;
+      width: 100%;
+      height: 460px;
+      cursor: crosshair;
+    }
+
+    .orb-caption {
+      text-align: center;
+      font-family: 'Comic Sans MS', Arial, Helvetica, sans-serif;
+      font-style: italic;
+      color: #800080;
+      margin: 6px 0 0 0;
     }
   </style>
 </head>
@@ -37,12 +41,13 @@
       </div>
 
       <div class="content">
-        <div class="orb">
-          <pre id="orb-display"></pre>
+        <div class="space">
+          <canvas id="orb-canvas" role="img" aria-label="An ASCII art glass orb floating through a starfield"></canvas>
         </div>
-        
+        <p class="orb-caption">~ move your cursor through the void to guide the light ~</p>
+
         <hr class="thick">
-        
+
         <div class="footer">
           <div><a href="../home">← Back to VIBELAND</a></div>
           <div>© 1999 VIBELAND - All Rights Reserved</div>
@@ -50,360 +55,356 @@
       </div>
     </div>
   </div>
-  
+
   <script>
-    const frames = [
-      `                                  ......            
-                                 ....::::::....        
-                             ....::::------::::....    
-                             ..::----======----::..    
-                           ..::--====++++++====--::..  
-                           ..::--==++******++==--::..  
-                         ..::--==++**######**++==--::..
-                         ..::--==++**##@@##**++==--::..
-                         ..::--==++**######**++==--::..
-                           ..::--==++******++==--::..  
-                           ..::--====++++++====--::..  
-                             ..::----======----::..    
-                             ....::::------::::....    
-                                 ....::::::....        
-                                     ......            
-                                                       `,
-      `                              ..............        
-                             ....::::::::::::::....    
-                           ....::--------------::....  
-                           ..::----==========----::..  
-                         ..::----==++++++++++==----::..
-                         ..::--==++**********++==--::..
-                         ..::--==++**######**++==--::..
-                         ..::--==++**##@@##**++==--::..
-                         ..::--==++**######**++==--::..
-                         ..::--==++**********++==--::..
-                         ..::----==++++++++++==----::..
-                           ..::----==========----::..  
-                           ....::--------------::....  
-                             ....::::::::::::::....    
-                                 ..............        
-                                                       `,
-      `                              ..............          
-                             ......::::::::::......      
-                           ....::::----------::::....    
-                         ....::----==========----::....  
-                         ..::----====++++++====----::..  
-                       ....::--==++++******++++==--::....
-                       ..::--====++****##****++====--::..
-                       ..::--==++****##%%##****++==--::..
-                       ..::--==++**##%%@@%%##**++==--::..
-                       ..::--==++****##%%##****++==--::..
-                       ..::--====++****##****++====--::..
-                       ....::--==++++******++++==--::....
-                         ..::----====++++++====----::..  
-                         ....::----==========----::....  
-                           ....::::----------::::....    
-                             ......::::::::::......      
-                                 ..............          `,
-      `                                ..........              
-                               ......::::::......          
-                           ....::::::::::::::::::....      
-                         ....::::--------------::::....    
-                         ..::::----==========----::::..    
-                       ..::::--====++++++++++====--::::..  
-                       ..::----==++++******++++==----::..  
-                     ....::--==++++**######**++++==--::....
-                     ..::::--==++**####%%####**++==--::::..
-                     ..::::--==++**##%%@@%%##**++==--::::..
-                     ..::::--==++**####%%####**++==--::::..
-                     ....::--==++++**######**++++==--::....
-                       ..::----==++++******++++==----::..  
-                       ..::::--====++++++++++====--::::..  
-                         ..::::----==========----::::..    
-                         ....::::--------------::::....    
-                           ....::::::::::::::::::....      
-                               ......::::::......          
-                                   ..........              `,
-      `                              ..............            
-                             ......::::::::::......        
-                           ....::::::------::::::....      
-                         ....::--------==--------::....    
-                       ....::----==============----::....  
-                       ..::----====++++++++++====----::..  
-                     ....::--====++**********++====--::....
-                     ..::::--==++****######****++==--::::..
-                     ..::----==++**####%%####**++==----::..
-                     ..::--====++**##%%@@%%##**++====--::..
-                     ..::----==++**####%%####**++==----::..
-                     ..::::--==++****######****++==--::::..
-                     ....::--====++**********++====--::....
-                       ..::----====++++++++++====----::..  
-                       ....::----==============----::....  
-                         ....::--------==--------::....    
-                           ....::::::------::::::....      
-                             ......::::::::::......        
-                                 ..............            `,
-      `                              ..............            
-                             ....::::::::::::::....        
-                           ....::::----------::::....      
-                         ..::::------======------::::..    
-                       ....::----==============----::....  
-                       ..::----====++++++++++====----::..  
-                     ..::::--====++**********++====--::::..
-                     ..::----==++****######****++==----::..
-                     ..::--====++**####%%####**++====--::..
-                     ..::--====++**##%%@@%%##**++====--::..
-                     ..::--====++**####%%####**++====--::..
-                     ..::----==++****######****++==----::..
-                     ..::::--====++**********++====--::::..
-                       ..::----====++++++++++====----::..  
-                       ....::----==============----::....  
-                         ..::::------======------::::..    
-                           ....::::----------::::....      
-                             ....::::::::::::::....        
-                                 ..............            `,
-      `                              ..............            
-                             ......::::::::::......        
-                           ....::::::------::::::....      
-                         ....::--------==--------::....    
-                       ....::----==============----::....  
-                       ..::----====++++++++++====----::..  
-                     ....::--====++**********++====--::....
-                     ..::::--==++****######****++==--::::..
-                     ..::----==++**####%%####**++==----::..
-                     ..::--====++**##%%@@%%##**++====--::..
-                     ..::----==++**####%%####**++==----::..
-                     ..::::--==++****######****++==--::::..
-                     ....::--====++**********++====--::....
-                       ..::----====++++++++++====----::..  
-                       ....::----==============----::....  
-                         ....::--------==--------::....    
-                           ....::::::------::::::....      
-                             ......::::::::::......        
-                                 ..............            `,
-      `                                ..........              
-                               ......::::::......          
-                           ....::::::::::::::::::....      
-                         ....::::--------------::::....    
-                         ..::::----==========----::::..    
-                       ..::::--====++++++++++====--::::..  
-                       ..::----==++++******++++==----::..  
-                     ....::--==++++**######**++++==--::....
-                     ..::::--==++**####%%####**++==--::::..
-                     ..::::--==++**##%%@@%%##**++==--::::..
-                     ..::::--==++**####%%####**++==--::::..
-                     ....::--==++++**######**++++==--::....
-                       ..::----==++++******++++==----::..  
-                       ..::::--====++++++++++====--::::..  
-                         ..::::----==========----::::..    
-                         ....::::--------------::::....    
-                           ....::::::::::::::::::....      
-                               ......::::::......          
-                                   ..........              `,
-      `                              ..............          
-                             ......::::::::::......      
-                           ....::::----------::::....    
-                         ....::----==========----::....  
-                         ..::----====++++++====----::..  
-                       ....::--==++++******++++==--::....
-                       ..::--====++****##****++====--::..
-                       ..::--==++****##%%##****++==--::..
-                       ..::--==++**##%%@@%%##**++==--::..
-                       ..::--==++****##%%##****++==--::..
-                       ..::--====++****##****++====--::..
-                       ....::--==++++******++++==--::....
-                         ..::----====++++++====----::..  
-                         ....::----==========----::....  
-                           ....::::----------::::....    
-                             ......::::::::::......      
-                                 ..............          `,
-      `                              ..............        
-                             ....::::::::::::::....    
-                           ....::--------------::....  
-                           ..::----==========----::..  
-                         ..::----==++++++++++==----::..
-                         ..::--==++**********++==--::..
-                         ..::--==++**######**++==--::..
-                         ..::--==++**##@@##**++==--::..
-                         ..::--==++**######**++==--::..
-                         ..::--==++**********++==--::..
-                         ..::----==++++++++++==----::..
-                           ..::----==========----::..  
-                           ....::--------------::....  
-                             ....::::::::::::::....    
-                                 ..............        
-                                                       `,
-      `                                  ......            
-                                 ....::::::....        
-                             ....::::------::::....    
-                             ..::----======----::..    
-                           ..::--====++++++====--::..  
-                           ..::--==++******++==--::..  
-                         ..::--==++**######**++==--::..
-                         ..::--==++**##@@##**++==--::..
-                         ..::--==++**######**++==--::..
-                           ..::--==++******++==--::..  
-                           ..::--====++++++====--::..  
-                             ..::----======----::..    
-                             ....::::------::::....    
-                                 ....::::::....        
-                                     ......            
-                                                       `,
-      `                                  ......          
-                                 ..::::::::::..      
-                               ..::----------::..    
-                             ..::--====++====--::..  
-                             ::--==++******++==--::  
-                           ..::--==**######**==--::..
-                           ..::--++**##@@##**++--::..
-                           ..::--==**######**==--::..
-                             ::--==++******++==--::  
-                             ..::--====++====--::..  
-                               ..::----------::..    
-                                 ..::::::::::..      
-                                     ......          
-                                                     
-                                                     
-                                                     `,
-      `                                ..........      
-                                 ..::------::..    
-                               ..::--======--::..  
-                             ..::--==++**++==--::..
-                             ..--==++**##**++==--..
-                             ..--==**##@@##**==--..
-                             ..--==++**##**++==--..
-                             ..::--==++**++==--::..
-                               ..::--======--::..  
-                                 ..::------::..    
-                                   ..........      
-                                                   
-                                                   
-                                                   
-                                                   
-                                                   `,
-      `                                ..::::::..    
-                                 ::----==----::  
-                               ..--==++++++==--..
-                               ::--++**##**++--::
-                               ::==++##@@##++==::
-                               ::--++**##**++--::
-                               ..--==++++++==--..
-                                 ::----==----::  
-                                   ..::::::..    
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 `,
-      `                                ....::....    
-                                 ..::------::..  
-                               ..::==++++++==::..
-                               ..--++**##**++--..
-                               ::--++##@@##++--::
-                               ..--++**##**++--..
-                               ..::==++++++==::..
-                                 ..::------::..  
-                                   ....::....    
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 `,
-      `                                  ......      
-                                 ..::------::..  
-                                 ::--==++==--::  
-                               ..--==**##**==--..
-                               ..--++##@@##++--..
-                               ..--==**##**==--..
-                                 ::--==++==--::  
-                                 ..::------::..  
-                                     ......      
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 `,
-      `                                ....::....    
-                                 ..::------::..  
-                               ..::==++++++==::..
-                               ..--++**##**++--..
-                               ::--++##@@##++--::
-                               ..--++**##**++--..
-                               ..::==++++++==::..
-                                 ..::------::..  
-                                   ....::....    
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 `,
-      `                                ..::::::..    
-                                 ::----==----::  
-                               ..--==++++++==--..
-                               ::--++**##**++--::
-                               ::==++##@@##++==::
-                               ::--++**##**++--::
-                               ..--==++++++==--..
-                                 ::----==----::  
-                                   ..::::::..    
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 `,
-      `                                ..........      
-                                 ..::------::..    
-                               ..::--======--::..  
-                             ..::--==++**++==--::..
-                             ..--==++**##**++==--..
-                             ..--==**##@@##**==--..
-                             ..--==++**##**++==--..
-                             ..::--==++**++==--::..
-                               ..::--======--::..  
-                                 ..::------::..    
-                                   ..........      
-                                                   
-                                                   
-                                                   
-                                                   
-                                                   `,
-      `                                ......          
-                                 ..::::::::::..      
-                               ..::----------::..    
-                             ..::--====++====--::..  
-                             ::--==++******++==--::  
-                           ..::--==**######**==--::..
-                           ..::--++**##@@##**++--::..
-                           ..::--==**######**==--::..
-                             ::--==++******++==--::  
-                             ..::--====++====--::..  
-                               ..::----------::..    
-                                 ..::::::::::..      
-                                     ......          
-                                                     
-                                                     
-                                                     `
-    ];
-    const colors = ['#0000FF'];
+    // A glass orb, ray traced one ASCII character at a time.
+    // Every cell is shaded from continuous math (refraction, fresnel, specular,
+    // caustic), so the motion stays fluid even though the grid is coarse.
+    const canvas = document.getElementById("orb-canvas");
+    const ctx = canvas.getContext("2d");
+    const RAMP = " .,-~:;=!*#$@";
+    const FONT_SIZE = 10;
+    const CELL_H = 10;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    let currentFrame = 0;
-    const orbDisplay = document.getElementById('orb-display');
+    let cellW = 6;
+    let cols = 0;
+    let rows = 0;
+    let width = 0;
+    let height = 0;
+    let padX = 0;
+    let padY = 0;
 
-    function animate() {
-      orbDisplay.textContent = frames[currentFrame];
-      orbDisplay.style.color = colors[0];
-      currentFrame = (currentFrame + 1) % frames.length;
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      width = canvas.clientWidth;
+      height = canvas.clientHeight;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.font = FONT_SIZE + "px 'Courier New', Courier, monospace";
+      ctx.textBaseline = "top";
+      cellW = ctx.measureText("M").width;
+      cols = Math.floor(width / cellW);
+      rows = Math.floor(height / CELL_H);
+      padX = (width - cols * cellW) / 2;
+      padY = (height - rows * CELL_H) / 2;
     }
 
-    setInterval(animate, 100);
-    animate();
+    // ---------- noise helpers ----------
+    function hash(x, y) {
+      let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263);
+      h = Math.imul(h ^ (h >>> 13), 1274126177);
+      return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    }
+
+    function noise(x, y) {
+      const xi = Math.floor(x);
+      const yi = Math.floor(y);
+      const xf = x - xi;
+      const yf = y - yi;
+      const u = xf * xf * (3 - 2 * xf);
+      const v = yf * yf * (3 - 2 * yf);
+      const a = hash(xi, yi);
+      const b = hash(xi + 1, yi);
+      const c = hash(xi, yi + 1);
+      const d = hash(xi + 1, yi + 1);
+      return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+    }
+
+    function fbm(x, y) {
+      return noise(x, y) * 0.55 + noise(x * 2.1 + 17, y * 2.1 + 9) * 0.3 + noise(x * 4.3 + 41, y * 4.3 + 3) * 0.15;
+    }
+
+    // ---------- background: nebula, parallax stars, shooting stars ----------
+    let BR = 0;
+    let BG = 0;
+    let BB = 0;
+    let time = 0;
+    let shooter = null;
+    let nextShooter = 2;
+
+    function starLayer(x, y, gs, seed, density, bright) {
+      const gx = Math.floor(x / gs);
+      const gy = Math.floor(y / gs);
+      const h = hash(gx + seed, gy - seed);
+      if (h > density) return;
+      const sx = (gx + 0.2 + 0.6 * hash(gy, gx + seed)) * gs;
+      const sy = (gy + 0.2 + 0.6 * hash(gx - seed, gy)) * gs;
+      const dx = (x - sx) / cellW;
+      const dy = (y - sy) / CELL_H;
+      // Tent filter: a drifting star cross-fades between neighbouring cells, so it glides
+      // smoothly instead of jumping a whole character at a time.
+      const fall = Math.max(0, 1 - Math.abs(dx)) * Math.max(0, 1 - Math.abs(dy));
+      if (fall === 0) return;
+      const twinkle = 0.6 + 0.4 * Math.sin(time * (0.8 + h * 5) + h * 40);
+      const b = fall * twinkle * bright * (0.3 + (h / density) * 1.6);
+      const hue = hash(gx * 7, gy * 13);
+      BR += b * (hue > 0.7 ? 1.0 : 0.8);
+      BG += b * 0.85;
+      BB += b * (hue < 0.35 ? 1.0 : 0.75);
+    }
+
+    function background(x, y) {
+      const n = fbm(x * 0.0045 + time * 0.012, y * 0.006 - time * 0.004);
+      const neb = Math.max(0, n - 0.48) * 0.55;
+      const mix = noise(x * 0.003 - 5, y * 0.003 + time * 0.01);
+      BR = neb * (0.35 * mix + 0.05);
+      BG = neb * (0.05 + 0.2 * (1 - mix));
+      BB = neb * (0.45 + 0.1 * mix);
+
+      starLayer(x + time * 3, y, 26, 101, 0.16, 0.6);
+      starLayer(x + time * 9, y + 400, 60, 977, 0.2, 1.2);
+
+      if (shooter) {
+        const px = x - shooter.x;
+        const py = y - shooter.y;
+        const along = -(px * shooter.dx + py * shooter.dy);
+        if (along > 0 && along < shooter.len) {
+          const perpX = (px + along * shooter.dx) / cellW;
+          const perpY = (py + along * shooter.dy) / CELL_H;
+          const tail = 1 - along / shooter.len;
+          const b = tail * tail * Math.exp(-(perpX * perpX + perpY * perpY) * 1.5) * shooter.fade * 1.6;
+          BR += b * 0.9;
+          BG += b * 0.95;
+          BB += b;
+        }
+      }
+    }
+
+    function updateShooter(dt) {
+      if (reducedMotion) return;
+      if (shooter) {
+        shooter.age += dt;
+        shooter.x += shooter.dx * shooter.speed * dt;
+        shooter.y += shooter.dy * shooter.speed * dt;
+        shooter.fade = Math.min(1, shooter.age * 4) * Math.max(0, 1 - shooter.age / shooter.life);
+        if (shooter.age > shooter.life) shooter = null;
+      } else if (time > nextShooter) {
+        const angle = 0.25 + Math.random() * 0.35;
+        const dir = Math.random() < 0.5 ? 1 : -1;
+        shooter = {
+          x: dir > 0 ? Math.random() * width * 0.5 : width * (0.5 + Math.random() * 0.5),
+          y: Math.random() * height * 0.4,
+          dx: Math.cos(angle) * dir,
+          dy: Math.sin(angle),
+          speed: 520 + Math.random() * 260,
+          len: 90 + Math.random() * 80,
+          age: 0,
+          life: 0.9 + Math.random() * 0.5,
+          fade: 0
+        };
+        nextShooter = time + 3 + Math.random() * 6;
+      }
+    }
+
+    // ---------- light that drifts or follows the cursor ----------
+    let pointer = null;
+    const light = { x: -0.5, y: -0.6, z: 0.62 };
+
+    canvas.addEventListener("pointermove", function (e) {
+      const rect = canvas.getBoundingClientRect();
+      pointer = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    });
+    canvas.addEventListener("pointerleave", function () {
+      pointer = null;
+    });
+
+    function updateLight(dt, ox, oy, R) {
+      let tx;
+      let ty;
+      if (pointer) {
+        tx = Math.max(-1.6, Math.min(1.6, (pointer.x - ox) / R));
+        ty = Math.max(-1.6, Math.min(1.6, (pointer.y - oy) / R));
+      } else {
+        tx = -0.55 + 0.25 * Math.sin(time * 0.21);
+        ty = -0.6 + 0.15 * Math.cos(time * 0.17);
+      }
+      const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 4);
+      const len = Math.hypot(tx, ty, 0.85);
+      light.x += (tx / len - light.x) * k;
+      light.y += (ty / len - light.y) * k;
+      light.z += (0.85 / len - light.z) * k;
+    }
+
+    // ---------- colour cache ----------
+    const colorCache = new Map();
+    function colorString(r, g, b) {
+      const qr = Math.min(31, (r * 31 + 0.5) | 0);
+      const qg = Math.min(31, (g * 31 + 0.5) | 0);
+      const qb = Math.min(31, (b * 31 + 0.5) | 0);
+      const key = (qr << 10) | (qg << 5) | qb;
+      let s = colorCache.get(key);
+      if (!s) {
+        s = "rgb(" + Math.round(qr * 8.226) + "," + Math.round(qg * 8.226) + "," + Math.round(qb * 8.226) + ")";
+        colorCache.set(key, s);
+      }
+      return s;
+    }
+
+    // ---------- the render loop ----------
+    let last = performance.now();
+
+    function frame(now) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      time += dt;
+      updateShooter(dt);
+
+      // Float on slow, incommensurate sine waves so the path never visibly repeats.
+      const ox = width / 2 + Math.sin(time * 0.31) * width * 0.11 + Math.sin(time * 0.13 + 1) * width * 0.05;
+      const oy = height / 2 + Math.sin(time * 0.47) * height * 0.05 + Math.sin(time * 0.23 + 2) * height * 0.025;
+      const R = Math.min(width, height) * 0.32 * (1 + 0.05 * Math.sin(time * 0.29));
+      updateLight(dt, ox, oy, R);
+
+      const hx = light.x;
+      const hy = light.y;
+      const hz = light.z + 1;
+      const hl = Math.hypot(hx, hy, hz);
+      const Hx = hx / hl;
+      const Hy = hy / hl;
+      const Hz = hz / hl;
+      const causticX = -light.x * 0.55;
+      const causticY = -light.y * 0.55;
+      const edge = cellW * 1.1;
+      const spin = time * 0.35;
+      const cosS = Math.cos(spin);
+      const sinS = Math.sin(spin);
+
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, width, height);
+
+      for (let row = 0; row < rows; row++) {
+        const py = padY + (row + 0.5) * CELL_H;
+        for (let col = 0; col < cols; col++) {
+          const px = padX + (col + 0.5) * cellW;
+          const dx = (px - ox) / R;
+          const dy = (py - oy) / R;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          background(px, py);
+          let r = BR;
+          let g = BG;
+          let b = BB;
+
+          if (dist > 1) {
+            // Soft blue halo of scattered light around the glass.
+            const halo = Math.exp(-(dist - 1) * 7) * 0.22;
+            r += halo * 0.3;
+            g += halo * 0.5;
+            b += halo;
+          }
+
+          const cover = Math.max(0, Math.min(1, (1 - dist) * R / edge + 0.5));
+          if (cover > 0) {
+            const nd = Math.min(dist, 0.999);
+            const sx = dist > 0 ? dx / dist * nd : 0;
+            const sy = dist > 0 ? dy / dist * nd : 0;
+            const r2 = nd * nd;
+            const nz = Math.sqrt(1 - r2);
+
+            // Refraction: a glass ball shows an inverted, fish-eyed view of the space behind it,
+            // with a hint of chromatic aberration toward the rim.
+            const lens = R * (1.15 + 2.2 * r2 * r2);
+            background(ox - sx * lens * 0.96, oy - sy * lens * 0.96);
+            let gr = BR;
+            background(ox - sx * lens, oy - sy * lens);
+            let gg = BG;
+            background(ox - sx * lens * 1.04, oy - sy * lens * 1.04);
+            let gb = BB;
+            const transmit = 0.9 * (1 - 0.85 * Math.pow(r2, 3));
+            gr *= transmit * 0.85;
+            gg *= transmit * 0.95;
+            gb *= transmit * 1.1;
+
+            // Fresnel rim reflection.
+            const f = 1 - nz;
+            const rim = Math.pow(f, 4) * 1.3;
+            gr += rim * 0.45;
+            gg += rim * 0.65;
+            gb += rim * 1.0;
+
+            // Faint glassy body tint so the sphere reads even against empty space.
+            const body = 0.012 + 0.03 * r2 * r2;
+            gr += body * 0.4;
+            gg += body * 0.7;
+            gb += body;
+
+            // Mystic wisps drifting inside, rotating with the orb.
+            const rx = sx * cosS + nz * sinS;
+            const rz = -sx * sinS + nz * cosS;
+            const ry = sy;
+            const wisp = Math.sin(4 * rx + 2 * Math.sin(3 * ry + time * 0.6)) * Math.sin(4 * rz + 2 * Math.sin(3 * rx - time * 0.45) + ry * 2);
+            const smoke = Math.exp(-Math.abs(wisp) * 9) * nz * nz * 0.2;
+            const swirlHue = 0.5 + 0.5 * Math.sin(ry * 3 + time * 0.5);
+            gr += smoke * (0.5 + 0.4 * swirlHue);
+            gg += smoke * (0.25 + 0.25 * (1 - swirlHue));
+            gb += smoke * 1.0;
+            const core = Math.exp(-r2 * 5) * (0.1 + 0.04 * Math.sin(time * 1.3));
+            gr += core * 0.7;
+            gg += core * 0.3;
+            gb += core;
+
+            // Caustic: light focused through the ball onto the far side.
+            const cdx = sx - causticX;
+            const cdy = sy - causticY;
+            const caustic = Math.exp(-(cdx * cdx + cdy * cdy) / 0.025) * 0.75 + Math.exp(-(cdx * cdx + cdy * cdy) / 0.12) * 0.15;
+            gr += caustic * 1.0;
+            gg += caustic * 0.8;
+            gb += caustic * 0.55;
+
+            // Specular highlights: a sharp hot spot plus a broad sheen.
+            const ndh = Math.max(0, sx * Hx + sy * Hy + nz * Hz);
+            const spec = Math.pow(ndh, 160) * 3 + Math.pow(ndh, 24) * 0.08;
+            gr += spec;
+            gg += spec;
+            gb += spec;
+            // Reflected arc of light hugging the rim on the lit side.
+            const lxy = Math.hypot(light.x, light.y) || 1;
+            const facing = Math.max(0, (sx * light.x + sy * light.y) / (nd * lxy || 1));
+            const band = Math.max(0, 1 - Math.abs(nd - 0.86) / 0.06);
+            const arc = band * band * Math.pow(facing, 5) * 0.9;
+            gr += arc * 0.85;
+            gg += arc * 0.95;
+            gb += arc;
+            // A violet kicker light from the opposite side.
+            const kick = Math.max(0, -sx * 0.72 - sy * 0.45 + nz * 0.53);
+            const kspec = Math.pow(kick, 40) * 0.7;
+            gr += kspec * 0.8;
+            gg += kspec * 0.45;
+            gb += kspec;
+
+            r = r * (1 - cover) + gr * cover;
+            g = g * (1 - cover) + gg * cover;
+            b = b * (1 - cover) + gb * cover;
+          }
+
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          const L = 1 - Math.exp(-lum * 1.7);
+          const idx = Math.min(RAMP.length - 1, (L * RAMP.length) | 0);
+          if (idx === 0) continue;
+
+          const boost = (0.5 + 0.7 * L) / Math.max(lum, 0.001);
+          ctx.fillStyle = colorString(Math.min(1, r * boost), Math.min(1, g * boost), Math.min(1, b * boost));
+          ctx.fillText(RAMP[idx], padX + col * cellW, padY + row * CELL_H);
+        }
+      }
+
+      if (!reducedMotion) requestAnimationFrame(frame);
+    }
+
+    resize();
+    window.addEventListener("resize", function () {
+      resize();
+      if (reducedMotion) frame(performance.now());
+    });
+    if (reducedMotion) {
+      time = 4;
+      canvas.addEventListener("pointermove", function () {
+        frame(performance.now());
+      });
+    }
+    requestAnimationFrame(frame);
   </script>
 </body>
 </html>
