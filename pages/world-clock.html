@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>World Clock - VIBELAND</title>
   <link rel="stylesheet" href="../assets/styles.css">
   <style>
@@ -94,13 +93,6 @@
       top: 50%;
       background-color: #666666;
       border-radius: 50%;
-    }
-
-    @media (max-width: 600px) {
-      .clock-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 15px;
-      }
     }
   </style>
 </head>
@@ -272,7 +264,12 @@
     }
 
     initClocks();
-    setInterval(updateClocks, 1000);
+    // Re-run just after each whole second so the second hands tick in sync with real time
+    function tick() {
+      updateClocks();
+      setTimeout(tick, 1000 - (Date.now() % 1000));
+    }
+    setTimeout(tick, 1000 - (Date.now() % 1000));
   </script>
 </body>
 </html>

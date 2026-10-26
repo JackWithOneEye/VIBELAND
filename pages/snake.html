@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Snake - VIBELAND</title>
     <link rel="stylesheet" type="text/css" href="../assets/styles.css">
     <style type="text/css">
@@ -10,8 +9,6 @@
             background: #000080;
             border: 2px inset #c0c0c0;
             cursor: crosshair;
-            width: 100%;
-            height: auto;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
@@ -255,6 +252,7 @@
         function setDirection(nx, ny) {
             if (pendingTurn) return;
             if (nx === -dir.x && ny === -dir.y) return;
+            if (nx === dir.x && ny === dir.y) return;
             nextDir = {x: nx, y: ny};
             pendingTurn = true;
         }

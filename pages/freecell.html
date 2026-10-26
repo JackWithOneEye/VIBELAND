@@ -4,7 +4,6 @@
 <head>
   <meta charset="UTF-8">
   <title>VIBELAND - FreeCell</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
     /* FreeCell game area - Windows 98/XP style */
@@ -12,8 +11,7 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       user-select: none;
       margin: 20px auto;
-      max-width: 900px;
-      width: 100%;
+      width: 852px;
       overflow: hidden;
     }
 
@@ -289,56 +287,6 @@
       letter-spacing: 3px;
       text-shadow: 1px 2px 2px #ccffd9;
     }
-
-    /* Responsive (min desktop) */
-    @media (max-width: 1000px) {
-      #game-container {
-        width: 95vw;
-        min-width: 320px;
-      }
-
-      #tableau-row,
-      #top-row {
-        gap: 5px;
-      }
-
-      .tableau {
-        width: 12vw;
-        min-width: 56px;
-      }
-
-      .cell,
-      .foundation {
-        width: 12vw;
-        min-width: 56px;
-      }
-
-      .card {
-        width: 11vw;
-        min-width: 53px;
-      }
-    }
-
-    @media (max-width: 700px) {
-      #game-container {
-        padding: 4px;
-      }
-
-      #title-bar {
-        font-size: 14px;
-      }
-
-      .card {
-        font-size: 15px;
-        height: 60px;
-      }
-
-      .tableau,
-      .cell,
-      .foundation {
-        min-width: 36px;
-      }
-    }
   </style>
 </head>
 
@@ -472,7 +420,9 @@
         let j = nextRand() % (i + 1);
         [deck[i], deck[j]] = [deck[j], deck[i]];
       }
-      return deck;
+      // Windows deals the picked cards from the end of the array, and numbers cards rank-major in C, D, H, S order
+      const MS_SUIT_TO_SUIT = [2, 3, 1, 0]; // Clubs, Diamonds, Hearts, Spades -> SUITS index
+      return deck.reverse().map(c => MS_SUIT_TO_SUIT[c % 4] * 13 + Math.floor(c / 4));
     }
 
     /** ---- DOM CREATION ---- **/
@@ -557,6 +507,8 @@
           cardDiv.style.left = '2px';
           tab.appendChild(cardDiv);
         }
+        // Grow the column so long stacks are not clipped by the game container
+        tab.style.minHeight = Math.max(400, (col.length - 1) * 28 + 98) + "px";
       }
       // Move counter, timer, game number
       document.getElementById('move-count').textContent = moveCount;
@@ -640,6 +592,8 @@
       if (victory) return;
       e.preventDefault();
       e.stopPropagation();
+      // A card selected by an earlier click is waiting for a destination; the click handler handles this card
+      if (selectedCards) return;
       const cardId = +this.dataset.cardid;
       let loc = findCardLocation(cardId);
       if (!loc) return;
@@ -675,7 +629,7 @@
       if (e.touches.length > 1) return;
       e.preventDefault();
       const touch = e.touches[0];
-      onCardMouseDown.call(this, {clientX: touch.clientX, clientY: touch.clientY, preventDefault() { }, button: 0});
+      onCardMouseDown.call(this, {clientX: touch.clientX, clientY: touch.clientY, preventDefault() { }, stopPropagation() { }, button: 0});
       document.addEventListener('touchmove', onDocumentTouchMove, {passive: false});
       document.addEventListener('touchend', onDocumentTouchEnd, {passive: false});
     }
@@ -722,6 +676,8 @@
     function finishDrag(x, y) {
       // Find drop target before removing drag image
       let dropTarget = document.elementFromPoint(x, y);
+      // Corner and placeholder spans sit on top of cards/foundations; use the enclosing card or pile
+      if (dropTarget) dropTarget = dropTarget.closest(".card, .tableau, .cell, .foundation") || dropTarget;
       removeDragImage();
       dragging = false;
 
@@ -755,20 +711,28 @@
       clearSelection();
     }
 
+    // A click on a card without dragging is left to the body click handler (select, deselect or move onto it).
+    // Moving here would re-render and detach the clicked card, so the browser would never fire click/dblclick.
+    function isPlainCardClick(e) {
+      if (dragging || !e.target.closest(".card")) return false;
+      if (selectedCards.origPos) clearSelection(); // drop the press-to-drag selection so the click can select
+      return true;
+    }
+
     function onTableauMouseUp(e) {
-      if (!selectedCards) return;
+      if (!selectedCards || isPlainCardClick(e)) return;
       let idx = +this.dataset.idx;
       tryMoveSelectedTo({type: 'tableau', idx});
       clearSelection();
     }
     function onCellMouseUp(e) {
-      if (!selectedCards) return;
+      if (!selectedCards || isPlainCardClick(e)) return;
       let idx = +this.dataset.idx;
       tryMoveSelectedTo({type: 'freecell', idx});
       clearSelection();
     }
     function onFoundationMouseUp(e) {
-      if (!selectedCards) return;
+      if (!selectedCards || isPlainCardClick(e)) return;
       let idx = +this.dataset.idx;
       tryMoveSelectedTo({type: 'foundation', idx});
       clearSelection();
@@ -781,6 +745,7 @@
       if (!loc) return;
       let card;
       if (loc.type === 'tableau') {
+        if (loc.pos !== tableau[loc.idx].length - 1) return; // only the exposed card can be auto-moved
         card = tableau[loc.idx][loc.pos];
       } else if (loc.type === 'freecell') {
         card = freecells[loc.idx];
@@ -823,7 +788,9 @@
       ghost.style.left = '0px';
       ghost.style.zIndex = 999;
       for (let i = 0; i < sel.cards.length; ++i) {
+        const origDom = sel.cards[i].dom;
         let cd = renderCard(sel.cards[i]);
+        sel.cards[i].dom = origDom; // keep pointing at the real card so its highlight can be cleared
         cd.classList.add('dragging');
         cd.style.position = 'absolute';
         cd.style.top = (i * 25) + 'px';
@@ -873,7 +840,7 @@
       checkVictory();
     }
 
-    function canMoveStack(cards, fromTabIdx) {
+    function canMoveStack(cards, fromTabIdx, toTabIdx) {
       // Only allow moving a valid stack (descending, alternating color)
       if (!cards || !cards.length) return false;
       for (let i = 1; i < cards.length; ++i) {
@@ -883,18 +850,19 @@
       }
       // Check max movable stack size (depends on empty freecells and empty columns)
       let numFree = freecells.filter(c => !c).length;
-      let numEmptyCols = tableau.filter((col, i) => i !== fromTabIdx && col.length === 0).length;
+      // An empty target column cannot also serve as temporary space
+      let numEmptyCols = tableau.filter((col, i) => i !== fromTabIdx && i !== toTabIdx && col.length === 0).length;
       let maxMovable = (numFree + 1) * Math.pow(2, numEmptyCols);
       return cards.length <= maxMovable;
     }
     function canMoveToTableau(cards, tabIdx, fromTabIdx) {
       if (!cards.length) return false;
       // Only allow moving stack if it is a valid sequence
-      if (!canMoveStack(cards, fromTabIdx)) return false;
+      if (!canMoveStack(cards, fromTabIdx, tabIdx)) return false;
       let col = tableau[tabIdx];
       if (col.length === 0) {
-        // Only Kings (or stack starting with King) to empty
-        return cards[0].rank === 13;
+        // In FreeCell any card (or valid stack) may go to an empty column
+        return true;
       } else {
         let top = col[col.length - 1];
         let moving = cards[0];
@@ -997,6 +965,7 @@
 
     document.getElementById('new-game-btn').onclick = function () {
       let n = prompt('Enter game number (1-32000), or leave blank for random:', gameNumber);
+      if (n === null) return; // Cancel keeps the current game
       n = parseInt(n);
       if (isNaN(n) || n < 1 || n > 32000) n = generateRandomGameNumber();
       startNewGame(n);
@@ -1030,6 +999,12 @@
       let cardId = +cardDiv.dataset.cardid;
       let loc = findCardLocation(cardId);
       if (!loc) return;
+      if (selectedCards) {
+        // Click-to-move: the clicked card's pile is the destination
+        tryMoveSelectedTo(loc);
+        clearSelection();
+        return;
+      }
       let movingCards;
       if (loc.type === 'tableau') {
         let idx = loc.idx, pos = loc.pos;

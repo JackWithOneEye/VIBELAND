@@ -3,7 +3,6 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Battleship - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
@@ -12,7 +11,6 @@
       display: flex;
       justify-content: center;
       gap: 30px;
-      flex-wrap: wrap;
       margin-top: 10px;
     }
 
@@ -114,12 +112,6 @@
       color: #000000;
       font-family: "Times New Roman", serif;
     }
-
-    @media (max-width: 768px) {
-      .boards {
-        gap: 16px;
-      }
-    }
   </style>
 </head>
 
@@ -192,6 +184,7 @@
     let currentPhase = "player_turn";
     let gameOver = false;
     let aiDifficulty = "normal";
+    let aiTurnTimer = null;
 
     // DOM
     const playerBoardEl = document.getElementById('player-board');
@@ -296,6 +289,8 @@
 
     // Game init/reset
     function setupGame() {
+      // Cancel a pending AI shot so it cannot fire into the new game
+      clearTimeout(aiTurnTimer);
       playerBoard = makeBoard();
       aiBoard = makeBoard();
       playerHits = makeBoard().map(row => row.map(_ => false));
@@ -360,13 +355,11 @@
         respectfulAIMessage("hit", hitShip);
         if (hitShip.hits.length === hitShip.size) {
           respectfulAIMessage("sunk", hitShip);
-          // On hard, remove target stack cells not adjacent to this ship
+          // On hard, drop target stack cells next to this ship, unless they also border a hit on a ship still afloat
           if (aiDifficulty === "hard") {
-            aiTargetStack = aiTargetStack.filter(([tx, ty]) =>
-              !hitShip.coords.some(([hx, hy]) =>
-                Math.abs(tx - hx) + Math.abs(ty - hy) === 1
-              )
-            );
+            const nextTo = ([tx, ty], cells) => cells.some(([hx, hy]) => Math.abs(tx - hx) + Math.abs(ty - hy) === 1);
+            const afloatHits = playerShips.filter(s => s.hits.length < s.size).flatMap(s => s.hits);
+            aiTargetStack = aiTargetStack.filter(t => !nextTo(t, hitShip.coords) || nextTo(t, afloatHits));
           }
         }
       } else {
@@ -469,7 +462,7 @@
       }
       renderBoards();
       currentPhase = "ai_turn";
-      setTimeout(aiTurn, 900);
+      aiTurnTimer = setTimeout(aiTurn, 900);
     }
 
     // Win check

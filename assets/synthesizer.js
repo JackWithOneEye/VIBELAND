@@ -401,14 +401,13 @@
 
     // Helper to safely disconnect all inputs to a node
     _disconnectInput(node) {
-      try {
-        this.lfo1.outputNode().disconnect(node);
-        this.lfo1.bipOut.disconnect(node);
-      } catch (e) { }
-      try {
-        this.lfo2.outputNode().disconnect(node);
-        this.lfo2.bipOut.disconnect(node);
-      } catch (e) { }
+      // Try each possible LFO output separately: disconnect() throws for an output
+      // that is not connected, which must not skip the remaining ones
+      [this.lfo1.bipOut, this.lfo1.uniSum, this.lfo2.bipOut, this.lfo2.uniSum].forEach(out => {
+        try {
+          out.disconnect(node);
+        } catch (e) { }
+      });
     }
 
     _updateFilterLfoRouting() {
@@ -732,6 +731,7 @@
       // Last-note priority: track pressed keys
       this.heldKeys = new Set();
       this.keyStack = []; // order of key presses
+      this.pointerKeys = new Set(); // keys held by mouse/touch
 
       // Base octave (C4 = MIDI 60) + user octave shift
       this.baseOctave = 4;
@@ -789,7 +789,8 @@
       };
 
       document.addEventListener('keydown', (e) => {
-        if (e.repeat || !this.keyMap.hasOwnProperty(e.code)) return;
+        // Leave browser shortcuts (Ctrl/Cmd/Alt + key) alone
+        if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || !this.keyMap.hasOwnProperty(e.code)) return;
         e.preventDefault();
         this.triggerNote(this.keyMap[e.code], true);
       });
@@ -799,6 +800,9 @@
         e.preventDefault();
         this.triggerNote(this.keyMap[e.code], false);
       });
+
+      // Keyup/mouseup never arrive once the window loses focus, so release everything
+      window.addEventListener('blur', () => this.releaseAll());
     }
 
     onPointerDown(e) {
@@ -823,19 +827,19 @@
 
       const semitone = parseInt(key.dataset.midi);
       console.log('Key pressed:', semitone, key.className);
+      if (!this.heldKeys.has(semitone)) this.pointerKeys.add(semitone);
       this.triggerNote(semitone, true);
     }
 
     onPointerUp(e) {
-      // Release all held notes on pointer up (simpler for touch)
-      if (this.keyStack.length > 0) {
-        const currentNote = this.keyStack[this.keyStack.length - 1];
-        this.triggerNote(currentNote, false);
-      }
+      // Release all notes held by mouse/touch on pointer up (simpler for touch);
+      // notes held on the computer keyboard are released by their own keyup
+      this.pointerKeys.forEach(semitone => this.triggerNote(semitone, false));
+      this.pointerKeys.clear();
     }
 
     triggerNote(semitone, isOn) {
-      const midiNote = (this.baseOctave + this.octaveShift) * 12 + semitone;
+      const midiNote = (this.baseOctave + 1 + this.octaveShift) * 12 + semitone;
 
       if (isOn) {
         if (!this.heldKeys.has(semitone)) {
@@ -854,7 +858,7 @@
           // Last-note priority: switch to most recent held key or release
           if (this.keyStack.length > 0) {
             const newNote = this.keyStack[this.keyStack.length - 1];
-            const newMidi = (this.baseOctave + this.octaveShift) * 12 + newNote;
+            const newMidi = (this.baseOctave + 1 + this.octaveShift) * 12 + newNote;
             this.onNoteOn(newMidi); // retrigger or legato depending on synth settings
           } else {
             this.onNoteOff();
@@ -881,6 +885,7 @@
       });
       this.heldKeys.clear();
       this.keyStack.length = 0;
+      this.pointerKeys.clear();
       this.onNoteOff();
     }
   }
@@ -940,7 +945,6 @@
         lfoDetune: v => v.toFixed(2) + ' ¢',
         lfoPan: v => v.toFixed(2),
         filterGain: u => {
-          if (u <= 0) return '-∞ dB';
           const db = lerp(-60, 0, u);
           return Math.round(db) + ' dB';
         },
@@ -961,23 +965,30 @@
       powerBtn.addEventListener('click', () => {
         if (!this.audioContext) {
           this.initAudio();
+          // Apply controls that were changed (or restored by the browser) before the synth existed
+          Object.values(this.knobs).forEach(knob => knob.onChange(knob.value));
+          this.selectorKnobs.forEach(knob => knob.onChange(knob.options[knob.currentIndex]));
+          ['filter-select', 'legato', 'lfo1-unipolar', 'lfo2-unipolar', 'filter-lfo-src', 'detune-lfo-src', 'pan-lfo-src']
+            .forEach(id => document.getElementById(id).dispatchEvent(new Event('change')));
           powerBtn.textContent = 'Synth Active';
           powerBtn.style.background = '#90EE90';
         }
       });
 
       // Waveform selector knobs
-      new SelectorKnob(document.getElementById('wave-knob'), (waveform) => {
-        if (this.synth) this.synth.setWaveform(waveform);
-      });
+      this.selectorKnobs = [
+        new SelectorKnob(document.getElementById('wave-knob'), (waveform) => {
+          if (this.synth) this.synth.setWaveform(waveform);
+        }),
 
-      new SelectorKnob(document.getElementById('lfo1-wave-knob'), (waveform) => {
-        if (this.synth) this.synth.setLfoParams(1, { type: waveform });
-      });
+        new SelectorKnob(document.getElementById('lfo1-wave-knob'), (waveform) => {
+          if (this.synth) this.synth.setLfoParams(1, { type: waveform });
+        }),
 
-      new SelectorKnob(document.getElementById('lfo2-wave-knob'), (waveform) => {
-        if (this.synth) this.synth.setLfoParams(2, { type: waveform });
-      });
+        new SelectorKnob(document.getElementById('lfo2-wave-knob'), (waveform) => {
+          if (this.synth) this.synth.setLfoParams(2, { type: waveform });
+        })
+      ];
 
       // Filter type dropdown
       document.getElementById('filter-select').addEventListener('change', (e) => {

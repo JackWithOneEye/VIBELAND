@@ -3,7 +3,6 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sudoku - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style type="text/css">
@@ -126,7 +125,7 @@
         <button onclick="clearBoard()">Clear</button>
         <button onclick="checkSolution()">Check</button>
         <button onclick="solvePuzzle()">Solve</button>
-        <button onclick="clearHints()">Hints</button>
+        <button onclick="showHints()">Hints</button>
       </div>
         </div>
 
@@ -190,12 +189,41 @@
         }
       }
       shuffle(cells);
-      // Remove cells to create puzzle
-      for (let k = 0; k < numToRemove; k++) {
-        let [i, j] = cells[k];
+      // Remove cells to create puzzle, keeping only removals that leave a single solution
+      let removed = 0;
+      for (let [i, j] of cells) {
+        if (removed === numToRemove) break;
+        const value = puzzle[i][j];
         puzzle[i][j] = 0;
+        if (countSolutions(puzzle, 2) === 1) {
+          removed++;
+        } else {
+          puzzle[i][j] = value;
+        }
       }
       return {puzzle, solved};
+    }
+
+    // Count solutions up to limit, filling the empty cell with the fewest candidates first
+    function countSolutions(b, limit) {
+      let best = null;
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          if (b[i][j] !== 0) continue;
+          const nums = [];
+          for (let num = 1; num <= 9; num++) if (isSafe(b, i, j, num)) nums.push(num);
+          if (!best || nums.length < best.nums.length) best = {i, j, nums};
+        }
+      }
+      if (!best) return 1;
+      let count = 0;
+      for (let num of best.nums) {
+        b[best.i][best.j] = num;
+        count += countSolutions(b, limit - count);
+        if (count >= limit) break;
+      }
+      b[best.i][best.j] = 0;
+      return count;
     }
 
     function initBoard() {
@@ -228,6 +256,7 @@
             input.value = originalBoard[i][j];
             input.readOnly = true;
           } else {
+            input.value = board[i][j] || "";
             input.addEventListener('input', handleInput);
             input.addEventListener('keydown', handleKeydown);
           }
@@ -242,8 +271,9 @@
       let val = e.target.value;
       if (val && !/^[1-9]$/.test(val)) {
         e.target.value = '';
-        return;
+        val = "";
       }
+      e.target.style.backgroundColor = "";
       const row = parseInt(e.target.dataset.row);
       const col = parseInt(e.target.dataset.col);
       board[row][col] = val ? parseInt(val) : 0;
@@ -258,6 +288,7 @@
         handleInput({target: input});
       } else if (e.key === 'Backspace' || e.key === 'Delete') {
         e.target.value = '';
+        e.target.style.backgroundColor = "";
         const row = parseInt(e.target.dataset.row);
         const col = parseInt(e.target.dataset.col);
         board[row][col] = 0;
@@ -359,6 +390,17 @@
       });
     }
 
+    function showHints() {
+      // Highlight entered numbers that do not match the solution
+      clearHints();
+      document.querySelectorAll(".cell input:not([readonly])").forEach(input => {
+        const value = board[input.dataset.row][input.dataset.col];
+        if (value !== 0 && value !== solvedBoard[input.dataset.row][input.dataset.col]) {
+          input.style.backgroundColor = "#ffcccc";
+        }
+      });
+    }
+
     // Initialize on load
     initBoard();
 
@@ -366,7 +408,7 @@
     document.addEventListener('keydown', e => {
       if (e.key >= '1' && e.key <= '9') {
         const focused = document.activeElement;
-        if (focused.tagName === 'INPUT') {
+        if (focused.tagName === 'INPUT' && !focused.readOnly) {
           focused.value = e.key;
           handleInput({target: focused});
         }

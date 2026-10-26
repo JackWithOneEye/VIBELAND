@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Unix Timestamp - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
@@ -72,8 +71,12 @@
       document.getElementById("timestamp").textContent = unix;
       document.getElementById("readable").textContent = now.toISOString().replace("T", " ").replace(/\.\d+Z$/, " UTC");
     }
-    updateTimestamp();
-    setInterval(updateTimestamp, 1000);
+    // Re-run just after each whole second so the display never lags or skips a second
+    function tick() {
+      updateTimestamp();
+      setTimeout(tick, 1000 - (Date.now() % 1000));
+    }
+    tick();
   </script>
 </body>
 </html>

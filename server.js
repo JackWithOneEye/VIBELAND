@@ -1,5 +1,6 @@
 /** @import { GuestbookEntry } from "./types" */
 import { Database } from "bun:sqlite";
+import { resolve, sep } from "node:path";
 
 const db = new Database("vibeland.db", { create: true });
 
@@ -58,15 +59,13 @@ Bun.serve({
         const name = formData.get("name");
         const message = formData.get("message");
 
-        if (typeof name !== 'string' || typeof message !== 'string') {
+        if (typeof name !== 'string' || typeof message !== 'string' || !name.trim() || !message.trim()) {
           return Response.redirect("/guestbook/add?error=missing", 302);
         }
 
         let email = formData.get("email");
-        if (typeof email !== 'string') {
+        if (typeof email !== 'string' || !email.trim()) {
           email = null;
-        } else {
-          email = escapeHtml(email);
         }
 
         const reqIp = server.requestIP(req);
@@ -76,25 +75,13 @@ Bun.serve({
         const locale = acceptLanguage?.split(",")[0]?.split(";")[0] || null;
 
         db.prepare("INSERT INTO guestbook (name, email, message, ip, user_agent_id, locale) VALUES (?, ?, ?, ?, ?, ?)")
-          .run(escapeHtml(name), email, escapeHtml(message), ip, getUserAgentId(userAgent), locale);
+          .run(name.trim(), email?.trim() ?? null, message.trim(), ip, getUserAgentId(userAgent), locale);
 
         return Response.redirect("/guestbook?success=1", 302);
       }
     },
-    "/assets/:file": async req => {
-      const file = Bun.file(`./assets/${req.params.file}`);
-      if (!(await file.exists())) {
-        return new Response(null, { status: 404 });
-      }
-      return new Response(file);
-    },
-    "/assets/img/:file": async req => {
-      const file = Bun.file(`./assets/img/${req.params.file}`);
-      if (!(await file.exists())) {
-        return new Response(null, { status: 404 });
-      }
-      return new Response(file);
-    },
+    "/assets/:file": req => serveFrom("assets", req.params.file),
+    "/assets/img/:file": req => serveFrom("assets/img", req.params.file),
     "/api/hit": {
       POST: async (req, server) => {
         const reqIp = server.requestIP(req);
@@ -133,14 +120,16 @@ Bun.serve({
  * @param hasSuccess {boolean}
  */
 async function generateGuestbookViewHTML(entries, hasSuccess, locale = 'en-US') {
+  let formatter;
+  try {
+    formatter = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    // Accept-Language values such as "*" are not valid locales
+    formatter = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
   const entriesHTML = entries.length === 0
     ? '<div class="loading-message">No entries yet. Be the first to sign!</div>'
     : entries.map(entry => {
-      const formatter = new Intl.DateTimeFormat(locale, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
       const date = formatter.format(new Date(entry.submitted_at));
       return `
           <div class="entry">
@@ -157,8 +146,8 @@ async function generateGuestbookViewHTML(entries, hasSuccess, locale = 'en-US') 
 
   const tmpl = await Bun.file("./templates/guestbook-view.template.html").text();
   return tmpl
-    .replace("{{ entries }}", entriesHTML)
-    .replace("{{ successMessage }}", successMessage);
+    .replace("{{ entries }}", () => entriesHTML)
+    .replace("{{ successMessage }}", () => successMessage);
 }
 
 /**
@@ -168,7 +157,22 @@ async function generateGuestbookAddHTML(hasError) {
   const errorMessage = hasError ? '<div class="error-message">⚠️ Please fill in both name and message fields.</div>' : '';
 
   const tmpl = await Bun.file("./templates/guestbook-add.template.html").text();
-  return tmpl.replace("{{ errorMessage }}", errorMessage);
+  return tmpl.replace("{{ errorMessage }}", () => errorMessage);
+}
+
+/**
+ * Serves a file only if it resolves inside `dir`, so encoded "../" in the URL cannot escape it.
+ * @param dir {string}
+ * @param name {string}
+ */
+async function serveFrom(dir, name) {
+  const root = resolve(dir);
+  const path = resolve(root, name);
+  const file = Bun.file(path);
+  if (!path.startsWith(root + sep) || !(await file.exists())) {
+    return new Response(null, { status: 404 });
+  }
+  return new Response(file);
 }
 
 /**

@@ -11,7 +11,7 @@ function mulberry32(seed) {
 // ======================== LAYOUTS ========================
 const LAYOUTS = {
   easy: [
-    // Simple pyramid - 72 tiles
+    // Simple pyramid - 66 tiles
     { x: 7, y: 0, z: 0 }, { x: 9, y: 0, z: 0 }, { x: 11, y: 0, z: 0 }, { x: 13, y: 0, z: 0 }, { x: 15, y: 0, z: 0 }, { x: 17, y: 0, z: 0 },
     { x: 5, y: 2, z: 0 }, { x: 7, y: 2, z: 0 }, { x: 9, y: 2, z: 0 }, { x: 11, y: 2, z: 0 }, { x: 13, y: 2, z: 0 }, { x: 15, y: 2, z: 0 }, { x: 17, y: 2, z: 0 }, { x: 19, y: 2, z: 0 },
     { x: 5, y: 4, z: 0 }, { x: 7, y: 4, z: 0 }, { x: 9, y: 4, z: 0 }, { x: 11, y: 4, z: 0 }, { x: 13, y: 4, z: 0 }, { x: 15, y: 4, z: 0 }, { x: 17, y: 4, z: 0 }, { x: 19, y: 4, z: 0 },
@@ -23,11 +23,10 @@ const LAYOUTS = {
     { x: 9, y: 3, z: 2 }, { x: 11, y: 3, z: 2 }, { x: 13, y: 3, z: 2 }, { x: 15, y: 3, z: 2 },
     { x: 9, y: 5, z: 2 }, { x: 11, y: 5, z: 2 }, { x: 13, y: 5, z: 2 }, { x: 15, y: 5, z: 2 },
     { x: 11, y: 3, z: 3 }, { x: 13, y: 3, z: 3 },
-    { x: 11, y: 5, z: 3 }, { x: 13, y: 5, z: 3 },
-    { x: 12, y: 4, z: 4 }
+    { x: 11, y: 5, z: 3 }, { x: 13, y: 5, z: 3 }
   ],
   normal: [
-    // Classic turtle layout - 144 tiles
+    // Classic turtle layout - 150 tiles
     { x: 0, y: 7, z: 0 }, { x: 2, y: 7, z: 0 }, { x: 28, y: 7, z: 0 }, { x: 30, y: 7, z: 0 },
     { x: 4, y: 1, z: 0 }, { x: 6, y: 1, z: 0 }, { x: 8, y: 1, z: 0 }, { x: 10, y: 1, z: 0 }, { x: 12, y: 1, z: 0 }, { x: 14, y: 1, z: 0 }, { x: 16, y: 1, z: 0 }, { x: 18, y: 1, z: 0 }, { x: 20, y: 1, z: 0 }, { x: 22, y: 1, z: 0 }, { x: 24, y: 1, z: 0 }, { x: 26, y: 1, z: 0 },
     { x: 6, y: 3, z: 0 }, { x: 8, y: 3, z: 0 }, { x: 10, y: 3, z: 0 }, { x: 12, y: 3, z: 0 }, { x: 14, y: 3, z: 0 }, { x: 16, y: 3, z: 0 }, { x: 18, y: 3, z: 0 }, { x: 20, y: 3, z: 0 }, { x: 22, y: 3, z: 0 }, { x: 24, y: 3, z: 0 },
@@ -50,7 +49,7 @@ const LAYOUTS = {
     { x: 14, y: 7, z: 4 }, { x: 16, y: 7, z: 4 }
   ],
   hard: [
-    // Extended pyramid - 144 tiles
+    // Extended pyramid - 122 tiles
     { x: 8, y: 0, z: 0 }, { x: 10, y: 0, z: 0 }, { x: 12, y: 0, z: 0 }, { x: 14, y: 0, z: 0 }, { x: 16, y: 0, z: 0 }, { x: 18, y: 0, z: 0 }, { x: 20, y: 0, z: 0 }, { x: 22, y: 0, z: 0 },
     { x: 6, y: 2, z: 0 }, { x: 8, y: 2, z: 0 }, { x: 10, y: 2, z: 0 }, { x: 12, y: 2, z: 0 }, { x: 14, y: 2, z: 0 }, { x: 16, y: 2, z: 0 }, { x: 18, y: 2, z: 0 }, { x: 20, y: 2, z: 0 }, { x: 22, y: 2, z: 0 }, { x: 24, y: 2, z: 0 },
     { x: 6, y: 4, z: 0 }, { x: 8, y: 4, z: 0 }, { x: 10, y: 4, z: 0 }, { x: 12, y: 4, z: 0 }, { x: 14, y: 4, z: 0 }, { x: 16, y: 4, z: 0 }, { x: 18, y: 4, z: 0 }, { x: 20, y: 4, z: 0 }, { x: 22, y: 4, z: 0 }, { x: 24, y: 4, z: 0 },
@@ -138,13 +137,25 @@ function generateBoard(slots, difficulty, seed) {
     }
   }
 
-  for (let i = faceDeck.length - 1; i > 0; i--) {
+  // Deal whole pairs (consecutive deck entries share a matchKey) so every
+  // matchKey appears an even number of times, even when n < deck size
+  const pairDeck = [];
+  for (let i = 0; i + 1 < faceDeck.length; i += 2) {
+    pairDeck.push([faceDeck[i], faceDeck[i + 1]]);
+  }
+  for (let i = pairDeck.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [faceDeck[i], faceDeck[j]] = [faceDeck[j], faceDeck[i]];
+    [pairDeck[i], pairDeck[j]] = [pairDeck[j], pairDeck[i]];
+  }
+  const dealt = pairDeck.slice(0, n / 2).flat();
+
+  for (let i = dealt.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [dealt[i], dealt[j]] = [dealt[j], dealt[i]];
   }
 
   for (let i = 0; i < n; i++) {
-    const { face, matchKey } = faceDeck[i];
+    const { face, matchKey } = dealt[i];
     tiles.push({ slotId: i, face, matchKey });
   }
 
@@ -386,6 +397,7 @@ function updateFreeStatus() {
 }
 
 function handleTileClick(slotId) {
+  if (gameState.isAnimating) return;
   const tile = document.querySelector(`.tile[data-slot-id="${slotId}"]`);
   if (!tile || tile.classList.contains("blocked")) return;
 
@@ -518,6 +530,7 @@ function updateTimer() {
 const newGameBtn = document.getElementById("new-game");
 if (newGameBtn) {
   newGameBtn.addEventListener("click", () => {
+    if (gameState.isAnimating) return;
     initGame(gameState.difficulty);
   });
 }
@@ -525,6 +538,7 @@ if (newGameBtn) {
 const hintBtn = document.getElementById("hint");
 if (hintBtn) {
   hintBtn.addEventListener("click", () => {
+  if (gameState.isAnimating) return;
   if (gameState.tiles.length === 0) return;
 
   // If we already have a persistent hint and both tiles still exist, keep it (do nothing).
@@ -574,10 +588,13 @@ if (hintBtn) {
 const shuffleBtn = document.getElementById("shuffle");
 if (shuffleBtn) {
   shuffleBtn.addEventListener("click", () => {
+  if (gameState.isAnimating) return;
   if (gameState.tiles.length === 0) return;
 
-  // Try to get a fast removal plan using greedy randomized attempts
-  const plan = findGreedySolution(gameState, gameState.slots, 400);
+  // Try to get a fast removal plan using greedy randomized attempts.
+  // Faces get reassigned afterwards, so plan on positions only (any two tiles may pair).
+  const anyFace = { tiles: gameState.tiles.map(t => ({ ...t, matchKey: "any" })) };
+  const plan = findGreedySolution(anyFace, gameState.slots, 400);
 
   if (!plan || plan.length === 0) {
     showMessage("Cannot shuffle - no quick solvable plan found!");
@@ -632,7 +649,8 @@ if (undoBtn) {
 
   const prev = gameState.undoStack.pop();
   gameState.tiles.push(...prev.tiles);
-  gameState.score = prev.score;
+  // Take back only the match's 100 points; keep hint/shuffle penalties paid since then
+  gameState.score = Math.max(0, gameState.score - 100);
   gameState.moves = prev.moves;
   gameState.selected = null;
 
@@ -645,6 +663,7 @@ if (undoBtn) {
 
 document.querySelectorAll(".diff-btn").forEach(btn => {
   btn.addEventListener("click", () => {
+    if (gameState.isAnimating) return;
     document.querySelectorAll(".diff-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     initGame(btn.dataset.diff);
@@ -675,6 +694,7 @@ function initGame(difficulty) {
 
   if (gameState.timerInterval) clearInterval(gameState.timerInterval);
   gameState.timerInterval = setInterval(updateTimer, 1000);
+  updateTimer();
 
   renderBoard();
 }

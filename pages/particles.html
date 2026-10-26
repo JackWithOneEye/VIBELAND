@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Particle Simulator - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
@@ -82,11 +81,13 @@
     let selectedType = 'sand';
 
     let isMouseDown = false;
+    let lastPos = null;
 
-    function getGridPos(x, y) {
+    function getGridPos(e) {
+      const rect = canvas.getBoundingClientRect();
       return {
-        gx: Math.floor(x / cellSize),
-        gy: Math.floor(y / cellSize)
+        gx: Math.floor((e.clientX - rect.left - canvas.clientLeft) / cellSize),
+        gy: Math.floor((e.clientY - rect.top - canvas.clientTop) / cellSize)
       };
     }
 
@@ -97,22 +98,35 @@
       }
     }
 
-    canvas.addEventListener('mousedown', (e) => {
+    // Fill every cell between two mouse positions so fast strokes leave no gaps
+    function placeLine(from, to, type) {
+      const steps = Math.max(Math.abs(to.gx - from.gx), Math.abs(to.gy - from.gy));
+      for (let i = 0; i <= steps; i++) {
+        const t = steps === 0 ? 0 : i / steps;
+        placeParticle(Math.round(from.gx + (to.gx - from.gx) * t), Math.round(from.gy + (to.gy - from.gy) * t), type);
+      }
+    }
+
+    canvas.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
       isMouseDown = true;
-      const rect = canvas.getBoundingClientRect();
-      const {gx, gy} = getGridPos(e.clientX - rect.left, e.clientY - rect.top);
-      placeParticle(gx, gy, selectedType);
+      lastPos = getGridPos(e);
+      placeParticle(lastPos.gx, lastPos.gy, selectedType);
     });
 
-    canvas.addEventListener('mouseup', () => {
+    window.addEventListener("mouseup", () => {
       isMouseDown = false;
     });
 
-    canvas.addEventListener('mousemove', (e) => {
+    canvas.addEventListener("mouseleave", () => {
+      lastPos = null;
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
       if (isMouseDown) {
-        const rect = canvas.getBoundingClientRect();
-        const {gx, gy} = getGridPos(e.clientX - rect.left, e.clientY - rect.top);
-        placeParticle(gx, gy, selectedType);
+        const pos = getGridPos(e);
+        placeLine(lastPos || pos, pos, selectedType);
+        lastPos = pos;
       }
     });
 

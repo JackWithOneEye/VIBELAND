@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calculator - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
@@ -135,36 +134,93 @@
     }
 
     function backspace() {
+      if (expr === "Error") expr = "";
       expr = expr.slice(0, -1);
+      lastWasResult = false;
       updateDisplay();
     }
 
+    const FUNCS = {sin: Math.sin, cos: Math.cos, tan: Math.tan, log: Math.log10, sqrt: Math.sqrt};
+
+    // Recursive-descent evaluator: + - (lowest), * /, unary -, ^ (right-associative), % (postfix)
     function compute(str) {
-      str = str.replace(/π/g, "Math.PI");
-      str = str.replace(/(\d+(\.\d+)?|\([^\)]+\))\s*\^\s*(\d+(\.\d+)?|\([^\)]+\))/g,
-        (_, a, _1, b) => `Math.pow(${a},${b})`
-      );
-      str = str.replace(/sqrt\(/g, "Math.sqrt(");
-      str = str.replace(/sin\(/g, "Math.sin(");
-      str = str.replace(/cos\(/g, "Math.cos(");
-      str = str.replace(/tan\(/g, "Math.tan(");
-      str = str.replace(/log\(/g, "Math.log10(");
-      str = str.replace(/(\d+(\.\d+)?)%/g, (_, n) => `(${n}/100)`);
-      str = str.replace(/÷/g, "/").replace(/×/g, "*").replace(/−/g, "-");
-      return str;
+      const NUMBER = /^(?:(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?|Infinity)$/;
+      const tokens = str.match(/(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?|Infinity|[a-z]+|\S/g) || [];
+      let pos = 0;
+      const peek = () => tokens[pos];
+      const next = () => tokens[pos++];
+      const expect = (t) => {
+        if (next() !== t) throw new Error("Syntax error");
+      };
+
+      function parseSum() {
+        let value = parseProduct();
+        while (peek() === "+" || peek() === "-") {
+          value = next() === "+" ? value + parseProduct() : value - parseProduct();
+        }
+        return value;
+      }
+
+      function parseProduct() {
+        let value = parseUnary();
+        while (peek() === "*" || peek() === "/") {
+          value = next() === "*" ? value * parseUnary() : value / parseUnary();
+        }
+        return value;
+      }
+
+      function parseUnary() {
+        if (peek() === "-") { next(); return -parseUnary(); }
+        if (peek() === "+") { next(); return parseUnary(); }
+        return parsePower();
+      }
+
+      function parsePower() {
+        const base = parsePercent();
+        if (peek() === "^") { next(); return Math.pow(base, parseUnary()); }
+        return base;
+      }
+
+      function parsePercent() {
+        let value = parsePrimary();
+        while (peek() === "%") { next(); value /= 100; }
+        return value;
+      }
+
+      function parsePrimary() {
+        const t = next();
+        if (t === undefined) throw new Error("Syntax error");
+        if (NUMBER.test(t)) return parseFloat(t);
+        if (t === "π") return Math.PI;
+        if (t === "(") {
+          const value = parseSum();
+          expect(")");
+          return value;
+        }
+        if (Object.hasOwn(FUNCS, t)) {
+          expect("(");
+          const value = parseSum();
+          expect(")");
+          return FUNCS[t](value);
+        }
+        throw new Error("Syntax error");
+      }
+
+      const result = parseSum();
+      if (pos !== tokens.length) throw new Error("Syntax error");
+      return result;
     }
 
     function calculate() {
-      let toEval, repeatMode = false;
+      let toEval;
       if (lastWasResult && lastCalculation) {
         toEval = lastCalculation;
-        repeatMode = true;
       } else {
-        toEval = compute(expr);
+        toEval = expr;
         lastCalculation = toEval;
       }
       try {
-        let result = Function(`"use strict";return (${toEval})`)();
+        let result = compute(toEval);
         if (typeof result === "number" && !Number.isInteger(result)) {
           result = result.toFixed(9).replace(/\.?0+$/, "");
         }
@@ -179,26 +235,23 @@
       updateDisplay();
     }
 
-    document.addEventListener('keydown', e => {
-      if (e.key >= '0' && e.key <= '9') input(e.key);
-      if (e.key === '.') input('.');
-      if (e.key === '+') inputOperator('+');
-      if (e.key === '-') inputOperator('-');
-      if (e.key === '*') inputOperator('*');
-      if (e.key === '/') inputOperator('/');
-      if (e.key === '(') input('(');
-      if (e.key === ')') input(')');
-      if (e.key === '^') inputOperator('^');
-      if (e.key === '%') input('%');
-      if (e.key.toLowerCase() === 'c') clearDisplay();
-      if (e.key === 'Backspace') backspace();
-      if (e.key === 'Enter') calculate();
-      if (e.key === 's') inputFunc('sin');
-      if (e.key === 'c') inputFunc('cos');
-      if (e.key === 't') inputFunc('tan');
-      if (e.key === 'l') inputFunc('log');
-      if (e.key === 'r') inputFunc('sqrt');
-      if (e.key === 'p') input('pi');
+    document.addEventListener("keydown", e => {
+      if ((e.ctrlKey || e.metaKey || e.altKey) && !e.getModifierState("AltGraph")) return;
+      const k = e.key;
+      if (k >= "0" && k <= "9" && k.length === 1) input(k);
+      else if (k === "." || k === "(" || k === ")" || k === "%") input(k);
+      else if (k === "+" || k === "-" || k === "*" || k === "/" || k === "^") inputOperator(k);
+      else if (k === "C" || k === "Escape" || k === "Delete") clearDisplay();
+      else if (k === "Backspace") backspace();
+      else if (k === "Enter" || k === "=") calculate();
+      else if (k === "s") inputFunc("sin");
+      else if (k === "c") inputFunc("cos");
+      else if (k === "t") inputFunc("tan");
+      else if (k === "l") inputFunc("log");
+      else if (k === "r") inputFunc("sqrt");
+      else if (k === "p") input("pi");
+      else return;
+      e.preventDefault();
     });
   </script>
 </body>

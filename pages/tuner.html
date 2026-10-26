@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Instrument Tuner - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
@@ -93,6 +92,7 @@
     let stream;
     let a4Freq = 440; // Default A4 frequency
     let isRunning = false;
+    let isStarting = false;
     let animationId;
     let lastFreq = -1;
     let holdFrames = 0;
@@ -103,8 +103,11 @@
 
     // Function to toggle tuner start/stop
     async function toggleTuner() {
+      if (isStarting) return; // Ignore clicks while waiting for the microphone
       if (!isRunning) {
+        isStarting = true;
         await startTuner();
+        isStarting = false;
       } else {
         stopTuner();
       }
@@ -114,7 +117,10 @@
     async function startTuner() {
       try {
         // Request microphone access
-        stream = await navigator.mediaDevices.getUserMedia({audio: true});
+        // Turn off voice processing: it attenuates and distorts sustained instrument tones
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false}
+        });
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 2048;
@@ -211,25 +217,46 @@
 
       const MIN_PERIOD = Math.floor(sampleRate / 2000); // Max freq 2000 Hz
       const MAX_PERIOD = Math.floor(sampleRate / 50); // Min freq 50 Hz
-      let bestOffset = -1;
+      const maxOffset = Math.min(MAX_PERIOD, SIZE / 2);
+      const correlations = new Float32Array(maxOffset + 1);
       let bestCorrelation = 0;
-      const threshold = 0.01; // Lowered threshold
+      const threshold = 0.5; // Minimum normalized correlation (-1..1), independent of volume
 
-      for (let offset = MIN_PERIOD; offset < Math.min(MAX_PERIOD, SIZE / 2); offset++) {
+      for (let offset = MIN_PERIOD; offset <= maxOffset; offset++) {
         let correlation = 0;
+        let energy = 0;
         for (let i = 0; i < SIZE - offset; i++) {
           correlation += buffer[i] * buffer[i + offset];
+          energy += buffer[i] * buffer[i] + buffer[i + offset] * buffer[i + offset];
         }
-        correlation /= (SIZE - offset);
+        // Normalize by the energy of the overlapping parts (keeps the peak at the true period)
+        correlation = energy > 0 ? 2 * correlation / energy : 0;
+        correlations[offset] = correlation;
 
         if (correlation > bestCorrelation) {
           bestCorrelation = correlation;
-          bestOffset = offset;
         }
       }
 
-      if (bestCorrelation > threshold && bestOffset > 0) {
-        const freq = sampleRate / bestOffset;
+      // Use the shortest period that correlates nearly as well as the best one:
+      // multiples of the period correlate just as well and would read octaves too low
+      let bestOffset = -1;
+      for (let offset = MIN_PERIOD + 1; offset < maxOffset; offset++) {
+        const c = correlations[offset];
+        if (c > 0.9 * bestCorrelation && c >= correlations[offset - 1] && c >= correlations[offset + 1]) {
+          bestOffset = offset;
+          break;
+        }
+      }
+
+      if (bestOffset > 0 && correlations[bestOffset] > threshold) {
+        // Parabolic interpolation around the peak for sub-sample period precision
+        const prev = correlations[bestOffset - 1];
+        const peak = correlations[bestOffset];
+        const next = correlations[bestOffset + 1];
+        const denom = prev - 2 * peak + next;
+        const shift = denom !== 0 ? 0.5 * (prev - next) / denom : 0;
+        const freq = sampleRate / (bestOffset + shift);
         if (freq > 50 && freq < 2000) { // Valid range for instruments
           return freq;
         }
@@ -243,7 +270,7 @@
 
       // Update note and cents display
       document.getElementById("note").textContent = note;
-      document.getElementById("cents").textContent = `${cents.toFixed(0)} cents`;
+      document.getElementById("cents").textContent = `${Math.round(cents)} cents`; // Math.round avoids "-0"
 
       // Draw meter
       drawMeter(cents);

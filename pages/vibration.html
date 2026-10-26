@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>String Vibration - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
@@ -177,6 +176,12 @@
           if (this.isDragging && this.sGrab >= 0) {
             this.fillTrapezoidProfile(this.sGrab, this.dragTarget, this.R, this.y);
             this.yPrev.set(this.y);
+          }
+          if (this.isDragging) {
+            // Apply tension/damping changes that were held back during the drag
+            this.c = parseFloat(document.getElementById('tension').value);
+            this.zeta = parseFloat(document.getElementById('damping').value);
+            this.updatePhysicsParameters();
           }
           this.isDragging = false;
           this.sGrab = -1;
