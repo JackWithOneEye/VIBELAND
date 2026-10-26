@@ -114,7 +114,10 @@
     }
 
     function inputFunc(func) {
-      if (lastWasResult || expr === "" || expr === "Error") {
+      if (expr === "" || expr === "Error") {
+        expr = func + "(";
+        lastWasResult = false;
+      } else if (lastWasResult) {
         expr = func + "(" + (isNaN(lastResult) ? "0" : lastResult.toString()) + ")";
         lastWasResult = false;
       } else {
