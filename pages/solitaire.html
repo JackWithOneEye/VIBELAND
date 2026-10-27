@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <title>Solitaire - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <link rel="stylesheet" type="text/css" href="../assets/cards.css">
   <style type="text/css">
     .solitaire {
       width: 650px;
@@ -101,41 +102,14 @@
       cursor: grabbing;
     }
 
+    /* Card back: lattice pattern inside a white margin, like a real deck */
     .face-down {
-      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      background:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.22) 0 1.5px, transparent 1.5px 6px),
+        repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 1.5px, transparent 1.5px 6px),
+        #1e4fa0;
+      box-shadow: inset 0 0 0 4px #fff, inset 0 0 0 5px #1e4fa0, 3px 3px 6px rgba(0, 0, 0, 0.4);
       color: white;
-    }
-
-    .corner {
-      position: absolute;
-      font-family: 'Times New Roman', serif;
-      font-weight: bold;
-      font-size: 16px;
-      line-height: 1.05;
-      text-align: center;
-      letter-spacing: 0.2px;
-    }
-
-    .top-left {
-      top: 3px;
-      left: 3px;
-    }
-
-    .top-right {
-      top: 3px;
-      right: 3px;
-    }
-
-    .bottom-right {
-      bottom: 3px;
-      right: 3px;
-      transform: rotate(180deg);
-    }
-
-    .bottom-left {
-      bottom: 3px;
-      left: 3px;
-      transform: rotate(180deg);
     }
 
     .red {
@@ -144,19 +118,6 @@
 
     .black {
       color: #212121;
-    }
-
-    /* Large center mark */
-    .center-mark {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-family: 'Times New Roman', serif;
-      font-weight: bold;
-      font-size: 34px;
-      opacity: 0.9;
-      pointer-events: none;
     }
 
     button {
@@ -253,6 +214,7 @@
     </div>
   </div>
 
+  <script src="../assets/cards.js"></script>
   <script>
     const suits = ['♣', '♦', '♥', '♠'];
     const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -336,20 +298,7 @@
       const el = document.createElement('div');
       el.className = `card ${card.faceUp ? '' : 'face-down'} ${card.color}`;
 
-      if (card.faceUp) {
-        const colorClass = card.color === 'red' ? 'red' : 'black';
-        const rank = card.rank;
-        const suit = card.suit;
-        el.innerHTML = `
-          <span class="corner top-left ${colorClass}">${rank}</span>
-          <span class="corner bottom-right ${colorClass}">${rank}</span>
-          <span class="corner top-right ${colorClass}">${suit}</span>
-          <span class="corner bottom-left ${colorClass}">${suit}</span>
-          <span class="center-mark ${colorClass}">${suit}</span>
-        `;
-      } else {
-        el.innerHTML = '';
-      }
+      el.innerHTML = card.faceUp ? cardFaceHTML(card.rank, card.suit, 'classic') : '';
       el.dataset.suit = card.suit;
       el.dataset.rank = card.rank;
       el.dataset.color = card.color;
@@ -399,9 +348,14 @@
       // Tableau
       for (let col = 0; col < 7; col++) {
         const tEl = document.getElementById(`tableau${col}`);
-        tableau[col].forEach((card, index) => {
+        // Face-up cards are spread wider so their rank-over-suit corner index stays readable
+        let top = 0;
+        let cardTop = 0;
+        tableau[col].forEach(card => {
           const cardEl = createCardElement(card);
-          cardEl.style.top = `${index * 20}px`;
+          cardTop = top;
+          cardEl.style.top = `${cardTop}px`;
+          top += card.faceUp ? 28 : 20;
           cardEl.style.left = '0';
           if (card.faceUp) {
             cardEl.draggable = true;
@@ -411,7 +365,7 @@
           tEl.appendChild(cardEl);
         });
         // Grow the column so long stacks stay inside it instead of spilling over the footer
-        tEl.style.minHeight = `${Math.max(350, (tableau[col].length - 1) * 20 + 104)}px`;
+        tEl.style.minHeight = `${Math.max(350, cardTop + 104)}px`;
       }
 
       checkWin();

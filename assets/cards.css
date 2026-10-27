@@ -1,0 +1,89 @@
+/* Real playing card faces, shared by Solitaire and FreeCell (see cards.js) */
+.card-face {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.card-face.red {
+  color: #c8102e;
+}
+
+.card-face.black {
+  color: #111;
+}
+
+/* Corner index: rank above a small suit, repeated upside down in the opposite corner */
+.card-index {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card-index.bottom {
+  top: auto;
+  left: auto;
+  bottom: 2px;
+  right: 2px;
+  transform: rotate(180deg);
+}
+
+.card-rank {
+  font-weight: bold;
+  font-size: 14px;
+  line-height: 14px;
+}
+
+.card-rank.ten {
+  font-size: 12.5px;
+  letter-spacing: -1px;
+}
+
+.card-index svg {
+  width: 9px;
+  height: 9px;
+  margin-top: 1px;
+}
+
+.card-pip {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+}
+
+.card-pip.flip {
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+.card-pip.card-ace {
+  width: 28px;
+  height: 28px;
+}
+
+.card-pip.card-ace.spade {
+  width: 38px;
+  height: 38px;
+}
+
+/* Framed court picture for J, Q and K */
+.card-court {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  top: 6%;
+  bottom: 6%;
+  border: 1px solid currentColor;
+  overflow: hidden;
+}
+
+.card-court svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

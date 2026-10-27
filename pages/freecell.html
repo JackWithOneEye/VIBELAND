@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <title>VIBELAND - FreeCell</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <link rel="stylesheet" type="text/css" href="../assets/cards.css">
   <style>
     /* FreeCell game area - Windows 98/XP style */
     .freecell-game {
@@ -176,52 +177,6 @@
       box-shadow: 0 0 24px #0080FF88, 2px 8px 22px #0006;
     }
 
-    /* Card corner styling - matching solitaire */
-    .corner {
-      position: absolute;
-      font-family: 'Times New Roman', serif;
-      font-weight: bold;
-      font-size: 16px;
-      line-height: 1.05;
-      text-align: center;
-      letter-spacing: 0.2px;
-    }
-
-    .top-left {
-      top: 3px;
-      left: 3px;
-    }
-
-    .top-right {
-      top: 3px;
-      right: 3px;
-    }
-
-    .bottom-right {
-      bottom: 3px;
-      right: 3px;
-      transform: rotate(180deg);
-    }
-
-    .bottom-left {
-      bottom: 3px;
-      left: 3px;
-      transform: rotate(180deg);
-    }
-
-    /* Large center mark */
-    .center-mark {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-family: 'Times New Roman', serif;
-      font-weight: bold;
-      font-size: 34px;
-      opacity: 0.9;
-      pointer-events: none;
-    }
-
     /* Foundation suit icon (empty) */
     .foundation .suit-placeholder {
       font-size: 30px;
@@ -348,6 +303,7 @@
       </div>
     </div>
   </div>
+  <script src="../assets/cards.js"></script>
   <script>
     /*
       FreeCell Windows-Style Implementation
@@ -531,15 +487,7 @@
       div.addEventListener('touchstart', onCardTouchStart, {passive: false});
       div.addEventListener('dblclick', onCardDoubleClick);
 
-      // Card face: solitaire-style layout with corners and center mark
-      const colorClass = card.color === 'red' ? 'red' : 'black';
-      div.innerHTML = `
-        <span class="corner top-left ${colorClass}">${RANKS[card.rank]}</span>
-        <span class="corner bottom-right ${colorClass}">${RANKS[card.rank]}</span>
-        <span class="corner top-right ${colorClass}">${SUITS[card.suit].symbol}</span>
-        <span class="corner bottom-left ${colorClass}">${SUITS[card.suit].symbol}</span>
-        <span class="center-mark ${colorClass}">${SUITS[card.suit].symbol}</span>
-      `;
+      div.innerHTML = cardFaceHTML(RANKS[card.rank], SUITS[card.suit].symbol, 'pixel');
       card.dom = div; // Save for animation
       return div;
     }
