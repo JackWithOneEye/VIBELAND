@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Psychedelic Mushroom - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style>
+    .trip {
+      background: #000000;
+      border: 3px inset #808080;
+      line-height: 0;
+    }
+
+    #mushroom-canvas {
+      display: block;
+      width: 100%;
+      height: 460px;
+      cursor: crosshair;
+    }
+
+    .mushroom-caption {
+      text-align: center;
+      font-family: 'Comic Sans MS', Arial, Helvetica, sans-serif;
+      font-style: italic;
+      color: #800080;
+      margin: 6px 0 0 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="outer-border">
+      <div class="header">
+        <h1>🍄 PSYCHEDELIC MUSHROOM 🍄</h1>
+        <p>~*~ It Sees You ~*~</p>
+      </div>
+
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ DO NOT EAT THE MUSHROOM ★ THE MUSHROOM IS WATCHING ★</div>
+      </div>
+
+      <div class="content">
+        <div class="trip">
+          <canvas id="mushroom-canvas" role="img" aria-label="An ASCII art mushroom with an eye that follows the cursor, floating in swirling psychedelic colours"></canvas>
+        </div>
+        <p class="mushroom-caption">~ move your cursor and it will watch you ~ click to make it blink ~</p>
+
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // A one-eyed mushroom, drawn one ASCII character at a time over a psychedelic background.
+    // Usually a fly agaric over acid plasma; one visit in ten, a swaying liberty cap in a kaleidoscope.
+    // Shapes are signed distance functions in units of half the canvas height, so the art
+    // scales with the canvas while every character is shaded from continuous math.
+    const canvas = document.getElementById("mushroom-canvas");
+    const ctx = canvas.getContext("2d");
+    const RAMP = " .:-=+*#%@";
+    const FONT_SIZE = 10;
+    const CELL_H = 10;
+    const OUTLINE = 0.032;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let cellW = 6;
+    let cols = 0;
+    let rows = 0;
+    let width = 0;
+    let height = 0;
+    let padX = 0;
+    let padY = 0;
+    let scale = 1;
+    let centerX = 0;
+    let centerY = 0;
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      width = canvas.clientWidth;
+      height = canvas.clientHeight;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.font = FONT_SIZE + "px 'Courier New', Courier, monospace";
+      ctx.textBaseline = "top";
+      cellW = ctx.measureText("M").width;
+      cols = Math.floor(width / cellW);
+      rows = Math.floor(height / CELL_H);
+      padX = (width - cols * cellW) / 2;
+      padY = (height - rows * CELL_H) / 2;
+      scale = Math.min(height / 2, width / 2.1) * 0.98;
+      centerX = width / 2;
+      centerY = height / 2 - 0.13 * scale;
+    }
+
+    // ---------- helpers ----------
+    function clamp(x, a, b) {
+      return x < a ? a : x > b ? b : x;
+    }
+
+    function hsv(h, s, v) {
+      h = (h - Math.floor(h)) * 6;
+      const i = h | 0;
+      const f = h - i;
+      const p = v * (1 - s);
+      const q = v * (1 - s * f);
+      const t = v * (1 - s * (1 - f));
+      switch (i) {
+        case 0: return [v, t, p];
+        case 1: return [q, v, p];
+        case 2: return [p, v, t];
+        case 3: return [p, q, v];
+        case 4: return [t, p, v];
+        default: return [v, p, q];
+      }
+    }
+
+    function sdEllipse(x, y, rx, ry) {
+      return (Math.hypot(x / rx, y / ry) - 1) * Math.min(rx, ry);
+    }
+
+    const LIGHT_LEN = Math.hypot(0.45, 0.55, 0.7);
+    const LX = -0.45 / LIGHT_LEN;
+    const LY = -0.55 / LIGHT_LEN;
+    const LZ = 0.7 / LIGHT_LEN;
+    function lit(nx, ny, nz) {
+      return Math.max(0, nx * LX + ny * LY + nz * LZ);
+    }
+
+    // Each cell's result: colour, ramp intensity, and an optional fixed character.
+    let R = 0;
+    let G = 0;
+    let B = 0;
+    let I = 0;
+    let C = null;
+    function put(r, g, b, i, c) {
+      R = r;
+      G = g;
+      B = b;
+      I = i;
+      C = c || null;
+    }
+    function putHsv(h, s, v, i, c) {
+      const k = hsv(h, s, v);
+      put(k[0], k[1], k[2], i, c);
+    }
+    function blank() {
+      put(0, 0, 0, 0);
+    }
+
+    // ---------- state: time, gaze, blinking ----------
+    let time = 0;
+    let clock = 0;
+    let lid = 1;
+    let pointer = null;
+    let wander = { x: 0.3, y: -0.2 };
+    let nextWander = 0;
+    let blinkStart = -9;
+    let nextBlink = 2;
+    const look = { x: 0, y: 0 };
+
+    canvas.addEventListener("pointermove", function (e) {
+      const rect = canvas.getBoundingClientRect();
+      pointer = { u: (e.clientX - rect.left - centerX) / scale, v: (e.clientY - rect.top - centerY) / scale };
+    });
+    canvas.addEventListener("pointerleave", function () {
+      pointer = null;
+    });
+    canvas.addEventListener("click", function () {
+      blinkStart = time;
+    });
+
+    function updateEye(dt) {
+      if (!reducedMotion && clock > nextBlink) {
+        blinkStart = time;
+        nextBlink = clock + 2.5 + Math.random() * 4;
+      }
+      const bp = (time - blinkStart) / 0.22;
+      lid = bp >= 0 && bp < 1 ? 1 - Math.sin(bp * Math.PI) * 0.97 : 1;
+
+      let tx;
+      let ty;
+      if (pointer) {
+        // Ease the gaze toward the cursor; it only reaches the rim when the cursor is far away.
+        const dx = pointer.u - eye.x;
+        const dy = pointer.v - eye.y;
+        const m = Math.hypot(dx, dy) || 1;
+        const f = m / (m + 0.25);
+        tx = (dx / m) * f;
+        ty = (dy / m) * f;
+      } else {
+        if (clock > nextWander) {
+          const a = Math.random() * Math.PI * 2;
+          const r = Math.random() * 0.8;
+          wander = { x: Math.cos(a) * r, y: Math.sin(a) * r };
+          nextWander = clock + 0.8 + Math.random() * 1.8;
+        }
+        tx = wander.x;
+        ty = wander.y;
+      }
+      const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 12);
+      look.x += (tx - look.x) * k;
+      look.y += (ty - look.y) * k;
+    }
+
+    // ---------- the eye ----------
+    function drawEye(u, v) {
+      const ry = Math.max(0.004, eye.ry * lid);
+      const ex = u - eye.x;
+      const ey = v - eye.y;
+      if (Math.hypot(ex / (eye.rx + 0.065), ey / (ry + 0.065)) > 1) return false;
+      if (Math.hypot(ex / (eye.rx + 0.035), ey / (ry + 0.035)) > 1) {
+        blank();
+        return true;
+      }
+      const d = Math.hypot(ex / eye.rx, ey / ry);
+      if (d > 1 || lid < 0.15) {
+        put(eye.lid[0], eye.lid[1], eye.lid[2], 0.9, ey < 0 || lid < 0.15 ? "=" : "-");
+        return true;
+      }
+      const ix = eye.x + look.x * eye.rx * 0.6;
+      const iy = eye.y + look.y * eye.ry * 0.45;
+      const qx = u - ix;
+      const qy = v - iy;
+      const id = Math.hypot(qx, qy);
+      if (id < eye.ri) {
+        if (id < eye.rp) {
+          blank();
+          return true;
+        }
+        const hx = qx + eye.ri * 0.4;
+        const hy = qy + eye.ri * 0.4;
+        if (hx * hx + hy * hy < eye.ri * eye.ri * 0.06) {
+          put(1, 1, 1, 1, "@");
+          return true;
+        }
+        const t = (id - eye.rp) / (eye.ri - eye.rp);
+        const hue = eye.hue + time * 0.03;
+        if (t > 0.85) {
+          putHsv(hue, 0.85, 0.7, 0.7);
+          return true;
+        }
+        const streak = 0.5 + 0.5 * Math.sin(Math.atan2(qy, qx) * 13 + t * 4);
+        putHsv(hue + t * 0.2, 0.65, 0.85 + 0.15 * streak, 0.8 + 0.2 * streak);
+        return true;
+      }
+      const nz = Math.sqrt(Math.max(0, 1 - d * d));
+      const sh = 0.7 + 0.3 * nz;
+      put(sh, sh * 0.97, sh * 0.94, 0.55 + 0.3 * nz);
+      return true;
+    }
+
+    // ---------- the toadstool ----------
+    const SPOTS = [[-0.5, -0.16, 0.085], [0.5, -0.13, 0.075], [-0.24, -0.5, 0.06], [0.27, -0.49, 0.065], [-0.64, 0.0, 0.05], [0.65, 0.02, 0.05], [0.0, -0.55, 0.04]];
+
+    function drawToadstool(u, v) {
+      if (drawEye(u, v)) return true;
+
+      // Red domed cap with a thin rounded rim underneath.
+      const capD = Math.min(Math.max(sdEllipse(u, v - 0.08, 0.78, 0.66), v - 0.08), sdEllipse(u, v - 0.08, 0.78, 0.07));
+      if (capD < 0) {
+        if (v > 0.1) {
+          put(1, 0.88, 0.75, 0.65, "|");
+          return true;
+        }
+        const nx = u / 0.78;
+        const ny = (v - 0.08) / 0.66;
+        const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+        const sh = 0.55 + 0.75 * lit(nx, ny, nz);
+        for (const s of SPOTS) {
+          if (Math.hypot(u - s[0], (v - s[1]) * 1.15) < s[2]) {
+            put(sh, sh, sh * 0.96, 0.65 + 0.35 * sh);
+            return true;
+          }
+        }
+        put(sh, 0.24 * sh, 0.17 * sh, 0.5 + 0.45 * sh);
+        return true;
+      }
+
+      // Thin stem that wobbles like it is breathing.
+      const sx = 0.06 * Math.sin(v * 5 - time * 2);
+      const w = 0.12 + 0.04 * v;
+      const stemD = Math.max(Math.abs(u - sx) - w, 0.08 - v, v - 0.86);
+      if (stemD < 0) {
+        const nx = clamp((u - sx) / w, -1, 1);
+        const sh = 0.55 + 0.75 * lit(nx, 0, Math.sqrt(1 - nx * nx));
+        put(sh, 0.95 * sh, 0.84 * sh, 0.45 + 0.5 * sh);
+        return true;
+      }
+
+      // A black outline keeps the mushroom readable against the busy background.
+      if (Math.min(capD, stemD) < OUTLINE) {
+        blank();
+        return true;
+      }
+      return false;
+    }
+
+    // ---------- the rare liberty cap ----------
+    function swayAt(v) {
+      return 0.17 * Math.sin(time * 0.9) * Math.pow(clamp((0.88 - v) / 1.55, 0, 1), 2);
+    }
+
+    function drawLibertyCap(u, v) {
+      if (drawEye(u, v)) return true;
+      const x = u - swayAt(v);
+      const tip = -0.67;
+      const base = -0.04;
+
+      // Pointed, striated cap that darkens toward the tip.
+      let capD = 1;
+      if (v > tip - 0.1 && v < base + 0.1) {
+        const t = clamp((v - tip) / (base - tip), 0, 1);
+        const w = 0.52 * Math.pow(t, 0.55);
+        capD = Math.max((Math.abs(x) - w) * 0.8, tip - v, v - (base + 0.025 * Math.sin(x * 16)));
+        if (capD < 0) {
+          const nx = clamp(x / (w + 0.001), -1, 1);
+          const sh = (0.5 + 0.8 * lit(nx * 0.85, -0.35, Math.sqrt(1 - nx * nx) * 0.85)) * (0.9 + 0.1 * Math.sin(Math.atan2(x, v - tip + 0.05) * 30));
+          put((0.75 + 0.25 * t) * sh, (0.45 + 0.3 * t) * sh, (0.2 + 0.12 * t) * sh, 0.45 + 0.5 * sh);
+          return true;
+        }
+      }
+
+      // Slender stem that bruises blue toward its base.
+      const w = 0.055 + 0.02 * (v + 0.04);
+      const stemD = Math.max(Math.abs(x) - w, base - v, v - 0.88);
+      if (stemD < 0) {
+        const nx = clamp(x / w, -1, 1);
+        const sh = 0.5 + 0.75 * lit(nx, 0, Math.sqrt(1 - nx * nx));
+        const b = clamp((v - 0.45) / 0.43, 0, 1);
+        put((1 - 0.6 * b) * sh, (0.95 - 0.35 * b) * sh, (0.82 + 0.18 * b) * sh, 0.45 + 0.5 * sh);
+        return true;
+      }
+
+      if (Math.min(capD, stemD) < OUTLINE) {
+        blank();
+        return true;
+      }
+      return false;
+    }
+
+    // ---------- backgrounds ----------
+    function plasma(u, v) {
+      const p = Math.sin(u * 4 + time) + Math.sin(v * 5 - time * 1.3) + Math.sin((u + v) * 3 + time * 0.7) + Math.sin(Math.hypot(u + 0.3, v - 0.2) * 7 - time * 2);
+      const s = Math.sin(p * 1.6);
+      const k = 0.5 + 0.5 * Math.sin(p * 3);
+      putHsv(0.86 + 0.39 * (0.5 + 0.5 * s), 0.8, 0.55 + 0.45 * k, 0.28 + 0.45 * k);
+    }
+
+    function kaleidoscope(u, v) {
+      const y0 = v + 0.1;
+      const d = Math.hypot(u, y0);
+      const seg = Math.PI / 6;
+      let a = Math.atan2(y0, u) + time * 0.15;
+      a = Math.abs((((a % (2 * seg)) + 2 * seg) % (2 * seg)) - seg);
+      const x = Math.cos(a) * d;
+      const y = Math.sin(a) * d;
+      const f = Math.sin(x * 11 - time * 1.5) * Math.cos(y * 13 + time) + Math.sin(d * 9 - time * 2) * 0.6;
+      if (f > 0.15) putHsv(d * 0.6 - time * 0.1 + a * 0.5, 0.8, 0.5 + 0.45 * Math.min(1, f), 0.3 + 0.4 * Math.min(1, f));
+      else if (f > -0.3) putHsv(d * 0.6 - time * 0.1 + 0.5, 0.65, 0.35, 0.18);
+    }
+
+    // ---------- which mushroom shows up: one visit in ten gets the liberty cap ----------
+    const TOADSTOOL = {
+      eye: function () {
+        return { x: 0, y: -0.24, rx: 0.36, ry: 0.21, ri: 0.17, rp: 0.08, hue: 0.45, lid: [1, 0.62, 0.52] };
+      },
+      draw: drawToadstool,
+      background: plasma
+    };
+    const LIBERTY_CAP = {
+      eye: function () {
+        return { x: swayAt(-0.3), y: -0.3, rx: 0.22, ry: 0.13, ri: 0.11, rp: 0.05, hue: 0.72, lid: [1, 0.82, 0.55] };
+      },
+      draw: drawLibertyCap,
+      background: kaleidoscope
+    };
+    const art = Math.random() < 0.1 ? LIBERTY_CAP : TOADSTOOL;
+    let eye = art.eye();
+
+    // ---------- colour cache ----------
+    const colorCache = new Map();
+    function colorString(r, g, b) {
+      const qr = Math.min(31, (r * 31 + 0.5) | 0);
+      const qg = Math.min(31, (g * 31 + 0.5) | 0);
+      const qb = Math.min(31, (b * 31 + 0.5) | 0);
+      const key = (qr << 10) | (qg << 5) | qb;
+      let s = colorCache.get(key);
+      if (!s) {
+        s = "rgb(" + Math.round(qr * 8.226) + "," + Math.round(qg * 8.226) + "," + Math.round(qb * 8.226) + ")";
+        colorCache.set(key, s);
+      }
+      return s;
+    }
+
+    // ---------- the render loop ----------
+    let last = performance.now();
+
+    function frame(now) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      clock += dt;
+      if (!reducedMotion) time += dt;
+      eye = art.eye();
+      updateEye(dt);
+
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, width, height);
+
+      for (let row = 0; row < rows; row++) {
+        const v = (padY + (row + 0.5) * CELL_H - centerY) / scale;
+        for (let col = 0; col < cols; col++) {
+          const u = (padX + (col + 0.5) * cellW - centerX) / scale;
+          I = 0;
+          C = null;
+          if (!art.draw(u, v)) art.background(u, v);
+          if (!C && I <= 0.02) continue;
+          ctx.fillStyle = colorString(R, G, B);
+          ctx.fillText(C || RAMP[clamp(Math.round(I * 9), 1, 9)], padX + col * cellW, padY + row * CELL_H);
+        }
+      }
+
+      if (!reducedMotion) requestAnimationFrame(frame);
+    }
+
+    resize();
+    window.addEventListener("resize", function () {
+      resize();
+      if (reducedMotion) frame(performance.now());
+    });
+    if (reducedMotion) {
+      time = 4;
+      canvas.addEventListener("pointermove", function () {
+        frame(performance.now());
+      });
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

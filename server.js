@@ -18,6 +18,7 @@ Bun.serve({
     "/paint": Bun.file("./pages/paint.html"),
     "/particles": Bun.file("./pages/particles.html"),
     "/pong": Bun.file("./pages/pong.html"),
+    "/psychedelic-mushroom": Bun.file("./pages/psychedelic-mushroom.html"),
     "/snake": Bun.file("./pages/snake.html"),
     "/solitaire": Bun.file("./pages/solitaire.html"),
     "/sudoku": Bun.file("./pages/sudoku.html"),
