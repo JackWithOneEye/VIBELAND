@@ -16,6 +16,7 @@ Bun.serve({
     "/graph-calculator": Bun.file("./pages/graph-calculator.html"),
     "/mahjong": Bun.file("./pages/mahjong.html"),
     "/memory": Bun.file("./pages/memory.html"),
+    "/mensch-aergere-dich-nicht": Bun.file("./pages/mensch-aergere-dich-nicht.html"),
     "/minesweeper": Bun.file("./pages/minesweeper.html"),
     "/paint": Bun.file("./pages/paint.html"),
     "/particles": Bun.file("./pages/particles.html"),

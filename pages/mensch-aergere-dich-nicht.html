@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Mensch ärgere dich nicht - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style>
+    .header h1 {
+      font-size: 34px;
+    }
+
+    .game {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: flex-start;
+      margin-top: 10px;
+    }
+
+    /* Board */
+    .board {
+      position: relative;
+      padding: 10px;
+      background: #FFE9A8;
+      border: 3px outset #C8A040;
+    }
+
+    .board svg {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      pointer-events: none;
+    }
+
+    .grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(11, 40px);
+      grid-template-rows: repeat(11, 40px);
+      gap: 2px;
+    }
+
+    .cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .field {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      border: 2px solid #000000;
+    }
+
+    .field.home,
+    .field.goal {
+      background: var(--tint);
+      border-color: var(--col);
+    }
+
+    .field.start {
+      background: var(--col);
+    }
+
+    .field .label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      font-weight: bold;
+      font-size: 13px;
+      color: #FFFFFF;
+      text-shadow: 1px 1px 0 #000000;
+    }
+
+    .center-mark {
+      font-size: 22px;
+    }
+
+    .cell.target .field {
+      box-shadow: 0 0 0 3px #FF00FF;
+    }
+
+    /* Pieces */
+    .piece {
+      position: absolute;
+      width: 30px;
+      height: 36px;
+      top: 0;
+      left: 5px;
+      filter: drop-shadow(1px 2px 0 rgba(0, 0, 0, 0.35));
+    }
+
+    .piece svg {
+      position: static;
+      display: block;
+    }
+
+    .piece.movable {
+      cursor: pointer;
+      animation: hop 0.6s ease-in-out infinite alternate;
+    }
+
+    .piece.movable:focus-visible {
+      outline: 2px dotted #FF00FF;
+      outline-offset: 2px;
+    }
+
+    @keyframes hop {
+      from {
+        transform: translateY(0);
+      }
+
+      to {
+        transform: translateY(-5px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .piece.movable {
+        animation: none;
+        outline: 2px solid #FF00FF;
+      }
+    }
+
+    /* Side panel */
+    .side {
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .panel {
+      background: #FFFFFF;
+      border: 2px inset #C0C0C0;
+      padding: 8px;
+    }
+
+    .panel-title {
+      font-weight: bold;
+      color: #000080;
+      margin-bottom: 6px;
+    }
+
+    .color-choice {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .color-choice button {
+      padding: 8px 4px;
+      color: #FFFFFF;
+      text-shadow: 1px 1px 0 #000000;
+      background: var(--col);
+      border: 3px outset var(--col);
+    }
+
+    .color-choice button:hover {
+      background: var(--col);
+      filter: brightness(1.15);
+    }
+
+    .color-choice button:active {
+      border-style: inset;
+    }
+
+    .players {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .players li {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      padding: 3px 4px;
+      border: 2px solid transparent;
+    }
+
+    .players li.active {
+      background: #FFFF99;
+      border-color: #FF00FF;
+    }
+
+    .players .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid #000000;
+      background: var(--col);
+      flex: none;
+    }
+
+    .players .name {
+      flex: 1;
+      font-weight: bold;
+    }
+
+    .players .goal-count {
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+    }
+
+    .dice-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dice {
+      width: 56px;
+      height: 56px;
+      background: #FFFFFF;
+      border: 2px solid #000000;
+      border-radius: 8px;
+      box-shadow: 2px 2px 0 #808080;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      padding: 6px;
+      flex: none;
+    }
+
+    .dice .pip {
+      width: 10px;
+      height: 10px;
+      margin: auto;
+      border-radius: 50%;
+      background: #000000;
+      visibility: hidden;
+    }
+
+    .dice .pip.on {
+      visibility: visible;
+    }
+
+    .dice-area button {
+      flex: 1;
+      font-size: 15px;
+    }
+
+    .dice-area button:disabled {
+      color: #808080;
+      cursor: default;
+    }
+
+    #status {
+      min-height: 40px;
+      color: #000080;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    #log {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      height: 120px;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+
+    #log li {
+      margin: 0 0 3px 0;
+    }
+
+    #log li:first-child {
+      font-weight: bold;
+    }
+
+    #new-game {
+      width: 100%;
+    }
+
+    .rules {
+      text-align: left;
+      max-width: none;
+      margin: 12px 0 0 0;
+      line-height: 1.4;
+    }
+
+    .rules ul {
+      margin: 4px 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="outer-border">
+      <div class="header">
+        <h1>🎲 MENSCH ÄRGERE DICH NICHT 🎲</h1>
+        <p>~*~ Ze German Klassiker since 1914 – now on ze Internet! ~*~</p>
+      </div>
+
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ VILLKOMMEN TO VIBELAND ★ CHOOSE YOUR COLOR ★ KNOCK ONKEL HEINZ OFF ZE BOARD ★ AND DON'T GET ANGRY, JA? ★</div>
+      </div>
+
+      <div class="content">
+        <div class="game">
+          <div class="board">
+            <svg id="lines" width="460" height="460" aria-hidden="true"></svg>
+            <div class="grid" id="grid"></div>
+          </div>
+
+          <div class="side">
+            <div class="panel" id="setup">
+              <div class="panel-title">Choose your color, bitte:</div>
+              <div class="color-choice" id="color-choice"></div>
+            </div>
+
+            <div class="panel" id="players-panel" hidden>
+              <div class="panel-title">Ze Players</div>
+              <ul class="players" id="players"></ul>
+            </div>
+
+            <div class="panel">
+              <div class="dice-area">
+                <div class="dice" id="dice" aria-live="polite" aria-label="Dice"></div>
+                <button id="roll-btn" disabled>Roll ze dice!</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div id="status" aria-live="polite">Choose a color to start ze game, ja?</div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-title">Vat happened so far</div>
+              <ul id="log"></ul>
+            </div>
+
+            <button id="new-game" hidden>Neues Spiel! (New game)</button>
+          </div>
+        </div>
+
+        <div class="instructions rules">
+          <strong>Ze Rules (die Spielregeln):</strong>
+          <ul>
+            <li>Only vith a <b>6</b> does a piece come out of ze house onto your start field, ze one marked "A" for <i>Anfang</i>. If you throw a 6, you must come out, and zen you may roll again. Jawohl!</li>
+            <li>As long as pieces are still vaiting in ze house, you must clear ze start field. No standing around!</li>
+            <li>Ven you have no piece on ze board, you get three tries to throw a 6.</li>
+            <li>Land on an opponent's piece and – zack! – it goes back into ze house.</li>
+            <li>You must reach ze goal fields vith ze exact number, and in ze goal you may not jump over anybody.</li>
+            <li>Ze first one vith all four pieces in ze goal is ze vinner!</li>
+          </ul>
+        </div>
+
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND, schnell!</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Board geometry on an 11x11 grid, as [x, y]. The track runs clockwise.
+    const TRACK = [
+      [0, 4], [1, 4], [2, 4], [3, 4], [4, 4], [4, 3], [4, 2], [4, 1], [4, 0], [5, 0],
+      [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [7, 4], [8, 4], [9, 4], [10, 4], [10, 5],
+      [10, 6], [9, 6], [8, 6], [7, 6], [6, 6], [6, 7], [6, 8], [6, 9], [6, 10], [5, 10],
+      [4, 10], [4, 9], [4, 8], [4, 7], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6], [0, 5]
+    ];
+    const GOAL = [
+      [[1, 5], [2, 5], [3, 5], [4, 5]],
+      [[5, 1], [5, 2], [5, 3], [5, 4]],
+      [[9, 5], [8, 5], [7, 5], [6, 5]],
+      [[5, 9], [5, 8], [5, 7], [5, 6]]
+    ];
+    const HOME = [
+      [[0, 0], [1, 0], [0, 1], [1, 1]],
+      [[9, 0], [10, 0], [9, 1], [10, 1]],
+      [[9, 9], [10, 9], [9, 10], [10, 10]],
+      [[0, 9], [1, 9], [0, 10], [1, 10]]
+    ];
+    const TRACK_LEN = 40;
+    const LAST_GOAL = 43;
+    const HOME_POS = -1;
+
+    const COLORS = [
+      {name: "Red", col: "#E00000", tint: "#FFB3B3"},
+      {name: "Blue", col: "#0040FF", tint: "#B3C6FF"},
+      {name: "Green", col: "#00A000", tint: "#B3F0B3"},
+      {name: "Yellow", col: "#FFD000", tint: "#FFF2A0"}
+    ];
+    const OPPONENT_NAMES = ["Onkel Heinz", "Tante Gisela", "Opa Willi", "Oma Erna"];
+    const PIPS = {
+      1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
+    };
+
+    const gridEl = document.getElementById("grid");
+    const linesEl = document.getElementById("lines");
+    const diceEl = document.getElementById("dice");
+    const rollBtn = document.getElementById("roll-btn");
+    const statusEl = document.getElementById("status");
+    const logEl = document.getElementById("log");
+    const setupEl = document.getElementById("setup");
+    const playersPanelEl = document.getElementById("players-panel");
+    const playersEl = document.getElementById("players");
+    const newGameBtn = document.getElementById("new-game");
+
+    const cells = {};
+    let players = [];
+    let current = 0;
+    let phase = "setup"; // setup | roll | move | busy | over
+    let dice = 6;
+    let triesLeft = 1;
+    let legal = [];
+    let placements = [];
+    let timer = null;
+    let gameId = 0;
+
+    // ---------- Board construction ----------
+
+    function key(x, y) {
+      return x + "," + y;
+    }
+
+    function addField(x, y, cls, color, label) {
+      const field = document.createElement("div");
+      field.className = "field " + cls;
+      if (color !== undefined) {
+        field.style.setProperty("--col", COLORS[color].col);
+        field.style.setProperty("--tint", COLORS[color].tint);
+      }
+      if (label) field.innerHTML = "<span class=\"label\">" + label + "</span>";
+      cells[key(x, y)].appendChild(field);
+    }
+
+    function buildBoard() {
+      for (let y = 0; y < 11; y++) {
+        for (let x = 0; x < 11; x++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cells[key(x, y)] = cell;
+          gridEl.appendChild(cell);
+        }
+      }
+      TRACK.forEach(([x, y], i) => {
+        const startOf = i % 10 === 0 ? i / 10 : undefined;
+        addField(x, y, startOf === undefined ? "track" : "start", startOf, startOf === undefined ? "" : "A");
+      });
+      for (let c = 0; c < 4; c++) {
+        GOAL[c].forEach(([x, y]) => addField(x, y, "goal", c, ""));
+        HOME[c].forEach(([x, y]) => addField(x, y, "home", c, ""));
+      }
+      cells[key(5, 5)].innerHTML = "<span class=\"center-mark\" aria-hidden=\"true\">🎲</span>";
+
+      // Connecting lines behind the fields
+      const center = ([x, y]) => (x * 42 + 20) + "," + (y * 42 + 20);
+      let svg = "<polygon points=\"" + TRACK.map(center).join(" ") +
+        "\" fill=\"none\" stroke=\"#000\" stroke-width=\"3\"/>";
+      for (let c = 0; c < 4; c++) {
+        const entry = TRACK[(c * 10 + TRACK_LEN - 1) % TRACK_LEN];
+        svg += "<polyline points=\"" + [entry].concat(GOAL[c]).map(center).join(" ") +
+          "\" fill=\"none\" stroke=\"" + COLORS[c].col + "\" stroke-width=\"3\"/>";
+      }
+      linesEl.innerHTML = svg;
+
+      for (let i = 0; i < 9; i++) {
+        diceEl.insertAdjacentHTML("beforeend", "<div class=\"pip\"></div>");
+      }
+    }
+
+    function pawnSvg(color) {
+      return "<svg width=\"30\" height=\"36\" viewBox=\"0 0 30 36\" aria-hidden=\"true\">" +
+        "<g fill=\"" + COLORS[color].col + "\" stroke=\"#000\" stroke-width=\"1.5\">" +
+        "<ellipse cx=\"15\" cy=\"31\" rx=\"11\" ry=\"3.5\"/>" +
+        "<path d=\"M8 31 C8 24 11 20 13 16 L17 16 C19 20 22 24 22 31 Z\"/>" +
+        "<circle cx=\"15\" cy=\"10\" r=\"6.5\"/></g>" +
+        "<circle cx=\"13\" cy=\"8\" r=\"2\" fill=\"#fff\" opacity=\"0.7\"/></svg>";
+    }
+
+    // ---------- Rules ----------
+
+    function cellOf(color, pos, pieceIdx) {
+      if (pos === HOME_POS) return HOME[color][pieceIdx];
+      if (pos >= TRACK_LEN) return GOAL[color][pos - TRACK_LEN];
+      return TRACK[(color * 10 + pos) % TRACK_LEN];
+    }
+
+    function absolute(color, pos) {
+      return (color * 10 + pos) % TRACK_LEN;
+    }
+
+    function legalMoves(p, roll) {
+      const own = p.pieces;
+      const moves = [];
+      own.forEach((pos, i) => {
+        if (pos === HOME_POS) {
+          if (roll === 6 && !own.includes(0)) moves.push({piece: i, from: pos, to: 0});
+          return;
+        }
+        const to = pos + roll;
+        if (to > LAST_GOAL) return;
+        if (to >= TRACK_LEN) {
+          // No jumping over own pieces inside the goal
+          for (let g = Math.max(pos + 1, TRACK_LEN); g <= to; g++) {
+            if (own.includes(g)) return;
+          }
+        } else if (own.includes(to)) {
+          return;
+        }
+        moves.push({piece: i, from: pos, to: to});
+      });
+
+      const bringOut = moves.filter(m => m.from === HOME_POS);
+      if (bringOut.length) return bringOut;
+
+      const onStart = own.indexOf(0);
+      if (onStart >= 0 && own.includes(HOME_POS)) {
+        const clearStart = moves.find(m => m.piece === onStart);
+        if (clearStart) return [clearStart];
+      }
+      return moves;
+    }
+
+    // A player without a movable piece on the board gets three tries to roll a 6.
+    function isStuck(p) {
+      return p.pieces.every(pos => {
+        if (pos === HOME_POS) return true;
+        if (pos < TRACK_LEN) return false;
+        for (let g = pos + 1; g <= LAST_GOAL; g++) {
+          if (!p.pieces.includes(g)) return false;
+        }
+        return true;
+      });
+    }
+
+    function victimAt(p, to) {
+      if (to >= TRACK_LEN) return null;
+      const abs = absolute(p.color, to);
+      for (const other of players) {
+        if (other === p) continue;
+        const idx = other.pieces.findIndex(pos => pos >= 0 && pos < TRACK_LEN && absolute(other.color, pos) === abs);
+        if (idx >= 0) return {player: other, piece: idx};
+      }
+      return null;
+    }
+
+    function threatAt(p, abs) {
+      let threat = 0;
+      for (const other of players) {
+        if (other === p || other.finished) continue;
+        other.pieces.forEach(pos => {
+          if (pos < 0 || pos >= TRACK_LEN) return;
+          const dist = (abs - absolute(other.color, pos) + TRACK_LEN) % TRACK_LEN;
+          if (dist >= 1 && dist <= 6 && pos + dist < TRACK_LEN) threat++;
+        });
+        if (other.pieces.includes(HOME_POS) && absolute(other.color, 0) === abs) threat++;
+      }
+      return threat;
+    }
+
+    function scoreMove(p, m) {
+      let score = Math.random() * 3;
+      const victim = victimAt(p, m.to);
+      if (victim) score += 80 + victim.player.pieces[victim.piece] * 0.5;
+      if (m.from === HOME_POS) score += 50;
+      if (m.to >= TRACK_LEN && m.from < TRACK_LEN) score += 60;
+      if (m.to < TRACK_LEN && threatAt(p, absolute(p.color, m.to))) score -= 25 + m.to * 0.3;
+      if (m.from >= 0 && m.from < TRACK_LEN && threatAt(p, absolute(p.color, m.from))) score += 20 + m.from * 0.3;
+      score += m.to * 0.2;
+      return score;
+    }
+
+    // ---------- Rendering ----------
+
+    function render() {
+      gridEl.querySelectorAll(".piece").forEach(el => el.remove());
+      gridEl.querySelectorAll(".cell.target").forEach(el => el.classList.remove("target"));
+      const humanMoves = phase === "move" && players[current].human ? legal : [];
+      for (const p of players) {
+        p.pieces.forEach((pos, i) => {
+          const [x, y] = cellOf(p.color, pos, i);
+          const el = document.createElement("div");
+          el.className = "piece";
+          el.innerHTML = pawnSvg(p.color);
+          if (p.human && humanMoves.some(m => m.piece === i)) {
+            el.classList.add("movable");
+            el.dataset.piece = i;
+            el.tabIndex = 0;
+            el.setAttribute("role", "button");
+            el.setAttribute("aria-label", "Move piece " + (i + 1));
+          }
+          if (p.moving === i) el.style.zIndex = 2;
+          cells[key(x, y)].appendChild(el);
+        });
+      }
+      renderPlayers();
+    }
+
+    function renderDice(value) {
+      const on = PIPS[value];
+      diceEl.querySelectorAll(".pip").forEach((pip, i) => pip.classList.toggle("on", on.includes(i)));
+      diceEl.setAttribute("aria-label", "Dice: " + value);
+    }
+
+    function renderPlayers() {
+      playersEl.innerHTML = "";
+      for (const p of players) {
+        const li = document.createElement("li");
+        li.style.setProperty("--col", COLORS[p.color].col);
+        if (p === players[current] && phase !== "over") li.classList.add("active");
+        const inGoal = p.pieces.filter(pos => pos >= TRACK_LEN).length;
+        const place = placements.indexOf(p);
+        li.innerHTML = "<span class=\"dot\"></span><span class=\"name\"></span>" +
+          "<span class=\"goal-count\">" + (place >= 0 ? "Platz " + (place + 1) : "Goal " + inGoal + "/4") + "</span>";
+        li.querySelector(".name").textContent = p.name + (p.human ? " (" + COLORS[p.color].name + ")" : "");
+        playersEl.appendChild(li);
+      }
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function log(text) {
+      const li = document.createElement("li");
+      li.textContent = text;
+      logEl.prepend(li);
+    }
+
+    function say(p, youText, otherText) {
+      return p.human ? youText : otherText.replace("{name}", p.name);
+    }
+
+    // ---------- Game flow ----------
+
+    function later(fn, ms) {
+      const id = gameId;
+      timer = setTimeout(() => {
+        if (id === gameId) fn();
+      }, ms);
+    }
+
+    function startGame(humanColor) {
+      clearTimeout(timer);
+      gameId++;
+      players = COLORS.map((c, i) => ({
+        color: i,
+        human: i === humanColor,
+        name: i === humanColor ? "You" : OPPONENT_NAMES[i],
+        pieces: [HOME_POS, HOME_POS, HOME_POS, HOME_POS],
+        finished: false,
+        moving: null
+      }));
+      placements = [];
+      logEl.innerHTML = "";
+      setupEl.hidden = true;
+      playersPanelEl.hidden = false;
+      newGameBtn.hidden = false;
+      log("Neues Spiel! You are playing " + COLORS[humanColor].name + ". You begin, natürlich!");
+      current = humanColor;
+      startTurn();
+    }
+
+    function startTurn() {
+      const p = players[current];
+      triesLeft = isStuck(p) ? 3 : 1;
+      phase = "roll";
+      legal = [];
+      render();
+      if (p.human) {
+        rollBtn.disabled = false;
+        rollBtn.focus();
+        setStatus(triesLeft === 3 ? "Your turn! You need a 6 to come out – you have three tries, ja?" : "Your turn – roll ze dice, schnell!");
+      } else {
+        rollBtn.disabled = true;
+        setStatus(p.name + " is thinking … Moment, bitte …");
+        later(roll, 600);
+      }
+    }
+
+    function roll() {
+      if (phase !== "roll") return;
+      phase = "busy";
+      rollBtn.disabled = true;
+      let frames = 0;
+      const spin = () => {
+        renderDice(1 + Math.floor(Math.random() * 6));
+        if (++frames < 7) {
+          later(spin, 60);
+        } else {
+          dice = 1 + Math.floor(Math.random() * 6);
+          renderDice(dice);
+          afterRoll();
+        }
+      };
+      spin();
+    }
+
+    function afterRoll() {
+      const p = players[current];
+      triesLeft--;
+      log(say(p, "You throw a " + dice + ".", "{name} throws a " + dice + "."));
+      legal = legalMoves(p, dice);
+
+      if (!legal.length) {
+        if (dice === 6 || triesLeft > 0) {
+          if (dice !== 6) {
+            setStatus(say(p, "Ach, nothing! Still " + triesLeft + (triesLeft === 1 ? " try left!" : " tries left!"),
+              "{name} tries again …"));
+          }
+          phase = "roll";
+          if (dice === 6) triesLeft = isStuck(p) ? 3 : 1;
+          if (p.human) {
+            rollBtn.disabled = false;
+            rollBtn.focus();
+            if (dice === 6) setStatus("No move possible, but you may roll again. Gut!");
+          } else {
+            later(roll, 600);
+          }
+          return;
+        }
+        log(say(p, "You cannot move. Schade!", "{name} cannot move. Schade!"));
+        if (p.human) setStatus("You cannot move. Schade!");
+        phase = "busy";
+        later(nextTurn, p.human ? 900 : 500);
+        return;
+      }
+
+      phase = "move";
+      render();
+      if (p.human) {
+        setStatus(legal.every(m => m.from === HOME_POS)
+          ? "A 6! Wunderbar! Click a piece in ze house to bring it out."
+          : "Click a hopping piece to move it " + dice + (dice === 1 ? " field." : " fields."));
+        gridEl.querySelector(".piece.movable").focus();
+      } else {
+        const scored = legal.map(m => ({m: m, score: scoreMove(p, m)}));
+        const best = scored.reduce((a, b) => (b.score > a.score ? b : a)).m;
+        later(() => move(best), 500);
+      }
+    }
+
+    function move(m) {
+      const p = players[current];
+      phase = "busy";
+      legal = [];
+      p.moving = m.piece;
+      const path = [];
+      if (m.from === HOME_POS) {
+        path.push(0);
+      } else {
+        for (let pos = m.from + 1; pos <= m.to; pos++) path.push(pos);
+      }
+      const step = () => {
+        p.pieces[m.piece] = path.shift();
+        render();
+        if (path.length) later(step, 160);
+        else finishMove(p, m);
+      };
+      step();
+    }
+
+    function finishMove(p, m) {
+      p.moving = null;
+      if (m.from === HOME_POS) log(say(p, "You come out of ze house!", "{name} comes out of ze house!"));
+      const victim = victimAt(p, m.to);
+      if (victim) {
+        victim.player.pieces[victim.piece] = HOME_POS;
+        log(victim.player.human
+          ? p.name + " knocks you off ze board! Ärgere dich nicht – don't get angry!"
+          : say(p, "Zack! You knock off " + victim.player.name + "! Don't get angry, " + victim.player.name + "!",
+            "{name} knocks off " + victim.player.name + "!"));
+      }
+      if (m.to >= TRACK_LEN && m.from < TRACK_LEN) {
+        log(say(p, "One piece is in ze goal! Sehr gut!", "{name} brings a piece into ze goal."));
+      }
+      render();
+
+      if (p.pieces.every(pos => pos >= TRACK_LEN)) {
+        p.finished = true;
+        placements.push(p);
+        log(say(p, "All your pieces are in ze goal – Platz " + placements.length + "!",
+          "{name} has all pieces in ze goal – Platz " + placements.length + "!"));
+        const remaining = players.filter(q => !q.finished);
+        if (p.human || remaining.length === 1) {
+          endGame();
+          return;
+        }
+        later(nextTurn, 700);
+        return;
+      }
+
+      if (dice === 6) {
+        log(say(p, "A 6 – you may roll again! Jawohl!", "{name} may roll again."));
+        later(startTurn, p.human ? 300 : 500);
+      } else {
+        later(nextTurn, p.human ? 300 : 500);
+      }
+    }
+
+    function nextTurn() {
+      do {
+        current = (current + 1) % players.length;
+      } while (players[current].finished);
+      startTurn();
+    }
+
+    function endGame() {
+      phase = "over";
+      rollBtn.disabled = true;
+      const human = players.find(p => p.human);
+      if (!human.finished) {
+        human.finished = true;
+        placements.push(human);
+      }
+      const place = placements.indexOf(human) + 1;
+      const text = place === 1
+        ? "🏆 You have von! Herzlichen Glückwunsch!"
+        : "Ze game is over – you are on Platz " + place + ". Don't get angry, ja?";
+      setStatus(text);
+      log(text);
+      render();
+    }
+
+    // ---------- Events ----------
+
+    COLORS.forEach((c, i) => {
+      const btn = document.createElement("button");
+      btn.textContent = c.name;
+      btn.style.setProperty("--col", c.col);
+      btn.addEventListener("click", () => startGame(i));
+      document.getElementById("color-choice").appendChild(btn);
+    });
+
+    rollBtn.addEventListener("click", () => {
+      if (players[current] && players[current].human) roll();
+    });
+
+    function pickPiece(el) {
+      if (phase !== "move" || !players[current].human) return;
+      const m = legal.find(mv => mv.piece === Number(el.dataset.piece));
+      if (m) move(m);
+    }
+
+    function showTarget(el) {
+      gridEl.querySelectorAll(".cell.target").forEach(c => c.classList.remove("target"));
+      if (!el || phase !== "move") return;
+      const m = legal.find(mv => mv.piece === Number(el.dataset.piece));
+      if (!m) return;
+      const [x, y] = cellOf(players[current].color, m.to, m.piece);
+      cells[key(x, y)].classList.add("target");
+    }
+
+    gridEl.addEventListener("click", e => {
+      const el = e.target.closest(".piece.movable");
+      if (el) pickPiece(el);
+    });
+    gridEl.addEventListener("keydown", e => {
+      const el = e.target.closest(".piece.movable");
+      if (el && (e.key === "Enter" || e.key === " ")) {
+        e.preventDefault();
+        pickPiece(el);
+      }
+    });
+    gridEl.addEventListener("mouseover", e => showTarget(e.target.closest(".piece.movable")));
+    gridEl.addEventListener("focusin", e => showTarget(e.target.closest(".piece.movable")));
+
+    newGameBtn.addEventListener("click", () => {
+      clearTimeout(timer);
+      gameId++;
+      phase = "setup";
+      players = [];
+      rollBtn.disabled = true;
+      setupEl.hidden = false;
+      playersPanelEl.hidden = true;
+      newGameBtn.hidden = true;
+      logEl.innerHTML = "";
+      setStatus("Choose a color to start ze game, ja?");
+      showPreview();
+    });
+
+    // Before a color is chosen, all pieces wait in their houses.
+    function showPreview() {
+      players = COLORS.map((c, i) => ({color: i, human: false, name: "", pieces: [HOME_POS, HOME_POS, HOME_POS, HOME_POS], finished: false, moving: null}));
+      render();
+      players = [];
+    }
+
+    buildBoard();
+    renderDice(6);
+    showPreview();
+  </script>
+</body>
+
+</html>
