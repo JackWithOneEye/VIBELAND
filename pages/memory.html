@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Memory - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style>
+    .mem-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 28px;
+      background: #ffffff;
+      border: 2px inset #c0c0c0;
+      padding: 10px 15px;
+      margin: 10px 0 0 0;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .mem-controls select {
+      font-size: 14px;
+      padding: 2px 6px;
+      margin-left: 6px;
+      background-color: #ffffff;
+      border: 2px inset #c0c0c0;
+      font-family: "Times New Roman", serif;
+      cursor: pointer;
+    }
+
+    .mem-controls button {
+      padding: 4px 14px;
+      font-size: 14px;
+    }
+
+    .mem-players {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0 0 0;
+    }
+
+    .mem-player {
+      flex: 1;
+      max-width: 200px;
+      background: #c0c0c0;
+      border: 2px outset #c0c0c0;
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    .mem-player.active {
+      background: #000080;
+      color: #ffffff;
+      border-style: inset;
+    }
+
+    .mem-player .name {
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .mem-player .score {
+      font-family: "Courier New", monospace;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .mem-player .won {
+      min-height: 18px;
+      font-size: 13px;
+      line-height: 18px;
+      word-break: break-all;
+    }
+
+    .mem-status {
+      text-align: center;
+      font-family: "Comic Sans MS", Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      color: #000080;
+      margin: 10px 0;
+      min-height: 22px;
+    }
+
+    .mem-status.win {
+      color: #ff0000;
+    }
+
+    .mem-stage {
+      display: flex;
+      justify-content: center;
+      padding: 0 0 16px 0;
+    }
+
+    .mem-board {
+      display: grid;
+      gap: 8px;
+      background: #008000;
+      padding: 12px;
+      border: 3px solid;
+      border-color: #808080 #ffffff #ffffff #808080;
+    }
+
+    .card {
+      width: 86px;
+      height: 86px;
+      padding: 0;
+      border: none;
+      background: none;
+      perspective: 600px;
+      cursor: pointer;
+    }
+
+    .card:hover,
+    .card:active {
+      background: none;
+      border: none;
+    }
+
+    .card:focus-visible {
+      outline: 3px dashed #ffff00;
+      outline-offset: 2px;
+    }
+
+    .card-inner {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.35s ease;
+    }
+
+    .card.up .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-back,
+    .card-face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    /* Classic Ravensburger memory® back: pale blue, grainy speckle print with a white cardboard edge */
+    .card-back {
+      background-color: #8fc2e3;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.22 0 0 0 0 0.47 0 0 0 0 0.74 5 0 0 0 -2.25'/%3E%3C/filter%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.92 0 0 0 0 0.97 0 0 0 0 1 5 0 0 0 -2.9'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23d)'/%3E%3Crect width='160' height='160' filter='url(%23l)'/%3E%3C/svg%3E");
+      border: 2px solid #eef2ee;
+      border-radius: 5px;
+      box-shadow: 1px 1px 0 #c9c9bd, 2px 3px 0 #004000;
+    }
+
+    .card:hover .card-back {
+      filter: brightness(1.06);
+    }
+
+    .card-face {
+      transform: rotateY(180deg);
+      background: #ffffff;
+      border: 3px solid #c0c0c0;
+      box-shadow: 2px 2px 0 #004000;
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+      font-size: 50px;
+      line-height: 1;
+    }
+
+    .card.matched {
+      cursor: default;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.4s ease, visibility 0s linear 0.4s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card-inner,
+      .card.matched {
+        transition: none;
+      }
+    }
+
+    .mem-help {
+      width: fit-content;
+      margin: 0 auto 10px auto;
+      background: #ffffff;
+      border: 2px inset #c0c0c0;
+      padding: 10px 14px;
+      font-size: 12px;
+    }
+
+    .mem-help h3 {
+      margin: 0 0 6px 0;
+      color: #000080;
+      font-size: 13px;
+    }
+
+    .mem-help ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container wide">
+    <div class="outer-border">
+      <div class="header">
+        <h1>🧠 MEMORY 🧠</h1>
+        <p>~*~ 16, 32 Or 64 Cards &bull; Flip Two &bull; Remember Everything ~*~</p>
+      </div>
+
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ MEMORY ★ 16, 32 OR 64 CARDS ★ 1 TO 4 PLAYERS ★ TRAIN YOUR BRAIN ★</div>
+      </div>
+
+      <div class="content">
+        <div class="mem-controls">
+          <label>Cards:<select id="mem-size">
+            <option value="16">16 (8 pairs)</option>
+            <option value="32">32 (16 pairs)</option>
+            <option value="64">64 (32 pairs)</option>
+          </select></label>
+          <label>Players:<select id="mem-count">
+            <option value="1">1 (Solo)</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </select></label>
+          <button type="button" id="mem-new">New Game</button>
+        </div>
+
+        <div class="mem-players" id="mem-players"></div>
+        <div class="mem-status" id="mem-status" role="status"></div>
+
+        <div class="mem-stage">
+          <div class="mem-board" id="mem-board" aria-label="memory cards"></div>
+        </div>
+
+        <div class="mem-help">
+          <h3>❓ How To Play</h3>
+          <ul>
+            <li>All cards lie <b>face down</b> &ndash; every picture appears exactly twice</li>
+            <li>On your turn, <b>flip two cards</b>. A matching pair is yours and you <b>go again</b></li>
+            <li>No match? The cards turn back over and the <b>next player</b> takes a turn</li>
+            <li>When all pairs are found, the player with the <b>most pairs</b> wins</li>
+            <li>Solo: find all pairs in as <b>few moves</b> as possible</li>
+          </ul>
+        </div>
+
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 32 pictures: no smileys or people, and no two that share a shape and color.
+    const PICTURES = [
+      ["🐘", "elephant"], ["🦒", "giraffe"], ["🐙", "octopus"], ["🐢", "turtle"],
+      ["🦋", "butterfly"], ["🐧", "penguin"], ["🐌", "snail"], ["🐝", "bee"],
+      ["🦜", "parrot"], ["🐳", "whale"], ["🦩", "flamingo"], ["🍍", "pineapple"],
+      ["🍌", "banana"], ["🍄", "mushroom"], ["🍕", "pizza"], ["🥕", "carrot"],
+      ["🍇", "grapes"], ["🍿", "popcorn"], ["🍩", "doughnut"], ["🌵", "cactus"],
+      ["🌻", "sunflower"], ["🌈", "rainbow"], ["❄️", "snowflake"], ["🚀", "rocket"],
+      ["🚲", "bicycle"], ["🚂", "locomotive"], ["🎸", "guitar"], ["🔑", "key"],
+      ["💡", "light bulb"], ["⏰", "alarm clock"], ["🧲", "magnet"], ["⚽", "soccer ball"]
+    ];
+    const STORE = "vibeland.memory";
+    const SIZES = { 16: 4, 32: 8, 64: 8 }; // card count -> columns
+    const FLIP_BACK_MS = 1400;
+
+    const boardEl = document.getElementById("mem-board");
+    const playersEl = document.getElementById("mem-players");
+    const statusEl = document.getElementById("mem-status");
+    const countEl = document.getElementById("mem-count");
+    const sizeEl = document.getElementById("mem-size");
+
+    const saved = JSON.parse(localStorage.getItem(STORE) || "{}");
+    let playerCount = saved.players || 1;
+    let cardCount = SIZES[saved.cards] ? saved.cards : 64;
+    let pairs = cardCount / 2;
+    let deck = [];
+    let cards = [];
+    let open = [];
+    let flipBackTimer = null;
+    let matchTimer = null;
+    let current = 0;
+    let won = [];
+    let moves = 0;
+    let found = 0;
+    let startTime = 0;
+    let clockTimer = null;
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function elapsed() {
+      if (!startTime) return "0:00";
+      const s = Math.floor((Date.now() - startTime) / 1000);
+      return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    }
+
+    function renderPlayers() {
+      if (playerCount === 1) {
+        playersEl.innerHTML =
+          "<div class=\"mem-player\"><div class=\"name\">Moves</div><div class=\"score\">" + moves + "</div></div>" +
+          "<div class=\"mem-player\"><div class=\"name\">Pairs</div><div class=\"score\">" + found + " / " + pairs + "</div></div>" +
+          "<div class=\"mem-player\"><div class=\"name\">Time</div><div class=\"score\">" + elapsed() + "</div></div>";
+        return;
+      }
+      playersEl.innerHTML = won.map(function (pairs, p) {
+        const active = p === current && found < pairs ? " active" : "";
+        return "<div class=\"mem-player" + active + "\"><div class=\"name\">Player " + (p + 1) + "</div>" +
+          "<div class=\"score\">" + pairs.length + "</div>" +
+          "<div class=\"won\">" + pairs.map(function (k) { return PICTURES[k][0]; }).join("") + "</div></div>";
+      }).join("");
+    }
+
+    function setStatus(text, win) {
+      statusEl.textContent = text;
+      statusEl.classList.toggle("win", !!win);
+    }
+
+    function turnStatus() {
+      setStatus(playerCount === 1 ? "Flip two cards to find a pair!" : "Player " + (current + 1) + ", your turn!");
+    }
+
+    function newGame() {
+      clearTimeout(flipBackTimer);
+      clearTimeout(matchTimer);
+      clearInterval(clockTimer);
+      flipBackTimer = null;
+      clockTimer = null;
+      pairs = cardCount / 2;
+      const picked = shuffle(PICTURES.map(function (_, k) { return k; })).slice(0, pairs);
+      deck = shuffle(picked.concat(picked));
+      open = [];
+      current = 0;
+      won = Array.from({ length: playerCount }, function () { return []; });
+      moves = 0;
+      found = 0;
+      startTime = 0;
+
+      boardEl.innerHTML = "";
+      boardEl.style.gridTemplateColumns = "repeat(" + SIZES[cardCount] + ", 86px)";
+      cards = deck.map(function (k, i) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "card";
+        btn.setAttribute("aria-label", "Face-down card " + (i + 1));
+        btn.innerHTML = "<span class=\"card-inner\"><span class=\"card-back\" aria-hidden=\"true\"></span>" +
+          "<span class=\"card-face\" aria-hidden=\"true\">" + PICTURES[k][0] + "</span></span>";
+        btn.addEventListener("click", function () { flip(i); });
+        boardEl.appendChild(btn);
+        return btn;
+      });
+
+      renderPlayers();
+      turnStatus();
+    }
+
+    function flipBack() {
+      clearTimeout(flipBackTimer);
+      flipBackTimer = null;
+      open.forEach(function (i) {
+        cards[i].classList.remove("up");
+        cards[i].setAttribute("aria-label", "Face-down card " + (i + 1));
+      });
+      open = [];
+      current = (current + 1) % playerCount;
+      renderPlayers();
+      turnStatus();
+    }
+
+    function flip(i) {
+      // A click during the "no match" pause turns the two cards back right away.
+      if (flipBackTimer) flipBack();
+      const card = cards[i];
+      if (open.length === 2 || card.classList.contains("up") || card.classList.contains("matched")) return;
+
+      if (!startTime) {
+        startTime = Date.now();
+        if (playerCount === 1) clockTimer = setInterval(renderPlayers, 1000);
+      }
+
+      card.classList.add("up");
+      card.setAttribute("aria-label", PICTURES[deck[i]][1]);
+      open.push(i);
+      if (open.length < 2) return;
+
+      moves++;
+      const [a, b] = open;
+      if (deck[a] !== deck[b]) {
+        setStatus(playerCount === 1 ? "No match!" : "No match! Next up: Player " + ((current + 1) % playerCount + 1));
+        renderPlayers();
+        flipBackTimer = setTimeout(flipBack, FLIP_BACK_MS);
+        return;
+      }
+
+      const k = deck[a];
+      won[current].push(k);
+      found++;
+      setStatus("Pair! " + PICTURES[k][0] + " " + PICTURES[k][1] + (playerCount === 1 ? "" : " for Player " + (current + 1) + " – go again!"));
+      matchTimer = setTimeout(function () {
+        [a, b].forEach(function (j) {
+          cards[j].classList.add("matched");
+          cards[j].disabled = true;
+        });
+        open = [];
+        if (found === pairs) gameOver();
+        renderPlayers();
+      }, 600);
+      renderPlayers();
+    }
+
+    function gameOver() {
+      clearInterval(clockTimer);
+      clockTimer = null;
+      if (playerCount === 1) {
+        setStatus("★ You found all " + pairs + " pairs in " + moves + " moves and " + elapsed() + "! ★", true);
+        return;
+      }
+      const best = Math.max.apply(null, won.map(function (w) { return w.length; }));
+      const winners = won.map(function (w, p) { return w.length === best ? p + 1 : 0; }).filter(Boolean);
+      setStatus(winners.length === 1
+        ? "★ Player " + winners[0] + " wins with " + best + " pairs! ★"
+        : "★ Tie between Players " + winners.join(" & ") + " with " + best + " pairs each! ★", true);
+    }
+
+    function changeSettings() {
+      playerCount = Number(countEl.value);
+      cardCount = Number(sizeEl.value);
+      localStorage.setItem(STORE, JSON.stringify({ players: playerCount, cards: cardCount }));
+      newGame();
+    }
+
+    countEl.value = String(playerCount);
+    sizeEl.value = String(cardCount);
+    countEl.addEventListener("change", changeSettings);
+    sizeEl.addEventListener("change", changeSettings);
+    document.getElementById("mem-new").addEventListener("click", newGame);
+
+    newGame();
+  </script>
+</body>
+</html>

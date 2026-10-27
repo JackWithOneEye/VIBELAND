@@ -14,6 +14,7 @@ Bun.serve({
     "/freecell": Bun.file("./pages/freecell.html"),
     "/graph-calculator": Bun.file("./pages/graph-calculator.html"),
     "/mahjong": Bun.file("./pages/mahjong.html"),
+    "/memory": Bun.file("./pages/memory.html"),
     "/minesweeper": Bun.file("./pages/minesweeper.html"),
     "/paint": Bun.file("./pages/paint.html"),
     "/particles": Bun.file("./pages/particles.html"),
