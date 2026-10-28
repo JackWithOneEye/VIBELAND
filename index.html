@@ -38,7 +38,7 @@
     }
 
     .container {
-      width: 780px;
+      width: 1000px;
       margin: 0 auto;
       background-color: #C0C0C0;
       padding: 4px;
@@ -155,28 +155,164 @@
       height: 3px;
     }
 
-    .guestbook-box {
-      display: inline-block;
-      background-color: #C0C0C0;
-      border: 3px outset #FFFFFF;
-      padding: 10px 15px;
+    .layout {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .layout .content {
+      flex: 1;
+    }
+
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .side-box {
+      background-color: #FFFF99;
+      border: 3px solid #FF00FF;
+      padding: 10px 8px;
       text-align: center;
-      cursor: pointer;
+      font-family: 'Comic Sans MS', Arial, Helvetica, sans-serif;
     }
 
-    .guestbook-box:active {
-      border-style: inset;
-    }
-
-    .guestbook-box a {
+    .side-box h3 {
+      margin: 0 0 8px 0;
       font-size: 16px;
+      color: #FF0000;
+      text-shadow: 1px 1px 0 #000080;
+    }
+
+    .side-box p {
+      margin: 6px 0 0 0;
+      font-size: 12px;
+    }
+
+    .guestbook-btn {
+      display: block;
+      padding: 10px 4px;
+      border: 4px solid;
+      border-image: linear-gradient(90deg, #FF0000, #FF9900, #FFFF00, #00FF00, #0099FF, #9900FF) 1;
+      background-color: #FFFFFF;
+      font-size: 15px;
       font-weight: bold;
-      color: #000000;
       text-decoration: none;
     }
 
-    .center {
+    .countdown-title {
+      margin: -10px -8px 8px -8px;
+      padding: 12px 4px;
+      border-bottom: 3px solid #FF00FF;
+      background: #200000 url('/assets/img/flames.jpg') center bottom / cover;
+      image-rendering: pixelated;
+      font-family: 'Arial Black', Arial, Helvetica, sans-serif;
+      font-size: 14px;
+      letter-spacing: 1px;
+      color: #FFFF00;
+      text-shadow: -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 0 #000000, 0 0 6px #FF0000;
+    }
+
+    .countdown {
+      background-color: #000000;
+      color: #FF2020;
+      font-family: 'Courier New', monospace;
+      font-size: 24px;
+      font-weight: bold;
+      padding: 8px 2px;
+      border: 4px ridge #808080;
+    }
+
+    .countdown-labels {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 3px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      font-weight: bold;
+      color: #000080;
+    }
+
+    .netscape-box {
+      margin-top: auto;
+    }
+
+    .netscape-caption {
+      margin-bottom: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #000080;
+    }
+
+    .netscape-badge {
+      display: inline-flex;
+      width: 88px;
+      height: 31px;
+      background-color: #000033;
+      border: 1px solid #FFFFFF;
+      outline: 1px solid #000000;
+      text-decoration: none;
+    }
+
+    .netscape-badge:hover {
+      background-color: #000033;
+      outline-color: #FF0000;
+    }
+
+    .netscape-logo {
+      position: relative;
+      flex-shrink: 0;
+      width: 31px;
+      height: 31px;
+      background: linear-gradient(#000033 0 58%, #008080 58% 100%);
+      overflow: hidden;
+    }
+
+    .netscape-logo::before {
+      content: "";
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 2px;
+      height: 2px;
+      background-color: #FFFFFF;
+      box-shadow: 9px 3px #FFFFFF, 19px 0 #FFFFFF, 23px 7px #FFFFCC;
+    }
+
+    .netscape-logo span {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -3px;
       text-align: center;
+      font: bold 27px Georgia, 'Times New Roman', serif;
+      color: #FFFFFF;
+      text-shadow: 1px 1px 0 #000000;
+    }
+
+    .netscape-text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      line-height: 1;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .netscape-text b {
+      font-size: 10px;
+      color: #FFFFFF;
+    }
+
+    .netscape-text i {
+      font-size: 12px;
+      font-weight: bold;
+      font-style: normal;
+      color: #FFFF00;
     }
 
     .pages-section {
@@ -274,86 +410,126 @@
         </div>
       </div>
 
-      <div class="content">
-        <div class="welcome">
-          <span class="welcome-new blink">★ NEW! ★</span>
-          <span class="welcome-text">
-            Welcome to the coolest site on the web! Check out all our awesome stuff below!
-          </span>
-        </div>
+      <div class="layout">
+        <div class="sidebar">
+          <div class="side-box">
+            <h3>✍️ GUESTBOOK ✍️</h3>
+            <a class="guestbook-btn" href="guestbook">Sign the Guestbook!</a>
+            <p>Tell us you were here!!!</p>
+          </div>
 
-        <hr class="thick">
+          <div class="side-box">
+            <div class="countdown-title">COUNTDOWN TO Y2K</div>
+            <div class="countdown" aria-label="time left until the year 2000">
+              <span data-countdown="days">000</span>:<span data-countdown="hours">00</span>:<span data-countdown="minutes">00</span>:<span data-countdown="seconds">00</span>
+            </div>
+            <div class="countdown-labels"><span>DAYS</span><span>HRS</span><span>MIN</span><span>SEC</span></div>
+          </div>
 
-        <div class="center">
-          <div class="guestbook-box">
-            <strong>📖 <a href="guestbook">SIGN OUR GUEST BOOK!</a> 📖</strong>
+          <div class="side-box netscape-box">
+            <div class="netscape-caption">Best viewed with</div>
+            <a class="netscape-badge" href="https://web.archive.org/web/19991127170911/http://www.home.netscape.com:80/computing/download/index.html" title="Download Netscape Navigator">
+              <span class="netscape-logo" aria-hidden="true"><span>N</span></span>
+              <span class="netscape-text"><b>Netscape</b><i>NOW!</i></span>
+            </a>
           </div>
         </div>
 
-        <br>
-        <hr class="thick">
-
-        <div class="pages-section">
-          <div class="pages-title">⚡ AVAILABLE PAGES ⚡</div>
-
-          <div class="category">
-            <div class="category-title">🎮 GAMES 🎮</div>
-            <strong><a href="battleship">Battleship</a></strong><br>
-            <strong><a href="freecell">Freecell</a></strong><br>
-            <strong><a href="mahjong">Mahjong</a></strong><br>
-            <strong><a href="memory">Memory</a></strong><br>
-            <strong><a href="mensch-aergere-dich-nicht">Mensch ärgere dich nicht</a></strong><br>
-            <strong><a href="minesweeper">Minesweeper</a></strong><br>
-            <strong><a href="paint">Paint</a></strong><br>
-            <strong><a href="pong">Pong</a></strong><br>
-            <strong><a href="snake">Snake</a></strong><br>
-            <strong><a href="solitaire">Solitaire</a></strong><br>
-            <strong><a href="sudoku">Sudoku</a></strong>
+        <div class="content">
+          <div class="welcome">
+            <span class="welcome-new blink">★ NEW! ★</span>
+            <span class="welcome-text">
+              Welcome to the coolest site on the web! Check out all our awesome stuff below!
+            </span>
           </div>
 
-          <div class="category">
-            <div class="category-title">🎵 MUSIC 🎵</div>
-            <strong><a href="synthesizer">Synthesizer</a></strong><br>
-            <strong><a href="tuner">Tuner</a></strong>
+          <hr class="thick">
+
+          <div class="pages-section">
+            <div class="pages-title">⚡ AVAILABLE PAGES ⚡</div>
+
+            <div class="category">
+              <div class="category-title">🎮 GAMES 🎮</div>
+              <strong><a href="battleship">Battleship</a></strong><br>
+              <strong><a href="freecell">Freecell</a></strong><br>
+              <strong><a href="mahjong">Mahjong</a></strong><br>
+              <strong><a href="memory">Memory</a></strong><br>
+              <strong><a href="mensch-aergere-dich-nicht">Mensch ärgere dich nicht</a></strong><br>
+              <strong><a href="minesweeper">Minesweeper</a></strong><br>
+              <strong><a href="paint">Paint</a></strong><br>
+              <strong><a href="pong">Pong</a></strong><br>
+              <strong><a href="snake">Snake</a></strong><br>
+              <strong><a href="solitaire">Solitaire</a></strong><br>
+              <strong><a href="sudoku">Sudoku</a></strong>
+            </div>
+
+            <div class="category">
+              <div class="category-title">🎵 MUSIC 🎵</div>
+              <strong><a href="synthesizer">Synthesizer</a></strong><br>
+              <strong><a href="tuner">Tuner</a></strong>
+            </div>
+
+            <div class="category">
+              <div class="category-title">🔬 SCIENCE 🔬</div>
+              <strong><a href="calculator">Calculator</a></strong><br>
+              <strong><a href="graph-calculator">Graph calculator</a></strong><br>
+              <strong><a href="particles">Particles</a></strong><br>
+              <strong><a href="vibration">Vibration</a></strong>
+            </div>
+
+            <div class="category">
+              <div class="category-title">🖼️ ART 🖼️</div>
+              <strong><a href="crying-boy">Crying Boy</a></strong><br>
+              <strong><a href="psychedelic-mushroom">Psychedelic Mushroom</a></strong><br>
+              <strong><a href="the-orb">The Orb</a></strong>
+            </div>
+
+            <div class="category">
+              <div class="category-title">📰 INFORMATION 📰</div>
+              <strong><a href="unix-time">Unix time</a></strong><br>
+              <strong><a href="weather">Weather</a></strong><br>
+              <strong><a href="world-clock">World clock</a></strong>
+            </div>
           </div>
 
-          <div class="category">
-            <div class="category-title">🔬 SCIENCE 🔬</div>
-            <strong><a href="calculator">Calculator</a></strong><br>
-            <strong><a href="graph-calculator">Graph calculator</a></strong><br>
-            <strong><a href="particles">Particles</a></strong><br>
-            <strong><a href="vibration">Vibration</a></strong>
+          <hr class="thick">
+          <br>
+
+          <div class="footer">
+            <div>© 1999 VIBELAND - All Rights Reserved</div>
+            <div>Last updated: October 19, 2025</div>
+            <div class="counter" id="hit-counter" aria-label="visitor counter">000000</div>
+            <div style="margin-top: 8px; font-size: 10px;">Best viewed at 800×600, 256 colors</div>
           </div>
-
-          <div class="category">
-            <div class="category-title">🖼️ ART 🖼️</div>
-            <strong><a href="crying-boy">Crying Boy</a></strong><br>
-            <strong><a href="psychedelic-mushroom">Psychedelic Mushroom</a></strong><br>
-            <strong><a href="the-orb">The Orb</a></strong>
-          </div>
-
-          <div class="category">
-            <div class="category-title">📰 INFORMATION 📰</div>
-            <strong><a href="unix-time">Unix time</a></strong><br>
-            <strong><a href="weather">Weather</a></strong><br>
-            <strong><a href="world-clock">World clock</a></strong>
-          </div>
-        </div>
-
-        <hr class="thick">
-        <br>
-
-        <div class="footer">
-          <div>© 1999 VIBELAND - All Rights Reserved</div>
-          <div>Last updated: October 19, 2025</div>
-          <div class="counter" id="hit-counter" aria-label="visitor counter">000000</div>
-          <div style="margin-top: 8px; font-size: 10px;">Best viewed at 800×600, 256 colors</div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
+    (function () {
+      var parts = document.querySelectorAll("[data-countdown]");
+
+      function tick() {
+        var now = new Date();
+        var y2k = new Date(now.getFullYear() + 1, 0, 1);
+        var s = Math.max(0, Math.floor((y2k - now) / 1000));
+        var values = {
+          days: Math.floor(s / 86400),
+          hours: Math.floor(s / 3600) % 24,
+          minutes: Math.floor(s / 60) % 60,
+          seconds: s % 60
+        };
+        parts.forEach(function (el) {
+          var key = el.getAttribute("data-countdown");
+          el.textContent = String(values[key]).padStart(key === "days" ? 3 : 2, "0");
+        });
+      }
+
+      tick();
+      setInterval(tick, 1000);
+    })();
+
     (function () {
       var el = document.getElementById("hit-counter");
       if (!el || !window.fetch) return;
