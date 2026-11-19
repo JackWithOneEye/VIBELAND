@@ -971,7 +971,8 @@
           ['filter-select', 'legato', 'lfo1-unipolar', 'lfo2-unipolar', 'filter-lfo-src', 'detune-lfo-src', 'pan-lfo-src']
             .forEach(id => document.getElementById(id).dispatchEvent(new Event('change')));
           powerBtn.textContent = 'Synth Active';
-          powerBtn.style.background = '#90EE90';
+          powerBtn.classList.add("on");
+          this.showNote(null);
         }
       });
 
@@ -1111,8 +1112,8 @@
       const keyboardEl = document.getElementById('keyboard');
       this.keyboard = new PianoKeyboard(
         keyboardEl,
-        (midi) => { if (this.synth) this.synth.noteOn(midi); },
-        () => { if (this.synth) this.synth.noteOff(); }
+        (midi) => { if (this.synth) { this.synth.noteOn(midi); this.showNote(midi); } },
+        () => { if (this.synth) { this.synth.noteOff(); this.showNote(null); } }
       );
 
       this.isInitialized = true;
@@ -1126,6 +1127,19 @@
       if (this.synth && this.knobs.filterGain) {
         this.synth.setFilterGainFromNorm(this.knobs.filterGain.value);
       }
+    }
+
+    // Note display in the top bar: the note being played, or READY when none is held
+    showNote(midi) {
+      const display = document.getElementById("note-display");
+      if (!display) return;
+      if (midi === null) {
+        display.textContent = "READY";
+        return;
+      }
+      const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+      const name = names[midi % 12] + (Math.floor(midi / 12) - 1);
+      display.textContent = name.padEnd(4, " ") + midiToFreq(midi).toFixed(1) + " Hz";
     }
 
     updateFilterKnobEnables(type) {

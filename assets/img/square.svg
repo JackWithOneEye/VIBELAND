@@ -1,6 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img">
   <title>Square waveform</title>
-  <path d="M0 16 H6 V8 H12 V16 H18 V8 H24"
-        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/>
+  <path d="M2 18 V6 H12 V18 H22 V6"
+        fill="none" stroke="#000080" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
-

@@ -5,108 +5,162 @@
   <title>Synthesizer - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
-    /* Retro-styled panel wrappers matching VIBELAND aesthetic */
+    /* Signal-flow patch bay: modules sit in the order sound flows through them */
+    body {
+      min-width: 1000px;
+      margin: 0;
+      padding: 0;
+    }
+
     .synth-panel {
-      background-color: #ffffff;
-      border: 2px inset #c0c0c0;
-      padding: 10px;
-      margin: 10px 0;
+      background-color: #FFFFCC;
+      padding: 4px 0;
     }
 
-    .controls-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: auto auto auto;
-      gap: 6px;
-      width: 928px;
-      margin: 0 auto 10px auto;
-    }
-
-    /* Row 1: Oscillator spans two columns, Master uses third */
-    .controls-container > .control-section:nth-of-type(1) { /* Oscillator */
-      grid-column: 1 / span 2;
-      grid-row: 1;
-    }
-    .controls-container > .control-section:nth-of-type(2) { /* Master */
-      grid-column: 3;
-      grid-row: 1;
-    }
-
-    /* Row 2: ADSR + LFO 1 */
-    .controls-container > .control-section:nth-of-type(3) { /* ADSR */
-      grid-column: 1;
-      grid-row: 2;
-    }
-    .controls-container > .control-section:nth-of-type(5) { /* LFO 1 */
-      grid-column: 2;
-      grid-row: 2;
-    }
-
-    /* Row 3: Filter + Delay */
-    .filter-section {
-      grid-column: 1 / span 2;
-      grid-row: 3;
-    }
-    .delay-section {
-      grid-column: 3;
-      grid-row: 3;
-    }
-    .controls-container > .control-section:nth-of-type(6) { /* LFO 2 */
-      grid-column: 3;
-      grid-row: 2;
-    }
-
-    .control-section {
-      background-color: #ffffff;
-      border: 2px inset #c0c0c0;
-      padding: 8px;
+    /* Top bar: power, legato, flow hint, note display */
+    .top-bar {
       display: flex;
-      flex-direction: column;
-      box-sizing: border-box;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 8px;
     }
 
-    .section-title {
+    .start-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      font-size: 13px;
+    }
+
+    .start-btn::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid #000;
+      background: #400000;
+    }
+
+    .start-btn.on {
+      background: #90EE90;
+      border-style: inset;
+    }
+
+    .start-btn.on::before {
+      background: #FF0000;
+    }
+
+    .legato {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .flow-hint {
       color: #000080;
       font-weight: bold;
-      margin: 0 0 6px 0;
-      text-align: center;
+    }
+
+    .lcd {
+      margin-left: auto;
+      min-width: 190px;
+      text-align: right;
+      font: bold 14px "Courier New", monospace;
+      background: #000;
+      color: #00FF00;
+      padding: 3px 8px;
+      border: 2px inset #C0C0C0;
+      white-space: pre;
+    }
+
+    /* Modules */
+    .flow {
+      display: flex;
+      align-items: stretch;
+    }
+
+    .module {
+      flex: 1 1 auto;
+      background: #FFFFFF;
+      border: 2px outset #C0C0C0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .module-title {
+      background: #000080;
+      color: #FFFFFF;
+      font-weight: bold;
       font-size: 13px;
-      white-space: nowrap;
+      letter-spacing: 1px;
+      text-align: center;
+      padding: 3px 4px;
     }
 
-    /* All controls horizontally aligned within each section */
-    .controls-grid {
+    .module-title small {
+      display: block;
+      font-weight: normal;
+      font-size: 11px;
+      letter-spacing: 0;
+      color: #FFFF99;
+    }
+
+    .lfo1-module .module-title { background: #806000; }
+    .lfo2-module .module-title { background: #005080; }
+
+    .arrow {
+      flex: 0 0 18px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+      align-items: center;
       justify-content: center;
-      align-items: flex-end;
+      color: #000080;
+      font-size: 16px;
     }
 
-    /* Override for ADSR to use horizontal layout */
-    .adsr-section .controls-grid {
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 8px;
+    .cells {
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 2), 66px);
+      gap: 10px 4px;
+      padding: 8px 6px;
       justify-content: center;
-      align-items: flex-end;
+      align-items: end;
     }
 
-    /* Override for Filter to use horizontal layout */
-    .filter-section .controls-grid {
+    .span-all {
+      grid-column: 1 / -1;
+    }
+
+    .lfo-row {
       display: flex;
-      flex-wrap: wrap;
       gap: 6px;
-      justify-content: center;
-      align-items: flex-end;
+      margin-top: 6px;
     }
 
-    /* Knob styles (simple retro dial) */
+    .lfo-row .module {
+      flex: 1 1 0;
+    }
+
+    .lfo-cells {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 6px 10px;
+    }
+
+    /* Controls */
+    .knob-wrap,
+    .ctrl {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
     .knob {
-      width: 56px;
-      height: 56px;
-      background: radial-gradient(circle at 30% 30%, #e8e8e8, #b8b8b8);
-      border: 2px outset #c0c0c0;
+      width: 44px;
+      height: 44px;
+      background: radial-gradient(circle at 30% 30%, #E8E8E8, #B8B8B8);
+      border: 2px outset #C0C0C0;
       border-radius: 50%;
       position: relative;
       box-shadow: inset 0 0 2px #888;
@@ -115,217 +169,62 @@
       touch-action: none;
     }
 
-    .knob:active {
-      border: 2px inset #c0c0c0;
+    .knob:active,
+    .selector-knob:active {
+      border: 2px inset #C0C0C0;
     }
 
-    .knob .indicator {
+    .knob .indicator,
+    .selector-knob .indicator {
       position: absolute;
       width: 2px;
-      height: 22px;
+      height: 16px;
       background: #000080;
       left: 50%;
-      top: 6px;
-      transform-origin: 50% 26px;
+      top: 4px;
+      transform-origin: 50% 16px;
       transform: translateX(-50%) rotate(-135deg);
       border-radius: 2px;
     }
 
-    /* Disabled knob state */
     .knob.disabled {
-      opacity: 0.5;
+      opacity: 0.4;
       cursor: not-allowed;
-    }
-
-    .knob-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 68px;
-      text-align: center;
-      height: 100px;
-      justify-content: flex-end;
-    }
-
-    .knob-wrap.waveform {
-      width: 80px;
-      height: 100px;
     }
 
     .knob-label {
       color: #000080;
       font-weight: bold;
-      margin-top: 6px;
       font-size: 12px;
+      margin-top: 3px;
+      white-space: nowrap;
     }
 
     .knob-value {
       font-family: "Courier New", monospace;
       font-size: 11px;
       color: #000;
-      margin-top: 2px;
+      white-space: nowrap;
     }
 
-    /* Selects and toggles (retro-ish) */
-    .ctrl {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      height: 100px;
-      justify-content: flex-end;
-    }
-
-    select,
-    .toggle {
-      background: #ffffff;
-      border: 2px inset #c0c0c0;
-      padding: 4px 6px;
-      font-family: "Times New Roman", serif;
-      color: #000;
-    }
-
-    .toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #000080;
-      font-weight: bold;
-    }
-
-    /* Container and body adjustments for desktop-only layout */
-    body {
-      min-width: 1000px;
-      margin: 0;
-      padding: 0;
-    }
-
-    /* Keyboard */
-    .keyboard {
-      position: relative;
-      width: 928px;
-      height: 120px;
-      margin: 5px auto 0;
-      background: #ddd;
-      border: 2px inset #c0c0c0;
-      box-sizing: border-box;
-      user-select: none;
-      touch-action: none;
-    }
-
-    .white-keys,
-    .black-keys {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      bottom: 0;
-    }
-
-    .white-keys {
-      display: flex;
-    }
-
-    /* Two-octave layout: keep octaves as flex rows; widths set inline for exact ratios */
-    .white-keys .octave {
-      display: flex;
-    }
-
-    .white-key {
-      position: relative;
-      flex: 1;
-      height: 100%;
-      background: #fff;
-      border: 1px solid #aaa;
-      box-sizing: border-box;
-      z-index: 1;
-      cursor: pointer;
-    }
-
-    .white-key.active {
-      background: #e0e0ff;
-    }
-
-    .black-key {
-      position: absolute;
-      width: calc((100% / 8) * 0.6);
-      height: 60%;
-      background: #000;
-      border: 1px solid #222;
-      top: 0;
-      transform: translateX(-50%);
-      z-index: 2;
-      cursor: pointer;
-    }
-
-    /* Ensure equal black key width per-octave container */
-    .black-keys .oct1 .black-key { width: calc((100% / 7) * 0.6); }
-    .black-keys .oct2 .black-key { width: calc((100% / 8) * 0.6); }
-
-    .black-key.active {
-      background: #2020ff;
-    }
-
-    .top-bar {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 8px;
-    }
-
-    .start-btn {
-      padding: 8px 16px;
-      font-weight: bold;
-    }
-
-    /* Selector knobs (waveform/filter type) */
+    /* Waveform selector knob with icons in the corners */
     .selector-knob {
-      width: 56px;
-      height: 56px;
-      background: radial-gradient(circle at 30% 30%, #e8e8e8, #b8b8b8);
-      border: 2px outset #c0c0c0;
+      width: 44px;
+      height: 44px;
+      background: radial-gradient(circle at 30% 30%, #E8E8E8, #B8B8B8);
+      border: 2px outset #C0C0C0;
       border-radius: 50%;
       position: relative;
       box-shadow: inset 0 0 2px #888;
-      cursor: pointer;
+      cursor: ns-resize;
       user-select: none;
       touch-action: none;
     }
 
-    .selector-knob:active {
-      border: 2px inset #c0c0c0;
-    }
-
-    .selector-knob .indicator {
-      position: absolute;
-      width: 2px;
-      height: 22px;
-      background: #000080;
-      left: 50%;
-      top: 6px;
-      transform-origin: 50% 26px;
-      transform: translateX(-50%) rotate(-135deg);
-      border-radius: 2px;
-    }
-
-    .selector-text {
-      position: absolute;
-      bottom: -2px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 8px;
-      color: #000080;
-      font-weight: bold;
-      text-align: center;
-      width: 60px;
-    }
-
-    /* Icons around knob containers */
     .waveform-knob-container {
       position: relative;
-      width: 80px;
-      height: 80px;
+      width: 72px;
+      height: 68px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -333,11 +232,9 @@
 
     .waveform-icon {
       position: absolute;
-      width: 16px;
-      height: 16px;
-      opacity: 0.4;
-      transition: opacity 0.2s;
-      z-index: 1;
+      width: 14px;
+      height: 14px;
+      opacity: 0.35;
     }
 
     .waveform-icon.active {
@@ -345,81 +242,78 @@
       filter: drop-shadow(0 0 2px #000080);
     }
 
-    /* Position waveform icons */
-    .waveform-icon.sine {
-      bottom: 2px;
-      left: 2px;
-    }
+    .waveform-icon.sine { bottom: 0; left: 0; }
+    .waveform-icon.triangle { top: 0; left: 0; }
+    .waveform-icon.sawtooth { top: 0; right: 0; }
+    .waveform-icon.square { bottom: 0; right: 0; }
 
-    .waveform-icon.triangle {
-      top: 2px;
-      left: 2px;
-    }
-
-    .waveform-icon.sawtooth {
-      top: 2px;
-      right: 2px;
-    }
-
-    .waveform-icon.square {
-      bottom: 2px;
-      right: 2px;
-    }
-
-    /* Filter dropdown styling */
-    .filter-select-container {
-      width: 80px;
-      height: 80px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
+    /* Filter type dropdown */
     .filter-dropdown {
-      width: 80px;
-      height: 40px;
-      background: #ffffff;
-      border: 2px inset #c0c0c0;
-      padding: 6px 4px;
-      font-family: "Times New Roman", serif;
+      width: 110px;
+      background: #FFFFFF;
+      border: 2px inset #C0C0C0;
+      padding: 3px 18px 3px 6px;
+      font: bold 12px Arial, Helvetica, sans-serif;
       color: #000080;
-      font-weight: bold;
-      font-size: 10px;
       cursor: pointer;
       appearance: none;
-      position: relative;
       background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23000080' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
       background-position: right 2px center;
       background-repeat: no-repeat;
-      background-size: 16px 16px;
-      padding-right: 16px;
+      background-size: 14px 14px;
     }
 
-    .filter-dropdown:hover {
-      border: 2px outset #c0c0c0;
-      background-color: #f0f0f0;
+    /* LFO input jacks: the color shows which LFO is patched in */
+    .jack {
+      appearance: none;
+      width: 66px;
+      border: 1px solid #000;
+      padding: 2px 4px 2px 17px;
+      font: bold 11px Arial, Helvetica, sans-serif;
+      color: #666;
+      background-color: #E0E0E0;
+      background-image: radial-gradient(circle at 8px 50%, #000 3px, #FFF 4px, #FFF 5px, transparent 6px);
+      cursor: pointer;
     }
 
-    .filter-dropdown:focus {
-      outline: none;
-      border: 2px inset #000080;
-      background-color: #e0e0ff;
+    .jack:has(option[value="lfo1"]:checked),
+    .jack-chip.lfo1 {
+      background-color: #FFCC00;
+      color: #000;
     }
 
-    .filter-dropdown option {
-      background: #ffffff;
-      color: #000080;
-      font-weight: bold;
-      padding: 4px 8px;
+    .jack:has(option[value="lfo2"]:checked),
+    .jack-chip.lfo2 {
+      background-color: #66CCFF;
+      color: #000;
     }
 
-    /* Switch styles (replacing checkboxes) */
+    .jack:focus {
+      outline: 2px solid #000080;
+      outline-offset: 1px;
+    }
+
+    .jack-chip {
+      display: inline-block;
+      border: 1px solid #000;
+      padding: 1px 5px;
+      font: bold 11px Arial, Helvetica, sans-serif;
+    }
+
+    .lfo-note {
+      font-size: 11px;
+      color: #000;
+      max-width: 130px;
+      text-align: left;
+    }
+
+    /* Switches */
     .switch {
       position: relative;
       display: inline-block;
       width: 44px;
       height: 20px;
-      margin: 0 8px;
+      margin: 0 6px 0 0;
     }
 
     .switch input {
@@ -431,13 +325,9 @@
     .switch-slider {
       position: absolute;
       cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #c0c0c0;
-      border: 2px inset #c0c0c0;
-      transition: .4s;
+      inset: 0;
+      background-color: #C0C0C0;
+      border: 2px inset #C0C0C0;
     }
 
     .switch-slider:before {
@@ -449,107 +339,45 @@
       bottom: 2px;
       background-color: white;
       border: 1px solid #888;
-      transition: .4s;
     }
 
-    input:checked+.switch-slider {
+    input:checked + .switch-slider {
       background-color: #000080;
-      border: 2px inset #000080;
+      border-color: #000080;
     }
 
-    input:checked+.switch-slider:before {
+    input:checked + .switch-slider:before {
       transform: translateX(20px);
-      background-color: #e0e0ff;
+      background-color: #E0E0FF;
+    }
+
+    input:focus-visible + .switch-slider {
+      outline: 2px solid #000080;
+      outline-offset: 1px;
     }
 
     .switch-label {
       color: #000080;
       font-weight: bold;
-      margin-left: 8px;
-      vertical-align: middle;
     }
 
-    /* LFO selector styles */
-    .lfo-selector {
-      width: 66px;
-      height: 30px;
-      background: #ffffff;
-      border: 2px inset #c0c0c0;
-      padding: 4px 6px;
-      font-family: "Times New Roman", serif;
-      color: #000080;
-      font-weight: bold;
-      font-size: 10px;
-      cursor: pointer;
-      box-sizing: border-box;
-    }
-
-    .lfo-selector:hover {
-      border: 2px outset #c0c0c0;
-      background-color: #f0f0f0;
-    }
-
-    .lfo-selector:focus {
-      outline: none;
-      border: 2px inset #000080;
-      background-color: #e0e0ff;
-    }
-
-    .sync-button {
-      padding: 6px 12px;
-      background: #ffffff;
-      border: 2px outset #c0c0c0;
-      color: #000080;
-      font-weight: bold;
-      cursor: pointer;
-      font-family: "Times New Roman", serif;
-      font-size: 11px;
-    }
-
-    .sync-button:hover {
-      border: 2px inset #c0c0c0;
-      background: #f0f0f0;
-    }
-
-    .sync-button:active {
-      border: 2px inset #c0c0c0;
-      background: #e0e0e0;
-    }
-
-    /* Special styling for switch controls */
-    .ctrl .switch {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .ctrl .switch-label {
-      margin-left: 0;
-    }
-
-    /* Vertical variant for LFO Unipolar switches */
+    /* Vertical unipolar switch: up = + (unipolar), down = +/- (bipolar) */
     .vertical-switch {
       width: 20px;
       height: 44px;
-      margin: 0 8px;
-    }
-
-    .vertical-switch .switch-slider {
-      width: 20px;
-      height: 44px;
+      margin: 14px auto;
+      display: block;
     }
 
     .vertical-switch .switch-slider:before {
-      left: 4px;
-      bottom: 4px;
+      left: 2px;
+      bottom: 2px;
     }
 
-    /* Move knob to top when checked (travel = 28px for 44px track) */
     .vertical-switch input:checked + .switch-slider:before {
-      transform: translateY(-28px);
+      transform: translateY(-24px);
     }
 
-    /* Position indicators for +/- (off) and + (on) */
     .vertical-switch::before,
     .vertical-switch::after {
       position: absolute;
@@ -561,30 +389,78 @@
       pointer-events: none;
     }
 
-    .vertical-switch::before { /* top label for ON state */
-      content: "+";
-      top: -14px;
+    .vertical-switch::before { content: "+"; top: -14px; }
+    .vertical-switch::after { content: "+/-"; bottom: -14px; }
+
+    .sync-button {
+      padding: 4px 10px;
+      font-size: 12px;
     }
 
-    .vertical-switch::after { /* bottom label for OFF state */
-      content: "+/-";
-      bottom: -14px;
+    .sync-button:active {
+      border-style: inset;
     }
 
-    /* Center LFO unipolar switches and SYNC button horizontally */
-    .lfo-section .vertical-switch {
-      margin: 0 auto;
-      display: block;
+    /* Keyboard */
+    .keyboard {
+      position: relative;
+      height: 120px;
+      margin: 8px 0 0;
+      background: #DDD;
+      border: 2px inset #C0C0C0;
+      user-select: none;
+      touch-action: none;
     }
 
-    .lfo-section .sync-button {
-      margin: 0 auto;
-      display: block;
+    .white-keys,
+    .black-keys {
+      position: absolute;
+      inset: 0;
     }
 
-    /* Center these controls vertically within their 100px control slot */
-    .lfo-section .ctrl.center-vert {
-      justify-content: center;
+    .white-keys,
+    .white-keys .octave {
+      display: flex;
+    }
+
+    .white-key {
+      position: relative;
+      flex: 1;
+      height: 100%;
+      background: #FFF;
+      border: 1px solid #AAA;
+      z-index: 1;
+      cursor: pointer;
+    }
+
+    .white-key.active {
+      background: #E0E0FF;
+      box-shadow: inset 0 -6px #000080;
+    }
+
+    .black-key {
+      position: absolute;
+      height: 60%;
+      background: #000;
+      border: 1px solid #222;
+      top: 0;
+      transform: translateX(-50%);
+      z-index: 2;
+      cursor: pointer;
+    }
+
+    .black-keys .oct1 .black-key { width: calc((100% / 7) * 0.6); }
+    .black-keys .oct2 .black-key { width: calc((100% / 8) * 0.6); }
+
+    .black-key.active {
+      background: #2020FF;
+    }
+
+    .key-hint {
+      text-align: center;
+      font-size: 11px;
+      color: #000080;
+      margin-top: 4px;
     }
   </style>
 </head>
@@ -606,19 +482,25 @@
           <div class="top-bar">
             <button id="power" class="start-btn">Start Synth</button>
 
-            <label class="switch">
-              <input type="checkbox" id="legato">
-              <span class="switch-slider"></span>
-            </label>
-            <span class="switch-label">Legato</span>
+            <span class="legato">
+              <label class="switch">
+                <input type="checkbox" id="legato">
+                <span class="switch-slider"></span>
+              </label>
+              <span class="switch-label">Legato</span>
+            </span>
+
+            <span class="flow-hint">Sound flows left to right ►</span>
+
+            <div class="lcd" id="note-display">SYNTH OFF</div>
           </div>
 
-          <div class="controls-container" id="knobs">
-            <!-- Oscillator Section -->
-            <div class="control-section">
-              <div class="section-title">Oscillator</div>
-              <div class="controls-grid">
-                <div class="knob-wrap waveform">
+          <div class="flow" id="knobs">
+            <!-- 1. Oscillator -->
+            <div class="module">
+              <div class="module-title">1. OSC<small>makes the tone</small></div>
+              <div class="cells">
+                <div class="knob-wrap span-all">
                   <div class="waveform-knob-container">
                     <img src="../assets/img/sine.svg" class="waveform-icon sine" alt="Sine">
                     <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
@@ -650,47 +532,81 @@
                   <div class="knob-value" data-for="lfoDetune">0 ¢</div>
                 </div>
                 <div class="ctrl">
-                  <select class="lfo-selector" id="detune-lfo-src">
-                    <option value="off">Off</option>
-                    <option value="lfo1">LFO1</option>
-                    <option value="lfo2">LFO2</option>
+                  <select class="jack" id="detune-lfo-src" title="LFO that wobbles the pitch">
+                    <option value="off">none</option>
+                    <option value="lfo1">LFO 1</option>
+                    <option value="lfo2">LFO 2</option>
                   </select>
-                  <div class="knob-label" style="margin-top: 4px;">LFO Src</div>
+                  <div class="knob-label">LFO In</div>
                 </div>
               </div>
             </div>
 
-            <!-- Master Section -->
-            <div class="control-section">
-              <div class="section-title">Master</div>
-              <div class="controls-grid">
-                <div class="knob-wrap">
-                  <div class="knob" data-param="master" data-min="0" data-max="1" data-step="0.001" data-default="0.7"
-                    data-value="0.7" title="Master Volume"></div>
-                  <div class="knob-label">Master</div>
-                  <div class="knob-value" data-for="master">-6 dB</div>
+            <div class="arrow" aria-hidden="true">►</div>
+
+            <!-- 2. Filter -->
+            <div class="module" style="--cols: 3">
+              <div class="module-title">2. FILTER<small>shapes the tone</small></div>
+              <div class="cells" style="--cols: 3">
+                <div class="ctrl span-all">
+                  <select id="filter-select" class="filter-dropdown" title="Filter Type">
+                    <option value="lowpass">Lowpass</option>
+                    <option value="highpass">Highpass</option>
+                    <option value="bandpass">Bandpass</option>
+                    <option value="lowshelf">Lowshelf</option>
+                    <option value="highshelf">Highshelf</option>
+                    <option value="peaking">Peaking</option>
+                    <option value="notch">Notch</option>
+                  </select>
+                  <div class="knob-label">Type</div>
                 </div>
                 <div class="knob-wrap">
-                  <div class="knob" data-param="lfoPan" data-min="0" data-max="1" data-step="0.01" data-default="0"
-                    data-value="0" title="Pan LFO Amount"></div>
-                  <div class="knob-label">Pan Amt</div>
-                  <div class="knob-value" data-for="lfoPan">0.00</div>
+                  <div class="knob" data-param="cutoff" data-min="0" data-max="1" data-step="0.001" data-default="0.54"
+                    data-value="0.54" title="Cutoff Frequency"></div>
+                  <div class="knob-label">Cutoff</div>
+                  <div class="knob-value" data-for="cutoff">829 Hz</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="resonance" data-min="0.1" data-max="20" data-step="0.1" data-default="0.5"
+                    data-value="0.5" title="Resonance (Q)"></div>
+                  <div class="knob-label">Resonance</div>
+                  <div class="knob-value" data-for="resonance">0.5 Q</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" id="filter-gain-knob" data-param="filterGain" data-min="0" data-max="1" data-step="0.001" data-default="0.5"
+                    data-value="0.5" title="Filter Gain (dB)"></div>
+                  <div class="knob-label">Gain</div>
+                  <div class="knob-value" data-for="filterGain">-30 dB</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="envAmount" data-min="-5000" data-max="5000" data-step="1" data-default="0"
+                    data-value="0" title="Env Amount (Hz)"></div>
+                  <div class="knob-label">Env Amt</div>
+                  <div class="knob-value" data-for="envAmount">0 Hz</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="lfoAmount" data-min="-2400" data-max="2400" data-step="1" data-default="0"
+                    data-value="0" title="LFO Amount (¢)"></div>
+                  <div class="knob-label">LFO Amt</div>
+                  <div class="knob-value" data-for="lfoAmount">0 ¢</div>
                 </div>
                 <div class="ctrl">
-                  <select class="lfo-selector" id="pan-lfo-src">
-                    <option value="off">Off</option>
-                    <option value="lfo1">LFO1</option>
-                    <option value="lfo2">LFO2</option>
+                  <select class="jack" id="filter-lfo-src" title="LFO that sweeps the cutoff">
+                    <option value="off">none</option>
+                    <option value="lfo1">LFO 1</option>
+                    <option value="lfo2">LFO 2</option>
                   </select>
-                  <div class="knob-label" style="margin-top: 4px;">Pan LFO</div>
+                  <div class="knob-label">LFO In</div>
                 </div>
               </div>
             </div>
 
-            <!-- ADSR Envelope Section -->
-            <div class="control-section adsr-section">
-              <div class="section-title">ADSR Envelope</div>
-              <div class="controls-grid">
+            <div class="arrow" aria-hidden="true">►</div>
+
+            <!-- 3. Amp envelope -->
+            <div class="module">
+              <div class="module-title">3. AMP ENV<small>shapes the volume</small></div>
+              <div class="cells">
                 <div class="knob-wrap">
                   <div class="knob" data-param="attack" data-min="0.001" data-max="2" data-step="0.001" data-default="0.02"
                     data-value="0.02" title="Attack (s)"></div>
@@ -718,136 +634,12 @@
               </div>
             </div>
 
-            <!-- Filter Section -->
-            <div class="control-section filter-section">
-              <div class="section-title">Filter</div>
-                <div class="controls-grid">
-                  <div class="knob-wrap waveform">
-                    <div class="filter-select-container">
-                      <select id="filter-select" class="filter-dropdown">
-                        <option value="lowpass">Lowpass</option>
-                        <option value="highpass">Highpass</option>
-                        <option value="bandpass">Bandpass</option>
-                        <option value="lowshelf">Lowshelf</option>
-                        <option value="highshelf">Highshelf</option>
-                        <option value="peaking">Peaking</option>
-                        <option value="notch">Notch</option>
-                      </select>
-                    </div>
-                    <div class="knob-label">Type</div>
-                  </div>
-                  <div class="knob-wrap">
-                    <div class="knob" data-param="cutoff" data-min="0" data-max="1" data-step="0.001" data-default="0.54"
-                      data-value="0.54" title="Cutoff Frequency"></div>
-                    <div class="knob-label">Cutoff</div>
-                    <div class="knob-value" data-for="cutoff">829 Hz</div>
-                  </div>
-                  <div class="knob-wrap">
-                    <div class="knob" data-param="resonance" data-min="0.1" data-max="20" data-step="0.1" data-default="0.5"
-                      data-value="0.5" title="Resonance (Q)"></div>
-                    <div class="knob-label">Resonance</div>
-                    <div class="knob-value" data-for="resonance">0.5 Q</div>
-                  </div>
-                  <div class="knob-wrap">
-                    <div class="knob" id="filter-gain-knob" data-param="filterGain" data-min="0" data-max="1" data-step="0.001" data-default="0.5"
-                      data-value="0.5" title="Filter Gain (dB)"></div>
-                    <div class="knob-label">Gain</div>
-                    <div class="knob-value" data-for="filterGain">-30 dB</div>
-                  </div>
-                  <div class="knob-wrap">
-                    <div class="knob" data-param="envAmount" data-min="-5000" data-max="5000" data-step="1" data-default="0"
-                      data-value="0" title="Env Amount (Hz)"></div>
-                    <div class="knob-label">Env Amt</div>
-                    <div class="knob-value" data-for="envAmount">0 Hz</div>
-                  </div>
-                  <div class="knob-wrap">
-                    <div class="knob" data-param="lfoAmount" data-min="-2400" data-max="2400" data-step="1" data-default="0"
-                      data-value="0" title="LFO Amount (¢)"></div>
-                    <div class="knob-label">LFO Amt</div>
-                    <div class="knob-value" data-for="lfoAmount">0 ¢</div>
-                  </div>
-                  <div class="ctrl">
-                    <select class="lfo-selector" id="filter-lfo-src">
-                      <option value="off">Off</option>
-                      <option value="lfo1">LFO1</option>
-                      <option value="lfo2">LFO2</option>
-                    </select>
-                    <div class="knob-label" style="margin-top: 4px;">LFO Src</div>
-                  </div>
-                </div>
-            </div>
+            <div class="arrow" aria-hidden="true">►</div>
 
-            <!-- LFO 1 Section -->
-            <div class="control-section lfo-section">
-                <div class="section-title">LFO 1</div>
-                <div class="controls-grid">
-                  <div class="knob-wrap waveform">
-                    <div class="waveform-knob-container">
-                      <img src="../assets/img/sine.svg" class="waveform-icon sine active" alt="Sine">
-                      <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
-                      <img src="../assets/img/sawtooth.svg" class="waveform-icon sawtooth" alt="Sawtooth">
-                      <img src="../assets/img/square.svg" class="waveform-icon square" alt="Square">
-                      <div class="selector-knob" id="lfo1-wave-knob" data-options="sine,triangle,sawtooth,square" data-value="0"
-                        title="LFO1 Waveform">
-                        <div class="indicator"></div>
-                      </div>
-                    </div>
-                    <div class="knob-label">Wave</div>
-                  </div>
-                  <div class="knob-wrap">
-                    <div class="knob" data-param="lfo1Freq" data-min="0.1" data-max="20" data-step="0.1" data-default="5"
-                      data-value="5" title="LFO1 Frequency"></div>
-                    <div class="knob-label">Rate</div>
-                    <div class="knob-value" data-for="lfo1Freq">5.00 Hz</div>
-                  </div>
-                  <div class="ctrl center-vert">
-                    <label class="switch vertical-switch">
-                      <input type="checkbox" id="lfo1-unipolar">
-                      <span class="switch-slider"></span>
-                    </label>
-                  </div>
-                </div>
-            </div>
-
-            <!-- LFO 2 Section -->
-            <div class="control-section lfo-section">
-                <div class="section-title">LFO 2</div>
-                <div class="controls-grid">
-                  <div class="knob-wrap waveform">
-                    <div class="waveform-knob-container">
-                      <img src="../assets/img/sine.svg" class="waveform-icon sine active" alt="Sine">
-                      <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
-                      <img src="../assets/img/sawtooth.svg" class="waveform-icon sawtooth" alt="Sawtooth">
-                      <img src="../assets/img/square.svg" class="waveform-icon square" alt="Square">
-                      <div class="selector-knob" id="lfo2-wave-knob" data-options="sine,triangle,sawtooth,square" data-value="0"
-                        title="LFO2 Waveform">
-                        <div class="indicator"></div>
-                      </div>
-                    </div>
-                    <div class="knob-label">Wave</div>
-                  </div>
-                  <div class="knob-wrap">
-                    <div class="knob" data-param="lfo2Freq" data-min="0.1" data-max="20" data-step="0.1" data-default="5"
-                      data-value="5" title="LFO2 Frequency"></div>
-                    <div class="knob-label">Rate</div>
-                    <div class="knob-value" data-for="lfo2Freq">5.00 Hz</div>
-                  </div>
-                  <div class="ctrl center-vert">
-                    <label class="switch vertical-switch">
-                      <input type="checkbox" id="lfo2-unipolar">
-                      <span class="switch-slider"></span>
-                    </label>
-                  </div>
-                  <div class="ctrl center-vert">
-                    <button id="lfo-sync" class="sync-button">SYNC</button>
-                  </div>
-                </div>
-            </div>
-
-            <!-- Delay Section -->
-            <div class="control-section delay-section">
-              <div class="section-title">Delay</div>
-              <div class="controls-grid">
+            <!-- 4. Delay -->
+            <div class="module">
+              <div class="module-title">4. DELAY<small>adds echoes</small></div>
+              <div class="cells">
                 <div class="knob-wrap">
                   <div class="knob" data-param="delayLevel" data-min="0" data-max="1" data-step="0.01" data-default="0.25"
                     data-value="0.25" title="Dry/Wet Mix"></div>
@@ -857,14 +649,115 @@
                 <div class="knob-wrap">
                   <div class="knob" data-param="delayTime" data-min="0.05" data-max="2.0" data-step="0.001" data-default="0.35"
                     data-value="0.35" title="Delay Time (s)"></div>
-                  <div class="knob-label">Delay</div>
+                  <div class="knob-label">Time</div>
                   <div class="knob-value" data-for="delayTime">350 ms</div>
                 </div>
-                <div class="knob-wrap">
+                <div class="knob-wrap span-all">
                   <div class="knob" data-param="delayFeedback" data-min="0" data-max="0.9" data-step="0.01" data-default="0.35"
                     data-value="0.35" title="Feedback Amount"></div>
                   <div class="knob-label">Feedback</div>
                   <div class="knob-value" data-for="delayFeedback">35%</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="arrow" aria-hidden="true">►</div>
+
+            <!-- 5. Master -->
+            <div class="module">
+              <div class="module-title">5. MASTER<small>to the speakers</small></div>
+              <div class="cells">
+                <div class="knob-wrap">
+                  <div class="knob" data-param="master" data-min="0" data-max="1" data-step="0.001" data-default="0.7"
+                    data-value="0.7" title="Master Volume"></div>
+                  <div class="knob-label">Volume</div>
+                  <div class="knob-value" data-for="master">-6 dB</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="lfoPan" data-min="0" data-max="1" data-step="0.01" data-default="0"
+                    data-value="0" title="Pan LFO Amount"></div>
+                  <div class="knob-label">Pan Amt</div>
+                  <div class="knob-value" data-for="lfoPan">0.00</div>
+                </div>
+                <div class="ctrl span-all">
+                  <select class="jack" id="pan-lfo-src" title="LFO that moves the sound left and right">
+                    <option value="off">none</option>
+                    <option value="lfo1">LFO 1</option>
+                    <option value="lfo2">LFO 2</option>
+                  </select>
+                  <div class="knob-label">Pan LFO In</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modulators -->
+          <div class="lfo-row">
+            <div class="module lfo1-module">
+              <div class="module-title">LFO 1<small>modulator · patch it with a <span class="jack-chip lfo1">LFO 1</span> jack</small></div>
+              <div class="lfo-cells">
+                <div class="knob-wrap">
+                  <div class="waveform-knob-container">
+                    <img src="../assets/img/sine.svg" class="waveform-icon sine active" alt="Sine">
+                    <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
+                    <img src="../assets/img/sawtooth.svg" class="waveform-icon sawtooth" alt="Sawtooth">
+                    <img src="../assets/img/square.svg" class="waveform-icon square" alt="Square">
+                    <div class="selector-knob" id="lfo1-wave-knob" data-options="sine,triangle,sawtooth,square" data-value="0"
+                      title="LFO1 Waveform">
+                      <div class="indicator"></div>
+                    </div>
+                  </div>
+                  <div class="knob-label">Wave</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="lfo1Freq" data-min="0.1" data-max="20" data-step="0.1" data-default="5"
+                    data-value="5" title="LFO1 Frequency"></div>
+                  <div class="knob-label">Rate</div>
+                  <div class="knob-value" data-for="lfo1Freq">5.00 Hz</div>
+                </div>
+                <div class="ctrl">
+                  <label class="switch vertical-switch" title="Up: unipolar (+), down: bipolar (+/-)">
+                    <input type="checkbox" id="lfo1-unipolar">
+                    <span class="switch-slider"></span>
+                  </label>
+                  <div class="knob-label">Polarity</div>
+                </div>
+                <div class="lfo-note">Pick LFO 1 on any <b>LFO In</b> jack above to route it there.</div>
+              </div>
+            </div>
+
+            <div class="module lfo2-module">
+              <div class="module-title">LFO 2<small>modulator · patch it with a <span class="jack-chip lfo2">LFO 2</span> jack</small></div>
+              <div class="lfo-cells">
+                <div class="knob-wrap">
+                  <div class="waveform-knob-container">
+                    <img src="../assets/img/sine.svg" class="waveform-icon sine active" alt="Sine">
+                    <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
+                    <img src="../assets/img/sawtooth.svg" class="waveform-icon sawtooth" alt="Sawtooth">
+                    <img src="../assets/img/square.svg" class="waveform-icon square" alt="Square">
+                    <div class="selector-knob" id="lfo2-wave-knob" data-options="sine,triangle,sawtooth,square" data-value="0"
+                      title="LFO2 Waveform">
+                      <div class="indicator"></div>
+                    </div>
+                  </div>
+                  <div class="knob-label">Wave</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="lfo2Freq" data-min="0.1" data-max="20" data-step="0.1" data-default="5"
+                    data-value="5" title="LFO2 Frequency"></div>
+                  <div class="knob-label">Rate</div>
+                  <div class="knob-value" data-for="lfo2Freq">5.00 Hz</div>
+                </div>
+                <div class="ctrl">
+                  <label class="switch vertical-switch" title="Up: unipolar (+), down: bipolar (+/-)">
+                    <input type="checkbox" id="lfo2-unipolar">
+                    <span class="switch-slider"></span>
+                  </label>
+                  <div class="knob-label">Polarity</div>
+                </div>
+                <div class="ctrl">
+                  <button id="lfo-sync" class="sync-button" title="Restart LFO 1 and LFO 2 together">SYNC</button>
+                  <div class="knob-label">LFO 1 + 2</div>
                 </div>
               </div>
             </div>
@@ -913,10 +806,11 @@
               </div>
             </div>
           </div>
+          <div class="key-hint">Tip: play with your computer keyboard too: A W S E D F T G Y H U J K</div>
         </div>
-        
+
         <hr class="thick">
-        
+
         <div class="footer">
           <div><a href="../home">← Back to VIBELAND</a></div>
           <div>© 1999 VIBELAND - All Rights Reserved</div>
@@ -924,7 +818,7 @@
       </div>
     </div>
   </div>
-  
+
   <script src="../assets/synthesizer.js"></script>
 </body>
 </html>

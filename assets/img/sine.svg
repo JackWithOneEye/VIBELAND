@@ -1,6 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img">
   <title>Sine waveform</title>
-  <path d="M0 12 C4 12, 4 6, 8 6 C12 6, 12 18, 16 18 C20 18, 20 10, 24 10"
-        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M2 12 C5.3 2.7 8.7 2.7 12 12 S18.7 21.3 22 12"
+        fill="none" stroke="#000080" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
-
