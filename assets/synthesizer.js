@@ -1,9 +1,12 @@
 // VIBELAND Monophonic Synthesizer
-// Uses Web Audio API with a single voice: Osc -> Filter -> Amp -> Delay (Dry+Wet) -> Panner -> Master -> Destination
+// Uses Web Audio API with a single voice: (Osc + Noise) -> Filter -> Amp -> Crush -> Delay (Dry+Wet) -> Panner -> Master -> Destination
 // Features: last-note priority, optional legato, ADSR, filter with env routing, delay with warmth, LFOs, waveform selector, octave shift, master volume.
 // UI: two-octave piano and circular knobs (no external dependencies).
 
 (() => {
+  // The crusher worklet sits next to this script; resolve it now, while currentScript is set
+  const crusherUrl = new URL("crusher-worklet.js", document.currentScript.src).href;
+
   // Utility helpers
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -178,13 +181,33 @@
       this.osc.detune.value = 0; // base detune in cents
       this.osc.start();
 
-      // Wire path: Osc -> Filter -> Amp -> (Dry + Delay) -> Panner -> Master
-      this.osc.connect(this.filter);
+      // Source mixer: oscillator and noise each have a level and both feed the filter
+      this.oscGain = ctx.createGain();
+      this.oscGain.gain.value = 1;
+      this.noiseGain = ctx.createGain();
+      this.noiseGain.gain.value = 0;
+      this.noiseBuffers = {};
+      this.noiseType = "white";
+      this._startNoise();
+
+      // Wire path: (Osc + Noise) -> Filter -> Amp -> Crush -> (Dry + Delay) -> Panner -> Master
+      this.osc.connect(this.oscGain);
+      this.oscGain.connect(this.filter);
+      this.noiseGain.connect(this.filter);
       this.filter.connect(this.amp);
 
+      // Crusher slot: passes straight through until loadCrusher() puts the worklet in between
+      this.crushIn = ctx.createGain();
+      this.crushOut = ctx.createGain();
+      this.crushIn.connect(this.crushOut);
+      this.crusher = null;
+      this.crushBits = 16;
+      this.crushRate = ctx.sampleRate;
+      this.amp.connect(this.crushIn);
+
       // Split into dry and wet paths
-      this.amp.connect(this.dryGain);
-      this.amp.connect(this.delayIn);
+      this.crushOut.connect(this.dryGain);
+      this.crushOut.connect(this.delayIn);
 
       // Delay feedback loop
       this.delayIn.connect(this.delay);
@@ -223,10 +246,17 @@
       this.panLfoScale.gain.value = 0;
       this.panLfoScale.connect(this.panner.pan);
 
+      // Delay time modulation in seconds. Time bottoms out at 50 ms and the amount tops out
+      // at 50 ms, so a bipolar LFO never pushes the delay time below zero.
+      this.delayLfoScale = ctx.createGain();
+      this.delayLfoScale.gain.value = 0;
+      this.delayLfoScale.connect(this.delay.delayTime);
+
       // LFO routing state
       this.filterLfoSource = 'off'; // 'off' | 'lfo1' | 'lfo2'
       this.detuneLfoSource = 'off';
       this.panLfoSource = 'off';
+      this.delayLfoSource = "off";
 
       // State
       this.currentNote = null;   // MIDI number of active note (if any)
@@ -235,6 +265,99 @@
     }
 
     setWaveform(type) { this.osc.type = type; }
+
+    // Lo-fi crusher. AudioWorklet modules load asynchronously, so the settings are kept
+    // and applied once the worklet is in place.
+    async loadCrusher(url) {
+      if (!this.ctx.audioWorklet) return; // needs a secure context (https or localhost)
+      await this.ctx.audioWorklet.addModule(url);
+      this.crusher = new AudioWorkletNode(this.ctx, "crusher");
+      this.setCrushBits(this.crushBits);
+      this.setCrushRate(this.crushRate);
+      this.crushIn.disconnect();
+      this.crushIn.connect(this.crusher);
+      this.crusher.connect(this.crushOut);
+    }
+
+    setCrushBits(bits) {
+      this.crushBits = clamp(Math.round(bits), 1, 16);
+      if (this.crusher) this.crusher.parameters.get("bits").setValueAtTime(this.crushBits, this.ctx.currentTime);
+    }
+
+    setCrushRate(hz) {
+      this.crushRate = clamp(hz, 1, this.ctx.sampleRate);
+      if (this.crusher) this.crusher.parameters.get("rate").setValueAtTime(this.crushRate, this.ctx.currentTime);
+    }
+
+    // Rate knob 0..1 maps exponentially from 200 Hz to the full sample rate
+    setCrushRateFromNorm(u) {
+      this.setCrushRate(normToFreq(u, 200, this.ctx.sampleRate));
+    }
+
+    // Source levels (linear 0..1)
+    setOscLevel(u) {
+      smoothSetTarget(this.oscGain.gain, clamp(u, 0, 1), this.ctx.currentTime);
+    }
+
+    setNoiseLevel(u) {
+      smoothSetTarget(this.noiseGain.gain, clamp(u, 0, 1), this.ctx.currentTime);
+    }
+
+    setNoiseType(type) {
+      if (type === this.noiseType) return;
+      this.noiseType = type;
+      this._startNoise();
+    }
+
+    // A buffer source's buffer cannot be swapped, so each type change starts a new looping source
+    _startNoise() {
+      if (this.noiseSource) this.noiseSource.stop();
+      this.noiseSource = this.ctx.createBufferSource();
+      this.noiseSource.buffer = this._noiseBuffer(this.noiseType);
+      this.noiseSource.loop = true;
+      this.noiseSource.connect(this.noiseGain);
+      this.noiseSource.start();
+    }
+
+    // 4 s of noise per type, built once. White is flat; pink falls 3 dB per octave
+    // (Paul Kellet's filter); brown falls 6 dB per octave (leaky integrated white noise).
+    _noiseBuffer(type) {
+      if (this.noiseBuffers[type]) return this.noiseBuffers[type];
+      const length = this.ctx.sampleRate * 4;
+      const buffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0, last = 0;
+      for (let i = 0; i < length; i++) {
+        const white = Math.random() * 2 - 1;
+        if (type === "pink") {
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+          b6 = white * 0.115926;
+        } else if (type === "brown") {
+          last = (last + 0.02 * white) / 1.02;
+          data[i] = last;
+        } else {
+          data[i] = white;
+        }
+      }
+      // Remove the drift between the first and last sample so the loop point does not click,
+      // then scale every type to the same loudness (RMS) so the Level knob means the same thing
+      const drift = data[length - 1] - data[0];
+      let sum = 0;
+      for (let i = 0; i < length; i++) {
+        data[i] -= drift * i / (length - 1);
+        sum += data[i] * data[i];
+      }
+      const scale = 0.3 / Math.sqrt(sum / length);
+      for (let i = 0; i < length; i++) data[i] *= scale;
+      this.noiseBuffers[type] = buffer;
+      return buffer;
+    }
 
     setMasterGain(u) {
       const now = this.ctx.currentTime;
@@ -378,6 +501,15 @@
       this._updatePanLfoRouting();
     }
 
+    setDelayLfoAmount(seconds) {
+      smoothSetTarget(this.delayLfoScale.gain, clamp(seconds, 0, 0.05), this.ctx.currentTime);
+    }
+
+    setDelayLfoSource(src) {
+      this.delayLfoSource = src;
+      this._updateDelayLfoRouting();
+    }
+
     // Helper to get pan source node (always use bipolar for centered panning)
     _getPanSourceNode(lfo) {
       return lfo.bipOut; // Always use bipolar for pan to keep centered motion
@@ -396,6 +528,10 @@
       if ((this.panLfoSource === 'lfo1' && index === 1) ||
         (this.panLfoSource === 'lfo2' && index === 2)) {
         this._updatePanLfoRouting();
+      }
+      if ((this.delayLfoSource === "lfo1" && index === 1) ||
+        (this.delayLfoSource === "lfo2" && index === 2)) {
+        this._updateDelayLfoRouting();
       }
     }
 
@@ -437,6 +573,16 @@
         this._getPanSourceNode(this.lfo1).connect(this.panLfoScale);
       } else if (this.panLfoSource === 'lfo2') {
         this._getPanSourceNode(this.lfo2).connect(this.panLfoScale);
+      }
+    }
+
+    _updateDelayLfoRouting() {
+      this._disconnectInput(this.delayLfoScale);
+
+      if (this.delayLfoSource === "lfo1") {
+        this.lfo1.outputNode().connect(this.delayLfoScale);
+      } else if (this.delayLfoSource === "lfo2") {
+        this.lfo2.outputNode().connect(this.delayLfoScale);
       }
     }
 
@@ -906,6 +1052,7 @@
 
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
       this.synth = new MonoSynth(this.audioContext);
+      this.synth.loadCrusher(crusherUrl).catch(e => console.error("Crusher unavailable:", e));
 
       // Expose synth for debugging
       window.synth = this.synth;
@@ -950,7 +1097,16 @@
         },
         delayLevel: v => Math.round(v * 100) + '%',
         delayTime: v => Math.round(v * 1000) + ' ms',
-        delayFeedback: v => Math.round(v * 100) + '%'
+        delayFeedback: v => Math.round(v * 100) + '%',
+        delayLfoAmount: v => (v * 1000).toFixed(1) + " ms",
+        crushBits: v => Math.round(v) + " bit",
+        crushRate: u => {
+          const ctx = this.audioContext || { sampleRate: 48000 }; // fallback before init
+          const hz = normToFreq(u, 200, ctx.sampleRate);
+          return hz >= 1000 ? (hz / 1000).toFixed(1) + " kHz" : Math.round(hz) + " Hz";
+        },
+        oscLevel: v => Math.round(v * 100) + "%",
+        noiseLevel: v => Math.round(v * 100) + "%"
       };
     }
 
@@ -968,7 +1124,7 @@
           // Apply controls that were changed (or restored by the browser) before the synth existed
           Object.values(this.knobs).forEach(knob => knob.onChange(knob.value));
           this.selectorKnobs.forEach(knob => knob.onChange(knob.options[knob.currentIndex]));
-          ['filter-select', 'legato', 'lfo1-unipolar', 'lfo2-unipolar', 'filter-lfo-src', 'detune-lfo-src', 'pan-lfo-src']
+          ['filter-select', 'noise-type', 'legato', 'lfo1-unipolar', 'lfo2-unipolar', 'filter-lfo-src', 'detune-lfo-src', 'pan-lfo-src', 'delay-lfo-src']
             .forEach(id => document.getElementById(id).dispatchEvent(new Event('change')));
           powerBtn.textContent = 'Synth Active';
           powerBtn.classList.add("on");
@@ -996,6 +1152,11 @@
         const type = e.target.value;
         if (this.synth) this.synth.setFilterType(type);
         this.updateFilterKnobEnables(type);
+      });
+
+      // Noise color
+      document.getElementById("noise-type").addEventListener("change", (e) => {
+        if (this.synth) this.synth.setNoiseType(e.target.value);
       });
 
       // Legato toggle
@@ -1028,6 +1189,10 @@
 
       document.getElementById('pan-lfo-src').addEventListener('change', (e) => {
         if (this.synth) this.synth.setPanLfoSource(e.target.value);
+      });
+
+      document.getElementById("delay-lfo-src").addEventListener("change", (e) => {
+        if (this.synth) this.synth.setDelayLfoSource(e.target.value);
       });
 
       // Initialize knobs
@@ -1099,6 +1264,21 @@
               break;
             case 'delayFeedback':
               this.synth.setDelayFeedback(value);
+              break;
+            case "delayLfoAmount":
+              this.synth.setDelayLfoAmount(value);
+              break;
+            case "crushBits":
+              this.synth.setCrushBits(value);
+              break;
+            case "crushRate":
+              this.synth.setCrushRateFromNorm(value);
+              break;
+            case "oscLevel":
+              this.synth.setOscLevel(value);
+              break;
+            case "noiseLevel":
+              this.synth.setNoiseLevel(value);
               break;
           }
         }, formatter);

@@ -79,8 +79,10 @@
       align-items: stretch;
     }
 
+    /* Knobs stack vertically; a module's width follows its column count (--cols) */
     .module {
-      flex: 1 1 auto;
+      flex: var(--cols, 1) 1 0;
+      min-width: 0;
       background: #FFFFFF;
       border: 2px outset #C0C0C0;
       display: flex;
@@ -92,9 +94,10 @@
       color: #FFFFFF;
       font-weight: bold;
       font-size: 13px;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       text-align: center;
-      padding: 3px 4px;
+      white-space: nowrap;
+      padding: 3px 2px;
     }
 
     .module-title small {
@@ -119,11 +122,32 @@
 
     .cells {
       display: grid;
-      grid-template-columns: repeat(var(--cols, 2), 66px);
-      gap: 10px 4px;
+      grid-template-columns: repeat(var(--cols, 1), var(--col, 66px));
+      /* Same row height in every module, so knobs line up across modules */
+      grid-auto-rows: 88px;
+      gap: 6px 4px;
       padding: 8px 6px;
       justify-content: center;
+      align-content: start;
       align-items: end;
+      flex: 1 1 auto;
+    }
+
+    /* Sound sources stacked in the first column: both feed the filter */
+    .sources {
+      flex: 2 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sources .module:first-child {
+      flex: 1 1 auto;
+    }
+
+    .sources .module:last-child {
+      flex: 0 0 auto;
     }
 
     .span-all {
@@ -145,6 +169,10 @@
       align-items: center;
       justify-content: space-around;
       padding: 6px 10px;
+    }
+
+    .filter-dropdown.noise-select {
+      width: 72px;
     }
 
     /* Controls */
@@ -496,11 +524,12 @@
           </div>
 
           <div class="flow" id="knobs">
-            <!-- 1. Oscillator -->
+            <div class="sources" style="--cols: 2">
+            <!-- 1a. Oscillator -->
             <div class="module">
-              <div class="module-title">1. OSC<small>makes the tone</small></div>
-              <div class="cells">
-                <div class="knob-wrap span-all">
+              <div class="module-title">1a. OSC<small>makes the tone</small></div>
+              <div class="cells" style="--col: 72px">
+                <div class="knob-wrap">
                   <div class="waveform-knob-container">
                     <img src="../assets/img/sine.svg" class="waveform-icon sine" alt="Sine">
                     <img src="../assets/img/triangle.svg" class="waveform-icon triangle" alt="Triangle">
@@ -512,6 +541,12 @@
                     </div>
                   </div>
                   <div class="knob-label">Wave</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="oscLevel" data-min="0" data-max="1" data-step="0.01" data-default="1"
+                    data-value="1" title="Oscillator Level"></div>
+                  <div class="knob-label">Level</div>
+                  <div class="knob-value" data-for="oscLevel">100%</div>
                 </div>
                 <div class="knob-wrap">
                   <div class="knob" data-param="octave" data-min="-2" data-max="2" data-step="1" data-default="0" data-value="0"
@@ -542,12 +577,34 @@
               </div>
             </div>
 
+            <!-- 1b. Noise -->
+            <div class="module">
+              <div class="module-title">1b. NOISE<small>makes hiss</small></div>
+              <div class="cells">
+                <div class="ctrl">
+                  <select id="noise-type" class="filter-dropdown noise-select" title="Noise Color">
+                    <option value="white">White</option>
+                    <option value="pink">Pink</option>
+                    <option value="brown">Brown</option>
+                  </select>
+                  <div class="knob-label">Color</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="noiseLevel" data-min="0" data-max="1" data-step="0.01" data-default="0"
+                    data-value="0" title="Noise Level"></div>
+                  <div class="knob-label">Level</div>
+                  <div class="knob-value" data-for="noiseLevel">0%</div>
+                </div>
+              </div>
+            </div>
+            </div>
+
             <div class="arrow" aria-hidden="true">►</div>
 
             <!-- 2. Filter -->
-            <div class="module" style="--cols: 3">
+            <div class="module" style="--cols: 2">
               <div class="module-title">2. FILTER<small>shapes the tone</small></div>
-              <div class="cells" style="--cols: 3">
+              <div class="cells">
                 <div class="ctrl span-all">
                   <select id="filter-select" class="filter-dropdown" title="Filter Type">
                     <option value="lowpass">Lowpass</option>
@@ -605,7 +662,7 @@
 
             <!-- 3. Amp envelope -->
             <div class="module">
-              <div class="module-title">3. AMP ENV<small>shapes the volume</small></div>
+              <div class="module-title">3. AMP ENV<small>shapes volume</small></div>
               <div class="cells">
                 <div class="knob-wrap">
                   <div class="knob" data-param="attack" data-min="0.001" data-max="2" data-step="0.001" data-default="0.02"
@@ -636,9 +693,30 @@
 
             <div class="arrow" aria-hidden="true">►</div>
 
-            <!-- 4. Delay -->
+            <!-- 4. Lo-fi: bit depth and sample rate reduction -->
             <div class="module">
-              <div class="module-title">4. DELAY<small>adds echoes</small></div>
+              <div class="module-title">4. LO-FI<small>crunchy bits</small></div>
+              <div class="cells">
+                <div class="knob-wrap">
+                  <div class="knob" data-param="crushBits" data-min="1" data-max="16" data-step="1" data-default="16"
+                    data-value="16" title="Bit Depth (16 = clean)"></div>
+                  <div class="knob-label">Bits</div>
+                  <div class="knob-value" data-for="crushBits">16 bit</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="crushRate" data-min="0" data-max="1" data-step="0.001" data-default="1"
+                    data-value="1" title="Sample Rate (full = clean)"></div>
+                  <div class="knob-label">Rate</div>
+                  <div class="knob-value" data-for="crushRate">48.0 kHz</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="arrow" aria-hidden="true">►</div>
+
+            <!-- 5. Delay -->
+            <div class="module" style="--cols: 2">
+              <div class="module-title">5. DELAY<small>adds echoes</small></div>
               <div class="cells">
                 <div class="knob-wrap">
                   <div class="knob" data-param="delayLevel" data-min="0" data-max="1" data-step="0.01" data-default="0.25"
@@ -658,14 +736,28 @@
                   <div class="knob-label">Feedback</div>
                   <div class="knob-value" data-for="delayFeedback">35%</div>
                 </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="delayLfoAmount" data-min="0" data-max="0.05" data-step="0.0005" data-default="0"
+                    data-value="0" title="LFO Amount on Delay Time (s)"></div>
+                  <div class="knob-label">LFO Amt</div>
+                  <div class="knob-value" data-for="delayLfoAmount">0.0 ms</div>
+                </div>
+                <div class="ctrl">
+                  <select class="jack" id="delay-lfo-src" title="LFO that wobbles the delay time">
+                    <option value="off">none</option>
+                    <option value="lfo1">LFO 1</option>
+                    <option value="lfo2">LFO 2</option>
+                  </select>
+                  <div class="knob-label">LFO In</div>
+                </div>
               </div>
             </div>
 
             <div class="arrow" aria-hidden="true">►</div>
 
-            <!-- 5. Master -->
+            <!-- 6. Master -->
             <div class="module">
-              <div class="module-title">5. MASTER<small>to the speakers</small></div>
+              <div class="module-title">6. MASTER<small>to speakers</small></div>
               <div class="cells">
                 <div class="knob-wrap">
                   <div class="knob" data-param="master" data-min="0" data-max="1" data-step="0.001" data-default="0.7"
@@ -679,7 +771,7 @@
                   <div class="knob-label">Pan Amt</div>
                   <div class="knob-value" data-for="lfoPan">0.00</div>
                 </div>
-                <div class="ctrl span-all">
+                <div class="ctrl">
                   <select class="jack" id="pan-lfo-src" title="LFO that moves the sound left and right">
                     <option value="off">none</option>
                     <option value="lfo1">LFO 1</option>
