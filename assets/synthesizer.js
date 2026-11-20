@@ -1,5 +1,5 @@
 // VIBELAND Monophonic Synthesizer
-// Uses Web Audio API with a single voice: (Osc + Noise) -> Filter -> Amp -> Crush -> Delay (Dry+Wet) -> Panner -> Master -> Destination
+// Uses Web Audio API with a single voice: (Osc + Noise) -> Crush -> Filter -> Amp -> Delay (Dry+Wet) -> Panner -> Master -> Destination
 // Features: last-note priority, optional legato, ADSR, filter with env routing, delay with warmth, LFOs, waveform selector, octave shift, master volume.
 // UI: two-octave piano and circular knobs (no external dependencies).
 
@@ -190,12 +190,6 @@
       this.noiseType = "white";
       this._startNoise();
 
-      // Wire path: (Osc + Noise) -> Filter -> Amp -> Crush -> (Dry + Delay) -> Panner -> Master
-      this.osc.connect(this.oscGain);
-      this.oscGain.connect(this.filter);
-      this.noiseGain.connect(this.filter);
-      this.filter.connect(this.amp);
-
       // Crusher slot: passes straight through until loadCrusher() puts the worklet in between
       this.crushIn = ctx.createGain();
       this.crushOut = ctx.createGain();
@@ -203,11 +197,18 @@
       this.crusher = null;
       this.crushBits = 16;
       this.crushRate = ctx.sampleRate;
-      this.amp.connect(this.crushIn);
+
+      // Wire path: (Osc + Noise) -> Crush -> Filter -> Amp -> (Dry + Delay) -> Panner -> Master
+      // The crusher sits before the filter, so the filter can tame its harsh steps
+      this.osc.connect(this.oscGain);
+      this.oscGain.connect(this.crushIn);
+      this.noiseGain.connect(this.crushIn);
+      this.crushOut.connect(this.filter);
+      this.filter.connect(this.amp);
 
       // Split into dry and wet paths
-      this.crushOut.connect(this.dryGain);
-      this.crushOut.connect(this.delayIn);
+      this.amp.connect(this.dryGain);
+      this.amp.connect(this.delayIn);
 
       // Delay feedback loop
       this.delayIn.connect(this.delay);
@@ -247,7 +248,7 @@
       this.panLfoScale.connect(this.panner.pan);
 
       // Delay time modulation in seconds. Time bottoms out at 50 ms and the amount tops out
-      // at 50 ms, so a bipolar LFO never pushes the delay time below zero.
+      // at 10 ms, so a bipolar LFO never pushes the delay time below zero.
       this.delayLfoScale = ctx.createGain();
       this.delayLfoScale.gain.value = 0;
       this.delayLfoScale.connect(this.delay.delayTime);
@@ -502,7 +503,7 @@
     }
 
     setDelayLfoAmount(seconds) {
-      smoothSetTarget(this.delayLfoScale.gain, clamp(seconds, 0, 0.05), this.ctx.currentTime);
+      smoothSetTarget(this.delayLfoScale.gain, clamp(seconds, 0, 0.01), this.ctx.currentTime);
     }
 
     setDelayLfoSource(src) {
@@ -1098,7 +1099,7 @@
         delayLevel: v => Math.round(v * 100) + '%',
         delayTime: v => Math.round(v * 1000) + ' ms',
         delayFeedback: v => Math.round(v * 100) + '%',
-        delayLfoAmount: v => (v * 1000).toFixed(1) + " ms",
+        delayLfoAmount: v => (v * 1000).toFixed(2) + " ms",
         crushBits: v => Math.round(v) + " bit",
         crushRate: u => {
           const ctx = this.audioContext || { sampleRate: 48000 }; // fallback before init
