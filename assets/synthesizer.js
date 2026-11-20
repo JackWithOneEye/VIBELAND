@@ -181,7 +181,8 @@
       this.osc.detune.value = 0; // base detune in cents
       this.osc.start();
 
-      // Source mixer: oscillator and noise each have a level and both feed the filter
+      // Source mixer: oscillator and noise each have a level and are summed in srcMix
+      this.srcMix = ctx.createGain();
       this.oscGain = ctx.createGain();
       this.oscGain.gain.value = 1;
       this.noiseGain = ctx.createGain();
@@ -198,13 +199,12 @@
       this.crushBits = 16;
       this.crushRate = ctx.sampleRate;
 
-      // Wire path: (Osc + Noise) -> Crush -> Filter -> Amp -> (Dry + Delay) -> Panner -> Master
-      // The crusher sits before the filter, so the filter can tame its harsh steps
+      // Wire path: (Osc + Noise) -> Filter -> Crush -> Amp -> (Dry + Delay) -> Panner -> Master
+      // setCrushPreFilter() can swap Filter and Crush
       this.osc.connect(this.oscGain);
-      this.oscGain.connect(this.crushIn);
-      this.noiseGain.connect(this.crushIn);
-      this.crushOut.connect(this.filter);
-      this.filter.connect(this.amp);
+      this.oscGain.connect(this.srcMix);
+      this.noiseGain.connect(this.srcMix);
+      this.setCrushPreFilter(false);
 
       // Split into dry and wet paths
       this.amp.connect(this.dryGain);
@@ -278,6 +278,22 @@
       this.crushIn.disconnect();
       this.crushIn.connect(this.crusher);
       this.crusher.connect(this.crushOut);
+    }
+
+    // Before the filter, the filter tames the crusher's harsh steps; after it, they stay audible
+    setCrushPreFilter(pre) {
+      this.srcMix.disconnect();
+      this.filter.disconnect();
+      this.crushOut.disconnect();
+      if (pre) {
+        this.srcMix.connect(this.crushIn);
+        this.crushOut.connect(this.filter);
+        this.filter.connect(this.amp);
+      } else {
+        this.srcMix.connect(this.filter);
+        this.filter.connect(this.crushIn);
+        this.crushOut.connect(this.amp);
+      }
     }
 
     setCrushBits(bits) {
@@ -1125,7 +1141,7 @@
           // Apply controls that were changed (or restored by the browser) before the synth existed
           Object.values(this.knobs).forEach(knob => knob.onChange(knob.value));
           this.selectorKnobs.forEach(knob => knob.onChange(knob.options[knob.currentIndex]));
-          ['filter-select', 'noise-type', 'legato', 'lfo1-unipolar', 'lfo2-unipolar', 'filter-lfo-src', 'detune-lfo-src', 'pan-lfo-src', 'delay-lfo-src']
+          ['filter-select', 'noise-type', 'legato', 'crush-pre', 'lfo1-unipolar', 'lfo2-unipolar', 'filter-lfo-src', 'detune-lfo-src', 'pan-lfo-src', 'delay-lfo-src']
             .forEach(id => document.getElementById(id).dispatchEvent(new Event('change')));
           powerBtn.textContent = 'Synth Active';
           powerBtn.classList.add("on");
@@ -1163,6 +1179,11 @@
       // Legato toggle
       document.getElementById('legato').addEventListener('change', (e) => {
         if (this.synth) this.synth.setLegato(e.target.checked);
+      });
+
+      // Lo-fi placement: checked = before the filter
+      document.getElementById("crush-pre").addEventListener("change", (e) => {
+        if (this.synth) this.synth.setCrushPreFilter(e.target.checked);
       });
 
       // LFO sync button

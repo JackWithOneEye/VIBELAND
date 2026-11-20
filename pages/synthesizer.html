@@ -5,7 +5,7 @@
   <title>Synthesizer - VIBELAND</title>
   <link rel="stylesheet" type="text/css" href="../assets/styles.css">
   <style>
-    /* Signal-flow patch bay: modules sit in the order sound flows through them */
+    /* Patch bay: modules grouped in columns, roughly in the order sound flows through them */
     body {
       min-width: 1000px;
       margin: 0;
@@ -56,11 +56,6 @@
       align-items: center;
     }
 
-    .flow-hint {
-      color: #000080;
-      font-weight: bold;
-    }
-
     .lcd {
       margin-left: auto;
       min-width: 190px;
@@ -77,6 +72,7 @@
     .flow {
       display: flex;
       align-items: stretch;
+      gap: 6px;
     }
 
     /* Knobs stack vertically; a module's width follows its column count (--cols) */
@@ -111,15 +107,6 @@
     .lfo1-module .module-title { background: #806000; }
     .lfo2-module .module-title { background: #005080; }
 
-    .arrow {
-      flex: 0 0 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #000080;
-      font-size: 16px;
-    }
-
     .cells {
       display: grid;
       grid-template-columns: repeat(var(--cols, 1), var(--col, 66px));
@@ -133,21 +120,21 @@
       flex: 1 1 auto;
     }
 
-    /* Sound sources stacked in the first column: both feed the filter */
-    .sources {
-      flex: 2 1 0;
+    /* Two modules sharing one column; the lower one fills the remaining height */
+    .stack {
+      flex: var(--cols, 1) 1 0;
       min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
 
-    .sources .module:first-child {
-      flex: 1 1 auto;
+    .stack .module {
+      flex: 0 0 auto;
     }
 
-    .sources .module:last-child {
-      flex: 0 0 auto;
+    .stack .module:last-child {
+      flex: 1 1 auto;
     }
 
     .span-all {
@@ -420,6 +407,10 @@
     .vertical-switch::before { content: "+"; top: -14px; }
     .vertical-switch::after { content: "+/-"; bottom: -14px; }
 
+    /* Lo-fi placement switch: up = before the filter, down = after it */
+    .place-switch::before { content: "PRE"; }
+    .place-switch::after { content: "POST"; }
+
     .sync-button {
       padding: 4px 10px;
       font-size: 12px;
@@ -518,16 +509,14 @@
               <span class="switch-label">Legato</span>
             </span>
 
-            <span class="flow-hint">Sound flows left to right ►</span>
-
             <div class="lcd" id="note-display">SYNTH OFF</div>
           </div>
 
           <div class="flow" id="knobs">
-            <div class="sources" style="--cols: 2">
-            <!-- 1a. Oscillator -->
+            <div class="stack" style="--cols: 2">
+            <!-- Oscillator -->
             <div class="module">
-              <div class="module-title">1a. OSC<small>makes the tone</small></div>
+              <div class="module-title">OSC<small>makes the tone</small></div>
               <div class="cells" style="--col: 72px">
                 <div class="knob-wrap">
                   <div class="waveform-knob-container">
@@ -577,9 +566,9 @@
               </div>
             </div>
 
-            <!-- 1b. Noise -->
+            <!-- Noise -->
             <div class="module">
-              <div class="module-title">1b. NOISE<small>makes hiss</small></div>
+              <div class="module-title">NOISE<small>makes hiss</small></div>
               <div class="cells">
                 <div class="ctrl">
                   <select id="noise-type" class="filter-dropdown noise-select" title="Noise Color">
@@ -599,32 +588,9 @@
             </div>
             </div>
 
-            <div class="arrow" aria-hidden="true">►</div>
-
-            <!-- 2. Lo-fi: bit depth and sample rate reduction -->
-            <div class="module">
-              <div class="module-title">2. LO-FI<small>crunchy bits</small></div>
-              <div class="cells">
-                <div class="knob-wrap">
-                  <div class="knob" data-param="crushBits" data-min="1" data-max="16" data-step="1" data-default="16"
-                    data-value="16" title="Bit Depth (16 = clean)"></div>
-                  <div class="knob-label">Bits</div>
-                  <div class="knob-value" data-for="crushBits">16 bit</div>
-                </div>
-                <div class="knob-wrap">
-                  <div class="knob" data-param="crushRate" data-min="0" data-max="1" data-step="0.001" data-default="1"
-                    data-value="1" title="Sample Rate (full = clean)"></div>
-                  <div class="knob-label">Rate</div>
-                  <div class="knob-value" data-for="crushRate">48.0 kHz</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="arrow" aria-hidden="true">►</div>
-
-            <!-- 3. Filter -->
+            <!-- Filter -->
             <div class="module" style="--cols: 2">
-              <div class="module-title">3. FILTER<small>shapes the tone</small></div>
+              <div class="module-title">FILTER<small>shapes the tone</small></div>
               <div class="cells">
                 <div class="ctrl span-all">
                   <select id="filter-select" class="filter-dropdown" title="Filter Type">
@@ -679,11 +645,9 @@
               </div>
             </div>
 
-            <div class="arrow" aria-hidden="true">►</div>
-
-            <!-- 4. Amp envelope -->
+            <!-- Amp envelope -->
             <div class="module">
-              <div class="module-title">4. AMP ENV<small>shapes volume</small></div>
+              <div class="module-title">AMP ENV<small>shapes volume</small></div>
               <div class="cells">
                 <div class="knob-wrap">
                   <div class="knob" data-param="attack" data-min="0.001" data-max="2" data-step="0.001" data-default="0.02"
@@ -712,11 +676,36 @@
               </div>
             </div>
 
-            <div class="arrow" aria-hidden="true">►</div>
+            <div class="stack" style="--cols: 2">
+            <!-- Lo-fi: bit depth and sample rate reduction -->
+            <div class="module" style="--cols: 3">
+              <div class="module-title">LO-FI<small>crunchy bits</small></div>
+              <div class="cells">
+                <div class="knob-wrap">
+                  <div class="knob" data-param="crushBits" data-min="1" data-max="16" data-step="1" data-default="16"
+                    data-value="16" title="Bit Depth (16 = clean)"></div>
+                  <div class="knob-label">Bits</div>
+                  <div class="knob-value" data-for="crushBits">16 bit</div>
+                </div>
+                <div class="knob-wrap">
+                  <div class="knob" data-param="crushRate" data-min="0" data-max="1" data-step="0.001" data-default="1"
+                    data-value="1" title="Sample Rate (full = clean)"></div>
+                  <div class="knob-label">Rate</div>
+                  <div class="knob-value" data-for="crushRate">48.0 kHz</div>
+                </div>
+                <div class="ctrl">
+                  <label class="switch vertical-switch place-switch" title="Up: before the filter, down: after the filter">
+                    <input type="checkbox" id="crush-pre">
+                    <span class="switch-slider"></span>
+                  </label>
+                  <div class="knob-label">Filter</div>
+                </div>
+              </div>
+            </div>
 
-            <!-- 5. Delay -->
-            <div class="module" style="--cols: 2">
-              <div class="module-title">5. DELAY<small>adds echoes</small></div>
+            <!-- Delay -->
+            <div class="module">
+              <div class="module-title">DELAY<small>adds echoes</small></div>
               <div class="cells">
                 <div class="knob-wrap">
                   <div class="knob" data-param="delayLevel" data-min="0" data-max="1" data-step="0.01" data-default="0.25"
@@ -752,12 +741,11 @@
                 </div>
               </div>
             </div>
+            </div>
 
-            <div class="arrow" aria-hidden="true">►</div>
-
-            <!-- 6. Master -->
+            <!-- Master -->
             <div class="module">
-              <div class="module-title">6. MASTER<small>to speakers</small></div>
+              <div class="module-title">MASTER<small>to speakers</small></div>
               <div class="cells">
                 <div class="knob-wrap">
                   <div class="knob" data-param="master" data-min="0" data-max="1" data-step="0.001" data-default="0.7"
