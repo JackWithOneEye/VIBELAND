@@ -9,6 +9,7 @@ Bun.serve({
   routes: {
     "/": Response.redirect("/home"),
     "/home": Bun.file("./index.html"),
+    "/atom-builder": Bun.file("./pages/atom-builder.html"),
     "/battleship": Bun.file("./pages/battleship.html"),
     "/calculator": Bun.file("./pages/calculator.html"),
     "/crying-boy": Bun.file("./pages/crying-boy.html"),

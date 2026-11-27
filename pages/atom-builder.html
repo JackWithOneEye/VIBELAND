@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Atom Builder - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style>
+    .builder {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .stage {
+      flex-shrink: 0;
+      width: 452px;
+      background-color: #C0C0C0;
+      border: 2px outset #C0C0C0;
+      padding: 4px;
+    }
+
+    #atomCanvas {
+      display: block;
+      width: 440px;
+      height: 440px;
+      background-color: #FFFFFF;
+      cursor: default;
+    }
+
+    .stage-caption {
+      margin: 4px 0;
+      text-align: center;
+      font-size: 11px;
+      color: #000080;
+    }
+
+    .particle-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin: 4px 0;
+    }
+
+    .particle-row .pname {
+      flex: 1;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .particle-row button,
+    .actions button,
+    .box button {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    .particle-row input[type="number"] {
+      width: 64px;
+      padding: 4px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 1px solid #000000;
+      border-radius: 50%;
+    }
+
+    .dot.proton {
+      background-color: #FF0000;
+    }
+
+    .dot.neutron {
+      background-color: #C0C0C0;
+    }
+
+    .dot.electron {
+      background-color: #0000FF;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .panel {
+      flex: 1;
+      min-width: 0;
+      background-color: #FFFFFF;
+      border: 2px inset #C0C0C0;
+      padding: 10px;
+    }
+
+    .identity {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tile {
+      position: relative;
+      flex-shrink: 0;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 3px outset #FFFFFF;
+      text-align: center;
+    }
+
+    .tile.undiscovered {
+      border: 3px dashed #FF00FF;
+    }
+
+    .t-num {
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .t-sym {
+      font-family: 'Arial Black', Arial, Helvetica, sans-serif;
+      font-size: 42px;
+      line-height: 1;
+    }
+
+    .t-name {
+      margin-top: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .t-weight {
+      font-size: 11px;
+    }
+
+    .id-name {
+      font-family: 'Arial Black', Arial, Helvetica, sans-serif;
+      font-size: 22px;
+      color: #FF0000;
+      word-break: break-word;
+    }
+
+    .id-sub {
+      font-size: 13px;
+      font-weight: bold;
+      color: #000080;
+    }
+
+    .id-cat {
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .nuclide {
+      display: inline-flex;
+      align-items: center;
+      margin: 4px 0;
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 34px;
+    }
+
+    .nuclide .stack {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-end;
+      margin-right: 2px;
+      font-size: 15px;
+      line-height: 1.1;
+    }
+
+    .nuclide .ion {
+      align-self: flex-start;
+      font-size: 16px;
+    }
+
+    .stats {
+      width: 100%;
+      margin-top: 8px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .stats th,
+    .stats td {
+      padding: 3px 4px;
+      border-bottom: 1px dotted #C0C0C0;
+      text-align: left;
+    }
+
+    .stats th {
+      width: 44%;
+      color: #000080;
+    }
+
+    .stats td {
+      font-family: "Courier New", monospace;
+      font-weight: bold;
+    }
+
+    .stability {
+      margin-top: 8px;
+      padding: 8px;
+      border: 3px ridge #C0C0C0;
+      line-height: 1.4;
+    }
+
+    .stability.stable {
+      background-color: #CCFFCC;
+    }
+
+    .stability.radioactive {
+      background-color: #FFFF66;
+    }
+
+    .stability.unbound {
+      background-color: #FFB0B0;
+    }
+
+    .stability.empty {
+      background-color: #E8E8E8;
+    }
+
+    .stab-title {
+      font-family: 'Arial Black', Arial, Helvetica, sans-serif;
+      font-size: 18px;
+    }
+
+    .fact {
+      margin-top: 4px;
+      font-style: italic;
+      color: #000080;
+    }
+
+    .badge {
+      display: inline-block;
+      margin: 4px 4px 0 0;
+      padding: 2px 6px;
+      background-color: #FF00FF;
+      border: 2px outset #FF00FF;
+      color: #FFFF00;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .note {
+      margin-top: 6px;
+      color: #FF0000;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .message {
+      min-height: 1.5em;
+      margin: 8px 0;
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+      color: #000080;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      margin-top: 10px;
+    }
+
+    .box {
+      background-color: #FFFFFF;
+      border: 2px inset #C0C0C0;
+      padding: 10px;
+    }
+
+    .box h3 {
+      margin: 0 0 6px 0;
+      font-size: 15px;
+    }
+
+    .box h3 small {
+      font-size: 11px;
+      font-weight: normal;
+      color: #000000;
+    }
+
+    #chartCanvas {
+      display: block;
+      width: 420px;
+      height: 280px;
+      border: 1px solid #808080;
+      background-color: #FFFFFF;
+      cursor: crosshair;
+    }
+
+    .chart-legend,
+    .legend {
+      margin-top: 4px;
+      font-size: 11px;
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin: 0 3px 0 8px;
+      border: 1px solid #000000;
+      vertical-align: middle;
+    }
+
+    .config {
+      font-family: "Courier New", monospace;
+      font-size: 17px;
+      font-weight: bold;
+      word-break: break-word;
+    }
+
+    .shell-info {
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .ptable-box {
+      margin-top: 10px;
+    }
+
+    .ptable {
+      display: grid;
+      grid-template-columns: repeat(18, 1fr);
+      grid-template-rows: repeat(7, 42px) 10px repeat(2, 42px);
+      gap: 2px;
+    }
+
+    .ptable button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .ptable button small {
+      font-size: 9px;
+      font-weight: normal;
+    }
+
+    .ptable button.current {
+      outline: 3px solid #FF0000;
+      position: relative;
+      z-index: 1;
+    }
+
+    .ptable .gap-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: #808080;
+    }
+
+    .missions ul {
+      columns: 2;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .missions li {
+      padding: 2px 0;
+      break-inside: avoid;
+    }
+
+    .missions li.done {
+      color: #008000;
+      font-weight: bold;
+    }
+
+    .decay-log {
+      width: 340px;
+      flex-shrink: 0;
+    }
+
+    .decay-log ol {
+      max-height: 170px;
+      margin: 0 0 6px 0;
+      padding-left: 22px;
+      overflow-y: auto;
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+    }
+
+    .decay-log .empty-log {
+      font-size: 12px;
+      font-style: italic;
+      color: #808080;
+    }
+
+    .instructions {
+      max-width: none;
+      text-align: left;
+    }
+
+    kbd {
+      padding: 0 4px;
+      background-color: #C0C0C0;
+      border: 2px outset #C0C0C0;
+      font-family: "Courier New", monospace;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container wide">
+    <div class="outer-border">
+      <div class="header">
+        <h1>⚛️ ATOM BUILDER ⚛️</h1>
+        <p>~*~ Build Your Own Element ~*~</p>
+      </div>
+
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ ADD PROTONS, NEUTRONS & ELECTRONS ★ DISCOVER NEW ELEMENTS ★ WATCH RADIOACTIVE DECAY ★</div>
+      </div>
+
+      <div class="content">
+        <div class="builder">
+          <div class="stage">
+            <canvas id="atomCanvas" width="440" height="440" aria-label="Picture of the atom you built"></canvas>
+            <div class="stage-caption">Bohr-style picture: real electrons are fuzzy clouds, and a real nucleus is 100,000× smaller!</div>
+
+            <div class="particle-row" data-kind="p">
+              <span class="dot proton"></span><label class="pname" for="countP">PROTONS</label>
+              <button data-delta="-10">−10</button><button data-delta="-1">−1</button>
+              <input type="number" id="countP" min="0" max="999" value="0">
+              <button data-delta="1">+1</button><button data-delta="10">+10</button>
+            </div>
+            <div class="particle-row" data-kind="n">
+              <span class="dot neutron"></span><label class="pname" for="countN">NEUTRONS</label>
+              <button data-delta="-10">−10</button><button data-delta="-1">−1</button>
+              <input type="number" id="countN" min="0" max="999" value="0">
+              <button data-delta="1">+1</button><button data-delta="10">+10</button>
+            </div>
+            <div class="particle-row" data-kind="e">
+              <span class="dot electron"></span><label class="pname" for="countE">ELECTRONS</label>
+              <button data-delta="-10">−10</button><button data-delta="-1">−1</button>
+              <input type="number" id="countE" min="0" max="999" value="0">
+              <button data-delta="1">+1</button><button data-delta="10">+10</button>
+            </div>
+
+            <div class="actions">
+              <button id="neutralizeBtn" class="func">NEUTRALIZE</button>
+              <button id="stableBtn" class="func">MAKE STABLE</button>
+              <button id="randomBtn">RANDOM ATOM</button>
+              <button id="resetBtn" class="clear">RESET</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="identity">
+              <div class="tile" id="tile">
+                <span class="t-num" id="tileNum"></span>
+                <span class="t-sym" id="tileSym"></span>
+                <span class="t-name" id="tileName"></span>
+                <span class="t-weight" id="tileWeight"></span>
+              </div>
+              <div>
+                <div class="id-name" id="atomName"></div>
+                <div class="id-sub" id="atomKind"></div>
+                <div class="nuclide" id="nuclide"></div>
+                <div class="id-cat" id="atomCategory"></div>
+              </div>
+            </div>
+
+            <table class="stats">
+              <tbody id="stats"></tbody>
+            </table>
+
+            <div class="stability" id="stability"></div>
+
+            <div class="actions">
+              <button id="decayBtn">☢ DECAY!</button>
+              <button id="chainBtn">DECAY TO STABILITY</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="message" id="message" role="status"></div>
+
+        <div class="row">
+          <div class="box">
+            <h3>VALLEY OF STABILITY <small>click to jump to any nucleus</small></h3>
+            <canvas id="chartCanvas" width="420" height="280" aria-label="Chart of stable nuclei by protons and neutrons"></canvas>
+            <div class="chart-legend">
+              <span class="swatch" style="background:#000080; margin-left:0"></span>stable
+              <span class="swatch" style="background:#FF9900"></span>famous radioactive
+              <span class="swatch" style="background:#FF0000; border-radius:50%"></span>your atom
+              <span class="swatch" style="background:#FFCCFF"></span>magic numbers
+            </div>
+          </div>
+          <div class="box" style="flex: 1">
+            <h3>ELECTRONS</h3>
+            <div class="config" id="config"></div>
+            <div class="shell-info" id="shellInfo"></div>
+            <div class="note" id="electronNote"></div>
+          </div>
+        </div>
+
+        <div class="box ptable-box">
+          <h3>PERIODIC TABLE <small>click an element to build its most common atom</small></h3>
+          <div class="ptable" id="ptable"></div>
+          <div class="legend" id="legend"></div>
+        </div>
+
+        <div class="row">
+          <div class="box missions" style="flex: 1">
+            <h3>MISSIONS <small id="missionCount"></small></h3>
+            <ul id="missionList"></ul>
+          </div>
+          <div class="box decay-log">
+            <h3>DECAY LOG</h3>
+            <ol id="decayLog"></ol>
+            <div class="empty-log" id="emptyLog">Build something radioactive and press DECAY!</div>
+            <button id="clearLogBtn">CLEAR LOG</button>
+          </div>
+        </div>
+
+        <div class="instructions">
+          <h3>HOW TO USE</h3>
+          <p><strong>PROTONS</strong> decide which element you have. <strong>NEUTRONS</strong> make different isotopes of
+            it and decide whether the nucleus is stable. <strong>ELECTRONS</strong> decide the charge: fewer electrons than
+            protons makes a positive ion, more makes a negative ion.</p>
+          <p>Use the buttons, type a number, or press <kbd>P</kbd> <kbd>N</kbd> <kbd>E</kbd> to add a particle
+            (hold <kbd>Shift</kbd> to remove one). <strong>MAKE STABLE</strong> picks the nearest stable isotope,
+            <strong>DECAY!</strong> lets a radioactive nucleus decay one step, and <strong>DECAY TO STABILITY</strong>
+            follows the whole decay chain.</p>
+          <p>Stability and half-lives come from real data for every stable nucleus and many famous radioactive ones. For
+            everything else, the page estimates with the liquid-drop model of the nucleus, so treat masses and decay modes
+            marked "estimate" as good guesses.</p>
+        </div>
+
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MAX_PARTICLES = 999;
+    const MAGIC = [2, 8, 20, 28, 50, 82, 126];
+    const PROTON_U = 1.007276467;
+    const NEUTRON_U = 1.008664916;
+    const ELECTRON_U = 0.000548580;
+    const MEV_PER_U = 931.494;
+    const KG_PER_U = 1.66053907e-27;
+
+    const CATEGORIES = {
+      am: ["Alkali metal", "#FF6666"],
+      ae: ["Alkaline earth metal", "#FFDEAD"],
+      tm: ["Transition metal", "#FFC0C0"],
+      pt: ["Post-transition metal", "#CCCCCC"],
+      md: ["Metalloid", "#CCCC99"],
+      nm: ["Nonmetal", "#A0FFA0"],
+      hl: ["Halogen", "#FFFF99"],
+      ng: ["Noble gas", "#C0FFFF"],
+      ln: ["Lanthanide", "#FFBFFF"],
+      an: ["Actinide", "#FF99CC"],
+      uk: ["Unknown properties", "#E8E8E8"],
+      new: ["Undiscovered element", "#FFFFFF"]
+    };
+
+    // Symbol, name, standard atomic weight ([n] = mass number of the longest-lived isotope), category.
+    const ELEMENT_DATA = `
+      H Hydrogen 1.008 nm
+      He Helium 4.0026 ng
+      Li Lithium 6.94 am
+      Be Beryllium 9.0122 ae
+      B Boron 10.81 md
+      C Carbon 12.011 nm
+      N Nitrogen 14.007 nm
+      O Oxygen 15.999 nm
+      F Fluorine 18.998 hl
+      Ne Neon 20.180 ng
+      Na Sodium 22.990 am
+      Mg Magnesium 24.305 ae
+      Al Aluminium 26.982 pt
+      Si Silicon 28.085 md
+      P Phosphorus 30.974 nm
+      S Sulfur 32.06 nm
+      Cl Chlorine 35.45 hl
+      Ar Argon 39.95 ng
+      K Potassium 39.098 am
+      Ca Calcium 40.078 ae
+      Sc Scandium 44.956 tm
+      Ti Titanium 47.867 tm
+      V Vanadium 50.942 tm
+      Cr Chromium 51.996 tm
+      Mn Manganese 54.938 tm
+      Fe Iron 55.845 tm
+      Co Cobalt 58.933 tm
+      Ni Nickel 58.693 tm
+      Cu Copper 63.546 tm
+      Zn Zinc 65.38 tm
+      Ga Gallium 69.723 pt
+      Ge Germanium 72.630 md
+      As Arsenic 74.922 md
+      Se Selenium 78.971 nm
+      Br Bromine 79.904 hl
+      Kr Krypton 83.798 ng
+      Rb Rubidium 85.468 am
+      Sr Strontium 87.62 ae
+      Y Yttrium 88.906 tm
+      Zr Zirconium 91.224 tm
+      Nb Niobium 92.906 tm
+      Mo Molybdenum 95.95 tm
+      Tc Technetium [98] tm
+      Ru Ruthenium 101.07 tm
+      Rh Rhodium 102.91 tm
+      Pd Palladium 106.42 tm
+      Ag Silver 107.87 tm
+      Cd Cadmium 112.41 tm
+      In Indium 114.82 pt
+      Sn Tin 118.71 pt
+      Sb Antimony 121.76 md
+      Te Tellurium 127.60 md
+      I Iodine 126.90 hl
+      Xe Xenon 131.29 ng
+      Cs Caesium 132.91 am
+      Ba Barium 137.33 ae
+      La Lanthanum 138.91 ln
+      Ce Cerium 140.12 ln
+      Pr Praseodymium 140.91 ln
+      Nd Neodymium 144.24 ln
+      Pm Promethium [145] ln
+      Sm Samarium 150.36 ln
+      Eu Europium 151.96 ln
+      Gd Gadolinium 157.25 ln
+      Tb Terbium 158.93 ln
+      Dy Dysprosium 162.50 ln
+      Ho Holmium 164.93 ln
+      Er Erbium 167.26 ln
+      Tm Thulium 168.93 ln
+      Yb Ytterbium 173.05 ln
+      Lu Lutetium 174.97 ln
+      Hf Hafnium 178.49 tm
+      Ta Tantalum 180.95 tm
+      W Tungsten 183.84 tm
+      Re Rhenium 186.21 tm
+      Os Osmium 190.23 tm
+      Ir Iridium 192.22 tm
+      Pt Platinum 195.08 tm
+      Au Gold 196.97 tm
+      Hg Mercury 200.59 tm
+      Tl Thallium 204.38 pt
+      Pb Lead 207.2 pt
+      Bi Bismuth 208.98 pt
+      Po Polonium [209] pt
+      At Astatine [210] hl
+      Rn Radon [222] ng
+      Fr Francium [223] am
+      Ra Radium [226] ae
+      Ac Actinium [227] an
+      Th Thorium 232.04 an
+      Pa Protactinium 231.04 an
+      U Uranium 238.03 an
+      Np Neptunium [237] an
+      Pu Plutonium [244] an
+      Am Americium [243] an
+      Cm Curium [247] an
+      Bk Berkelium [247] an
+      Cf Californium [251] an
+      Es Einsteinium [252] an
+      Fm Fermium [257] an
+      Md Mendelevium [258] an
+      No Nobelium [259] an
+      Lr Lawrencium [266] an
+      Rf Rutherfordium [267] tm
+      Db Dubnium [268] tm
+      Sg Seaborgium [269] tm
+      Bh Bohrium [270] tm
+      Hs Hassium [269] tm
+      Mt Meitnerium [278] uk
+      Ds Darmstadtium [281] uk
+      Rg Roentgenium [282] uk
+      Cn Copernicium [285] uk
+      Nh Nihonium [286] uk
+      Fl Flerovium [289] uk
+      Mc Moscovium [290] uk
+      Lv Livermorium [293] uk
+      Ts Tennessine [294] uk
+      Og Oganesson [294] uk`;
+
+    const ELEMENTS = [null];
+    ELEMENT_DATA.trim().split("\n").forEach(function (line) {
+      const [symbol, name, weight, cat] = line.trim().split(" ");
+      ELEMENTS.push({
+        symbol: symbol,
+        name: name,
+        weight: parseFloat(weight.replace(/[\[\]]/g, "")),
+        longestLived: weight.startsWith("["),
+        cat: cat
+      });
+    });
+
+    // Mass numbers of the stable (observationally stable) isotopes of each element, indexed by proton count.
+    const STABLE = [
+      [],
+      [1, 2], [3, 4], [6, 7], [9], [10, 11], [12, 13], [14, 15], [16, 17, 18], [19], [20, 21, 22],
+      [23], [24, 25, 26], [27], [28, 29, 30], [31], [32, 33, 34, 36], [35, 37], [36, 38, 40], [39, 41], [40, 42, 43, 44, 46],
+      [45], [46, 47, 48, 49, 50], [51], [50, 52, 53, 54], [55], [54, 56, 57, 58], [59], [58, 60, 61, 62, 64], [63, 65], [64, 66, 67, 68, 70],
+      [69, 71], [70, 72, 73, 74], [75], [74, 76, 77, 78, 80], [79, 81], [80, 82, 83, 84, 86], [85], [84, 86, 87, 88], [89], [90, 91, 92, 94],
+      [93], [92, 94, 95, 96, 97, 98], [], [96, 98, 99, 100, 101, 102, 104], [103], [102, 104, 105, 106, 108, 110], [107, 109], [106, 108, 110, 111, 112, 114], [113], [112, 114, 115, 116, 117, 118, 119, 120, 122, 124],
+      [121, 123], [120, 122, 123, 124, 125, 126], [127], [126, 128, 129, 130, 131, 132, 134], [133], [132, 134, 135, 136, 137, 138], [139], [136, 138, 140, 142], [141], [142, 143, 145, 146, 148],
+      [], [144, 149, 150, 152, 154], [153], [154, 155, 156, 157, 158, 160], [159], [156, 158, 160, 161, 162, 163, 164], [165], [162, 164, 166, 167, 168, 170], [169], [168, 170, 171, 172, 173, 174, 176],
+      [175], [176, 177, 178, 179, 180], [181], [182, 183, 184, 186], [185], [187, 188, 189, 190, 192], [191, 193], [192, 194, 195, 196, 198], [197], [196, 198, 199, 200, 201, 202, 204],
+      [203, 205], [204, 206, 207, 208]
+    ];
+
+    // Particle-bound nuclei (mass numbers) of the light elements, where the liquid-drop model is unreliable.
+    const LIGHT_BOUND = [
+      [],
+      [1, 2, 3],
+      [3, 4, 6, 8],
+      [6, 7, 8, 9, 11],
+      [7, 9, 10, 11, 12, 14],
+      [8, 10, 11, 12, 13, 14, 15, 17, 19],
+      [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22],
+      [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+      [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+    ];
+
+    // "Z-A": [decay mode, half-life, fun fact]
+    const NOTABLE = {
+      "0-1": ["beta-", "10.2 minutes", "A lonely neutron doesn't last long: it turns into a proton, an electron and an antineutrino."],
+      "1-3": ["beta-", "12.3 years", "Tritium! It makes glow-in-the-dark watch dials and exit signs shine."],
+      "4-7": ["ec", "53 days", "Made by cosmic rays in the air and falls to Earth with the rain."],
+      "4-8": ["alpha", "8×10⁻¹⁷ seconds", "Splits into two helium-4 nuclei almost instantly. Stars have to smash three helium nuclei together at once to get past it and make carbon."],
+      "6-11": ["beta+", "20.4 minutes", "Doctors use it in PET scans of the brain."],
+      "6-14": ["beta-", "5,730 years", "Radiocarbon! Scientists use it to find the age of bones, wood and mummies."],
+      "7-13": ["beta+", "10 minutes", "Used in PET scans to see blood flowing through the heart."],
+      "8-15": ["beta+", "2 minutes", "So short-lived that hospitals make it right next to the scanner."],
+      "9-18": ["beta+", "110 minutes", "The workhorse of PET scans in hospitals."],
+      "11-22": ["beta+", "2.6 years", "One of the few things that shoots out antimatter (positrons) you can buy for a lab."],
+      "11-24": ["beta-", "15 hours", "Used to find leaks in pipelines."],
+      "13-26": ["beta+", "717,000 years", "Its gamma rays light up the Milky Way where new stars are being born."],
+      "15-32": ["beta-", "14.3 days", "Used by biologists to label DNA."],
+      "17-36": ["beta-", "301,000 years", "Used to find out how old deep groundwater is."],
+      "19-40": ["beta-", "1.25 billion years", "Bananas are a tiny bit radioactive because of this potassium isotope!"],
+      "20-48": ["2beta-", "about 6×10¹⁹ years", "Decays by double beta decay, so slowly that it is almost stable."],
+      "23-50": ["ec", "2.7×10¹⁷ years", "Natural vanadium is a tiny bit radioactive because of it."],
+      "27-60": ["beta-", "5.27 years", "Its gamma rays are used to treat cancer and to sterilize food."],
+      "32-76": ["2beta-", "1.8×10²¹ years", "Physicists watch tons of it underground hoping to learn what neutrinos really are."],
+      "34-82": ["2beta-", "about 9×10¹⁹ years", "Decays by double beta decay: two neutrons turn into protons at once."],
+      "36-78": ["2ec", "about 9×10²¹ years", "Decays by grabbing two of its own electrons at once."],
+      "37-87": ["beta-", "49.7 billion years", "Used to measure the age of the oldest rocks on Earth."],
+      "38-90": ["beta-", "28.8 years", "A dangerous fallout product that hides in bones because it acts like calcium."],
+      "40-96": ["2beta-", "2.3×10¹⁹ years", "Decays by double beta decay."],
+      "42-100": ["2beta-", "7×10¹⁸ years", "Decays by double beta decay."],
+      "43-98": ["beta-", "4.2 million years", "One of technetium's longest-lasting isotopes, but still far too short to survive since the Earth formed."],
+      "43-99": ["beta-", "211,000 years", "Technetium has no stable isotopes at all. It was the first element made artificially."],
+      "48-113": ["beta-", "8×10¹⁵ years", "Mildly radioactive, and it gobbles up neutrons in nuclear reactor control rods."],
+      "48-116": ["2beta-", "2.7×10¹⁹ years", "Decays by double beta decay."],
+      "49-115": ["beta-", "4.4×10¹⁴ years", "Most natural indium is this slightly radioactive isotope!"],
+      "52-128": ["2beta-", "2.2×10²⁴ years", "The slowest radioactive decay ever measured: over 100 trillion times the age of the universe."],
+      "52-130": ["2beta-", "8×10²⁰ years", "Decays by double beta decay."],
+      "53-131": ["beta-", "8 days", "Used in medicine to treat thyroid problems."],
+      "54-124": ["2ec", "1.8×10²² years", "Its double electron capture was first seen in 2019, in a giant dark matter detector."],
+      "54-136": ["2beta-", "2.2×10²¹ years", "Decays by double beta decay."],
+      "55-137": ["beta-", "30 years", "A long-lasting fallout product from Chernobyl and Fukushima."],
+      "56-130": ["2ec", "about 10²¹ years", "Decays by grabbing two of its own electrons at once."],
+      "57-138": ["ec", "100 billion years", "Natural lanthanum is a tiny bit radioactive because of it."],
+      "60-144": ["alpha", "2.3×10¹⁵ years", "So slow that it was counted as stable for a long time."],
+      "60-150": ["2beta-", "9×10¹⁸ years", "Decays by double beta decay."],
+      "61-145": ["ec", "17.7 years", "Promethium has no stable isotopes. It's named after the Titan who stole fire from the gods."],
+      "62-147": ["alpha", "106 billion years", "Used to date meteorites."],
+      "62-148": ["alpha", "6×10¹⁵ years", "So slow that it was counted as stable for a long time."],
+      "63-151": ["alpha", "5×10¹⁸ years", "Its alpha decay was only noticed in 2007."],
+      "64-152": ["alpha", "1.1×10¹⁴ years", "So slow that it was counted as stable for a long time."],
+      "71-176": ["beta-", "37 billion years", "Used to date rocks and meteorites."],
+      "72-174": ["alpha", "2×10¹⁵ years", "So slow that it was counted as stable for a long time."],
+      "74-180": ["alpha", "1.8×10¹⁸ years", "Its alpha decay was only noticed in 2004."],
+      "75-187": ["beta-", "41 billion years", "Most natural rhenium is this slightly radioactive isotope!"],
+      "76-186": ["alpha", "2×10¹⁵ years", "So slow that it was counted as stable for a long time."],
+      "78-190": ["alpha", "about 5×10¹¹ years", "Natural platinum is a tiny bit radioactive because of it."],
+      "83-209": ["alpha", "2×10¹⁹ years", "Practically stable: its half-life is a billion times the age of the universe."],
+      "84-210": ["alpha", "138 days", "Discovered by Marie Curie, who named polonium after her homeland, Poland."],
+      "86-222": ["alpha", "3.8 days", "A radioactive gas that can seep into basements from the ground."],
+      "88-226": ["alpha", "1,600 years", "Once painted on watch dials to make them glow, with tragic results for the painters."],
+      "90-232": ["alpha", "14 billion years", "Its half-life is about the age of the whole universe."],
+      "92-235": ["alpha", "704 million years", "Splits when hit by a neutron: the fuel of nuclear reactors."],
+      "92-238": ["alpha", "4.5 billion years", "Its half-life is about the age of the Earth, so half of the Earth's original U-238 is still here."],
+      "94-239": ["alpha", "24,100 years", "Made in nuclear reactors and used as nuclear fuel."],
+      "95-241": ["alpha", "432 years", "There's a tiny speck of it inside most smoke detectors."],
+      "98-252": ["alpha", "2.6 years", "Also splits on its own and sprays neutrons, so it's used to kick-start nuclear reactors."],
+      "118-294": ["alpha", "under a millisecond", "The heaviest atom ever made. Only a handful have ever existed."],
+
+      // The rest of the three natural decay chains, so DECAY TO STABILITY follows them exactly.
+      "90-234": ["beta-", "24 days"],
+      "91-234": ["beta-", "1.2 minutes"],
+      "92-234": ["alpha", "245,500 years"],
+      "90-230": ["alpha", "75,400 years"],
+      "84-218": ["alpha", "3.1 minutes"],
+      "82-214": ["beta-", "27 minutes"],
+      "83-214": ["beta-", "20 minutes"],
+      "84-214": ["alpha", "164 microseconds", "One of the shortest-lived atoms found in nature."],
+      "82-210": ["beta-", "22 years"],
+      "83-210": ["beta-", "5 days"],
+      "90-231": ["beta-", "25.5 hours"],
+      "91-231": ["alpha", "32,760 years"],
+      "89-227": ["beta-", "21.8 years"],
+      "90-227": ["alpha", "18.7 days"],
+      "88-223": ["alpha", "11.4 days", "Used to treat bone cancer."],
+      "86-219": ["alpha", "4 seconds"],
+      "84-215": ["alpha", "1.8 milliseconds"],
+      "82-211": ["beta-", "36 minutes"],
+      "83-211": ["alpha", "2.1 minutes"],
+      "81-207": ["beta-", "4.8 minutes"],
+      "88-228": ["beta-", "5.75 years"],
+      "89-228": ["beta-", "6.2 hours"],
+      "90-228": ["alpha", "1.9 years"],
+      "88-224": ["alpha", "3.6 days"],
+      "86-220": ["alpha", "56 seconds", "Nicknamed thoron, because it comes from thorium."],
+      "84-216": ["alpha", "0.15 seconds"],
+      "82-212": ["beta-", "10.6 hours"],
+      "83-212": ["beta-", "61 minutes"],
+      "84-212": ["alpha", "0.3 microseconds", "Lasts less than a millionth of a second!"]
+    };
+
+    // Facts about stable nuclei, keyed "Z-A".
+    const FACTS = {
+      "1-1": "The most common atom in the universe: about 3 out of every 4 atoms are this.",
+      "1-2": "Deuterium, or heavy hydrogen. Water made with it is called heavy water.",
+      "2-3": "Super rare on Earth, but there's lots of it on the Moon.",
+      "2-4": "Made in the Big Bang and in every star. When it flies out of a nucleus, it's called an alpha particle.",
+      "6-12": "The basis of all life. The atomic mass unit is defined as exactly 1/12 of its mass.",
+      "8-16": "The oxygen you're breathing right now is almost all this isotope.",
+      "20-40": "The heaviest nucleus with equal numbers of protons and neutrons that is stable.",
+      "26-56": "Stars fuse elements up to around iron. Making anything heavier costs energy instead of releasing it.",
+      "28-62": "Holds its nucleons tighter than any other nucleus: the highest binding energy per nucleon.",
+      "50-120": "Tin has 10 stable isotopes, more than any other element, thanks to its magic 50 protons.",
+      "79-197": "Gold! Most of it was made when neutron stars crashed into each other.",
+      "82-208": "The heaviest stable nucleus, with a magic 82 protons and 126 neutrons."
+    };
+
+    const MODES = {
+      "beta-": { label: "β⁻ decay", desc: "a neutron turns into a proton and shoots out an electron", dz: 1, dn: -1 },
+      "beta+": { label: "β⁺ decay", desc: "a proton turns into a neutron and shoots out a positron", dz: -1, dn: 1 },
+      "ec": { label: "electron capture", desc: "a proton swallows one of the atom's electrons and becomes a neutron", dz: -1, dn: 1, de: -1 },
+      "2beta-": { label: "double β⁻ decay", desc: "two neutrons turn into protons at the same moment", dz: 2, dn: -2 },
+      "2ec": { label: "double electron capture", desc: "two protons swallow two electrons and become neutrons", dz: -2, dn: 2, de: -2 },
+      "alpha": { label: "α decay", desc: "it spits out an alpha particle (2 protons + 2 neutrons)", dz: -2, dn: -2 },
+      "n": { label: "neutron emission", desc: "a neutron simply drips off", dz: 0, dn: -1 },
+      "p": { label: "proton emission", desc: "a proton simply drips off", dz: -1, dn: 0 },
+      "sf": { label: "spontaneous fission", desc: "the nucleus splits into two smaller nuclei", dz: 0, dn: 0 }
+    };
+
+    const CONFIG_EXCEPTIONS = {
+      24: [["4s", -1], ["3d", 1]], 29: [["4s", -1], ["3d", 1]],
+      41: [["5s", -1], ["4d", 1]], 42: [["5s", -1], ["4d", 1]], 44: [["5s", -1], ["4d", 1]], 45: [["5s", -1], ["4d", 1]],
+      46: [["5s", -2], ["4d", 2]], 47: [["5s", -1], ["4d", 1]],
+      57: [["4f", -1], ["5d", 1]], 58: [["4f", -1], ["5d", 1]], 64: [["4f", -1], ["5d", 1]],
+      78: [["6s", -1], ["5d", 1]], 79: [["6s", -1], ["5d", 1]],
+      89: [["5f", -1], ["6d", 1]], 90: [["5f", -2], ["6d", 2]], 91: [["5f", -1], ["6d", 1]], 92: [["5f", -1], ["6d", 1]],
+      93: [["5f", -1], ["6d", 1]], 96: [["5f", -1], ["6d", 1]], 103: [["6d", -1], ["7p", 1]]
+    };
+
+    const SUBSHELL_LETTERS = "spdfghiklmnoqrtuvwxyz";
+    const NOBLE_CORES = [[118, "Og"], [86, "Rn"], [54, "Xe"], [36, "Kr"], [18, "Ar"], [10, "Ne"], [2, "He"]];
+    const SUPERSCRIPTS = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+    const ROOTS = ["nil", "un", "bi", "tri", "quad", "pent", "hex", "sept", "oct", "enn"];
+
+    // ---------- Physics ----------
+
+    function elementInfo(z) {
+      if (z <= 118) return ELEMENTS[z];
+      const digits = String(z).split("").map(Number);
+      const name = (digits.map(function (d) { return ROOTS[d]; }).join("") + "ium")
+        .replace(/ennn/g, "enn").replace(/biium$/, "bium").replace(/triium$/, "trium");
+      const symbol = digits.map(function (d) { return ROOTS[d][0]; }).join("");
+      return {
+        symbol: symbol[0].toUpperCase() + symbol.slice(1),
+        name: name[0].toUpperCase() + name.slice(1),
+        weight: null,
+        cat: "new"
+      };
+    }
+
+    const EXACT_BINDING = { "1-2": 2.224, "1-3": 8.482, "2-3": 7.718, "2-4": 28.296 };
+
+    // Total binding energy in MeV. Exact for the lightest nuclei, otherwise the semi-empirical mass formula.
+    function bindingEnergy(z, n) {
+      const a = z + n;
+      if (z < 0 || n < 0 || a < 2) return 0;
+      const exact = EXACT_BINDING[z + "-" + a];
+      if (exact !== undefined) return exact;
+      let b = 15.75 * a
+        - 17.8 * Math.pow(a, 2 / 3)
+        - 0.711 * z * (z - 1) / Math.cbrt(a)
+        - 23.7 * (n - z) * (n - z) / a;
+      if (z % 2 === 0 && n % 2 === 0) b += 11.18 / Math.sqrt(a);
+      if (z % 2 === 1 && n % 2 === 1) b -= 11.18 / Math.sqrt(a);
+      return b;
+    }
+
+    function stableNeutrons(z) {
+      return (STABLE[z] || []).map(function (a) { return a - z; });
+    }
+
+    // Returns the decay mode when the nucleus is not held together at all, or null when it is bound.
+    function unboundMode(z, n) {
+      const a = z + n;
+      if (n === 0) return z === 1 ? null : "p";
+      if (z <= 8) {
+        if (LIGHT_BOUND[z].includes(a)) return null;
+        return n > z ? "n" : "p";
+      }
+      const b = bindingEnergy(z, n);
+      const sn = b - bindingEnergy(z, n - 1);
+      const sp = b - bindingEnergy(z - 1, n);
+      if (b > 0 && sn > 0 && sp > 0) return null;
+      return sn < sp ? "n" : "p";
+    }
+
+    function valleyProtons(a) {
+      return a / (1.98 + 0.0155 * Math.pow(a, 2 / 3));
+    }
+
+    function estimatedDecayMode(z, n) {
+      const stableN = stableNeutrons(z);
+      if (stableN.length) {
+        if (n > stableN[stableN.length - 1]) return "beta-";
+        if (n < stableN[0]) return "beta+";
+      }
+      const b = bindingEnergy(z, n);
+      const qBetaMinus = 0.782 + bindingEnergy(z + 1, n - 1) - b;
+      const qCapture = -0.782 + bindingEnergy(z - 1, n + 1) - b;
+      const qAlpha = 28.296 + bindingEnergy(z - 2, n - 2) - b;
+      if (z > 82) {
+        if (qBetaMinus > 1) return "beta-";
+        if (qAlpha > 0) return "alpha";
+        if (qCapture > 0) return "beta+";
+      } else if (qBetaMinus > 0 || qCapture > 0) {
+        return qBetaMinus >= qCapture ? "beta-" : "beta+";
+      }
+      return z < valleyProtons(z + n) ? "beta-" : "beta+";
+    }
+
+    function halfLifeGuess(z, n) {
+      const stableN = stableNeutrons(z);
+      if (stableN.length) {
+        const d = Math.min.apply(null, stableN.map(function (s) { return Math.abs(n - s); }));
+        if (d <= 2) return "anywhere from seconds to millions of years";
+        if (d <= 5) return "probably seconds to hours";
+        return "probably well under a second";
+      }
+      if (z > 104) return "probably seconds or much less";
+      return "anywhere from microseconds to millions of years";
+    }
+
+    function analyze(z, n) {
+      const a = z + n;
+      const key = z + "-" + a;
+      if (a === 0) return { kind: "empty" };
+      if (z === 0 && n > 1) {
+        return { kind: "unbound", mode: "n", fact: "Neutrons can't stick together on their own. You need protons too!" };
+      }
+      if ((STABLE[z] || []).includes(a)) return { kind: "stable", fact: FACTS[key] };
+      const notable = NOTABLE[key];
+      if (notable) return { kind: "radioactive", mode: notable[0], halfLife: notable[1], fact: notable[2] };
+      const unbound = unboundMode(z, n);
+      if (unbound) return { kind: "unbound", mode: unbound };
+      if (z >= 90 && z * z / a >= 48) {
+        return { kind: "radioactive", mode: "sf", estimate: true, guess: "practically instantly" };
+      }
+      return { kind: "radioactive", mode: estimatedDecayMode(z, n), estimate: true, guess: halfLifeGuess(z, n) };
+    }
+
+    // ---------- Electrons ----------
+
+    function madelungOrder(count) {
+      const order = [];
+      let capacity = 0;
+      for (let sum = 1; capacity < count; sum++) {
+        for (let l = Math.floor((sum - 1) / 2); l >= 0; l--) {
+          order.push([sum - l, l]);
+          capacity += 4 * l + 2;
+        }
+      }
+      return order;
+    }
+
+    function fillSubshells(count, order) {
+      const shells = new Map();
+      let left = count;
+      for (const [n, l] of order) {
+        if (left <= 0) break;
+        const take = Math.min(left, 4 * l + 2);
+        shells.set(n + "," + l, take);
+        left -= take;
+      }
+      return shells;
+    }
+
+    function electronConfig(z, e) {
+      const order = madelungOrder(Math.max(z, e) + 40);
+      const shells = fillSubshells(z, order);
+      (CONFIG_EXCEPTIONS[z] || []).forEach(function ([label, delta]) {
+        const key = parseInt(label, 10) + "," + SUBSHELL_LETTERS.indexOf(label.slice(-1));
+        shells.set(key, (shells.get(key) || 0) + delta);
+      });
+      if (e < z) {
+        // Ions lose electrons from the outermost shell first (e.g. iron loses 4s before 3d).
+        for (let remove = z - e; remove > 0; remove--) {
+          let best = null;
+          shells.forEach(function (count, key) {
+            if (!count) return;
+            const [n, l] = key.split(",").map(Number);
+            if (!best || n > best[0] || (n === best[0] && l > best[1])) best = [n, l, key];
+          });
+          shells.set(best[2], shells.get(best[2]) - 1);
+        }
+      } else {
+        let add = e - z;
+        for (const [n, l] of order) {
+          if (add <= 0) break;
+          const key = n + "," + l;
+          const have = shells.get(key) || 0;
+          const take = Math.min(add, 4 * l + 2 - have);
+          if (take > 0) {
+            shells.set(key, have + take);
+            add -= take;
+          }
+        }
+      }
+      const list = [];
+      shells.forEach(function (count, key) {
+        if (count > 0) {
+          const [n, l] = key.split(",").map(Number);
+          list.push({ n: n, l: l, count: count });
+        }
+      });
+      list.sort(function (x, y) { return x.n - y.n || x.l - y.l; });
+      return list;
+    }
+
+    function sup(value) {
+      return String(value).split("").map(function (d) { return SUPERSCRIPTS[d]; }).join("");
+    }
+
+    function subshellText(s) {
+      return s.n + SUBSHELL_LETTERS[s.l] + sup(s.count);
+    }
+
+    function configText(config, e) {
+      if (!config.length) return "—";
+      const counts = new Map(config.map(function (s) { return [s.n + "," + s.l, s.count]; }));
+      for (const [core, symbol] of NOBLE_CORES) {
+        if (core >= e) continue;
+        const coreShells = fillSubshells(core, madelungOrder(core));
+        let full = true;
+        coreShells.forEach(function (count, key) {
+          if (counts.get(key) !== count) full = false;
+        });
+        if (full) {
+          const rest = config.filter(function (s) { return !coreShells.has(s.n + "," + s.l); });
+          return "[" + symbol + "] " + rest.map(subshellText).join(" ");
+        }
+      }
+      return config.map(subshellText).join(" ");
+    }
+
+    // ---------- Formatting ----------
+
+    function sci(x) {
+      if (x === 0) return "0";
+      const exp = Math.floor(Math.log10(x));
+      const mantissa = (x / Math.pow(10, exp)).toFixed(3);
+      return mantissa + "×10" + (exp < 0 ? "⁻" : "") + sup(Math.abs(exp)) + " kg";
+    }
+
+    function chargeText(q) {
+      if (q === 0) return "";
+      return (Math.abs(q) > 1 ? Math.abs(q) : "") + (q > 0 ? "+" : "−");
+    }
+
+    function nuclideName(z, n) {
+      if (z === 0) return n === 1 ? "a neutron" : n + " neutrons";
+      return elementInfo(z).name + "-" + (z + n);
+    }
+
+    // ---------- State ----------
+
+    const state = { p: 0, n: 0, e: 0 };
+    let chainTimer = null;
+    let missionsDone = loadMissions();
+
+    function clampCount(value) {
+      const v = Math.floor(Number(value));
+      return isNaN(v) ? 0 : Math.max(0, Math.min(MAX_PARTICLES, v));
+    }
+
+    function setAtom(p, n, e, fromChain) {
+      if (!fromChain) stopChain();
+      state.p = clampCount(p);
+      state.n = clampCount(n);
+      state.e = clampCount(e);
+      update();
+    }
+
+    function change(kind, delta) {
+      const next = Object.assign({}, state);
+      next[kind] = clampCount(next[kind] + delta);
+      setAtom(next.p, next.n, next.e);
+    }
+
+    function commonNeutrons(z) {
+      const el = ELEMENTS[z];
+      const stable = STABLE[z] || [];
+      if (stable.length) {
+        let best = stable[0];
+        stable.forEach(function (a) { if (Math.abs(a - el.weight) < Math.abs(best - el.weight)) best = a; });
+        return best - z;
+      }
+      return Math.round(el.weight) - z;
+    }
+
+    // ---------- Rendering: panel ----------
+
+    const $ = function (id) { return document.getElementById(id); };
+    let messageTimer = null;
+
+    function showMessage(html) {
+      $("message").innerHTML = html;
+      clearTimeout(messageTimer);
+      messageTimer = setTimeout(function () { $("message").innerHTML = ""; }, 6000);
+    }
+
+    function update() {
+      const z = state.p, n = state.n, e = state.e, a = z + n, q = z - e;
+      const info = analyze(z, n);
+
+      $("countP").value = z;
+      $("countN").value = n;
+      $("countE").value = e;
+
+      renderIdentity(z, n, e, a, q);
+      renderStats(z, n, e, a, q, info);
+      renderStability(z, n, a, info);
+      renderElectrons(z, e, q);
+
+      $("decayBtn").disabled = !(info.kind === "radioactive" || info.kind === "unbound");
+      $("stableBtn").disabled = z === 0 || z > 118;
+
+      ptableButtons.forEach(function (btn, i) { btn.classList.toggle("current", i + 1 === z); });
+      buildNucleus();
+      drawChart();
+      if (reducedMotion) drawAtom(0);
+      checkMissions(info);
+    }
+
+    function renderIdentity(z, n, e, a, q) {
+      const tile = $("tile");
+      let symbol, name, category, weight = "", title, kind;
+      if (z > 0) {
+        const el = elementInfo(z);
+        symbol = el.symbol;
+        name = el.name;
+        category = CATEGORIES[el.cat];
+        if (el.weight) weight = el.longestLived ? "[" + el.weight + "]" : String(el.weight);
+        else weight = "not discovered!";
+        title = name + "-" + a;
+        if (z === 1 && a <= 3) title += " (" + ["protium", "deuterium", "tritium"][a - 1] + ")";
+      } else if (n > 0) {
+        symbol = "n";
+        name = n === 1 ? "Neutron" : "Neutrons";
+        category = ["Not an element: no protons!", "#E8E8E8"];
+        title = n === 1 ? "Free neutron" : n + " loose neutrons";
+      } else if (e > 0) {
+        symbol = "e⁻";
+        name = "Electrons";
+        category = ["Not an element: no protons!", "#E8E8E8"];
+        title = e === 1 ? "One lonely electron" : e + " lonely electrons";
+      } else {
+        symbol = "?";
+        name = "Nothing yet";
+        category = ["Add some particles!", "#FFFFFF"];
+        title = "Empty space";
+      }
+
+      if (z === 0) kind = a > 0 && e > 0 ? "Neutrons and electrons, but no nucleus to hold them" : "";
+      else if (e === 0) kind = "Bare nucleus (all electrons stripped)";
+      else if (q === 0) kind = "Neutral atom";
+      else if (q > 0) kind = "Positive ion (cation), charge " + chargeText(q);
+      else kind = "Negative ion (anion), charge " + chargeText(q);
+
+      $("tileNum").textContent = z > 0 ? z : "";
+      $("tileSym").textContent = symbol;
+      $("tileName").textContent = name;
+      $("tileWeight").textContent = weight;
+      tile.style.backgroundColor = category[1];
+      tile.classList.toggle("undiscovered", z > 118);
+      $("atomName").textContent = title;
+      $("atomKind").textContent = kind;
+      $("atomCategory").textContent = category[0] + (z > 118 ? " (Element " + z + " hasn't been made yet!)" : "");
+
+      if (a > 0) {
+        $("nuclide").innerHTML = "<span class=\"stack\"><span>" + a + "</span><span>" + z + "</span></span>" +
+          symbol + "<span class=\"ion\">" + (z > 0 ? chargeText(q) : "") + "</span>";
+      } else {
+        $("nuclide").innerHTML = "";
+      }
+    }
+
+    function renderStats(z, n, e, a, q, info) {
+      const bound = info.kind === "stable" || info.kind === "radioactive";
+      const b = bound ? Math.max(0, bindingEnergy(z, n)) : 0;
+      const exact = EXACT_BINDING[z + "-" + a] !== undefined;
+      const mass = z * PROTON_U + n * NEUTRON_U + e * ELECTRON_U - b / MEV_PER_U;
+      let bindingText = "—";
+      if (a === 1) bindingText = "none (just one nucleon)";
+      else if (bound && a > 1) bindingText = "≈ " + (b / a).toFixed(2) + " MeV per nucleon" + (exact ? "" : " (estimate)");
+      else if (info.kind === "unbound") bindingText = "not enough to hold it together!";
+
+      const rows = [
+        ["Atomic number (Z)", z],
+        ["Mass number (A)", a],
+        ["Atomic mass", a + e === 0 ? "—" : "≈ " + (a ? mass.toFixed(2) : mass.toFixed(6)) + " u"],
+        ["Mass", a + e === 0 ? "—" : sci(mass * KG_PER_U)],
+        ["Charge", q === 0 ? "0 (neutral)" : (q > 0 ? "+" : "−") + Math.abs(q) + " e"],
+        ["Binding energy", bindingText],
+        ["Nucleus size", a ? "≈ " + (2.4 * Math.cbrt(a)).toFixed(1) + " femtometers across" : "—"]
+      ];
+      $("stats").innerHTML = rows.map(function (r) {
+        return "<tr><th>" + r[0] + "</th><td>" + r[1] + "</td></tr>";
+      }).join("");
+    }
+
+    function renderStability(z, n, a, info) {
+      const box = $("stability");
+      box.className = "stability " + info.kind;
+      let html = "";
+      if (info.kind === "empty") {
+        html = "<div class=\"stab-title\">NO NUCLEUS</div>Add protons and neutrons to build a nucleus.";
+      } else if (info.kind === "stable") {
+        html = "<div class=\"stab-title\">✔ STABLE</div>This nucleus lasts forever, as far as anyone has ever measured.";
+      } else if (info.kind === "radioactive") {
+        const mode = MODES[info.mode];
+        html = "<div class=\"stab-title\">☢ RADIOACTIVE</div>" +
+          "Decays by <strong>" + mode.label + "</strong>" + (info.estimate ? " (estimate)" : "") + ": " + mode.desc + ".<br>" +
+          (info.halfLife ? "Half-life: <strong>" + info.halfLife + "</strong>"
+            : "Half-life: not in our tables. Rough guess: <strong>" + info.guess + "</strong>");
+      } else {
+        const mode = MODES[info.mode];
+        html = "<div class=\"stab-title\">💥 FALLS APART INSTANTLY</div>" +
+          "This combination isn't held together at all: " + mode.desc + " in a split second.";
+      }
+      if (info.fact) html += "<div class=\"fact\">" + info.fact + "</div>";
+
+      const badges = [];
+      const magicZ = z > 0 && MAGIC.includes(z), magicN = MAGIC.includes(n);
+      if (a > 0 && info.kind !== "unbound") {
+        if (magicZ && magicN) badges.push("★ DOUBLY MAGIC ★");
+        else if (magicZ) badges.push("MAGIC PROTON NUMBER");
+        else if (magicN) badges.push("MAGIC NEUTRON NUMBER");
+      }
+      if (badges.length) {
+        html += "<div>" + badges.map(function (t) { return "<span class=\"badge\">" + t + "</span>"; }).join("") + "</div>" +
+          "<div style=\"font-size:11px\">Magic numbers (2, 8, 20, 28, 50, 82, 126) make nuclear shells full and extra sturdy.</div>";
+      }
+      box.innerHTML = html;
+    }
+
+    function renderElectrons(z, e, q) {
+      const config = electronConfig(z, e);
+      $("config").textContent = configText(config, e);
+
+      const perShell = [];
+      config.forEach(function (s) { perShell[s.n - 1] = (perShell[s.n - 1] || 0) + s.count; });
+      let info = "";
+      if (config.length) {
+        const outerN = config[config.length - 1].n;
+        const outer = perShell[outerN - 1];
+        const sCount = (config.find(function (s) { return s.n === outerN && s.l === 0; }) || {}).count || 0;
+        const pCount = (config.find(function (s) { return s.n === outerN && s.l === 1; }) || {}).count || 0;
+        const full = (outerN === 1 && sCount === 2) || (sCount === 2 && pCount === 6);
+        info = "Electrons per shell: <strong>" + Array.from(perShell, function (c) { return c || 0; }).join(", ") + "</strong><br>" +
+          "Outer shell (shell " + outerN + "): <strong>" + outer + " electron" + (outer === 1 ? "" : "s") + "</strong>" +
+          (full ? "<br>The outer shell is full, like a noble gas, so it doesn't want to react." : "");
+      } else if (z > 0) {
+        info = "No electrons at all!";
+      }
+      $("shellInfo").innerHTML = info;
+
+      let note = "";
+      if (z === 0 && e > 0) note = "Electrons with no nucleus have nothing to orbit. They'd just fly apart!";
+      else if (z > 0 && e === 0) note = "A bare nucleus, like the ones zooming around inside the Sun.";
+      else if (z > 0 && -q >= 3) note = "Way too many extra electrons! A real atom can hold on to one or two extra; the rest would be pushed away.";
+      $("electronNote").textContent = note;
+      shellCounts = Array.from(perShell, function (c) { return c || 0; });
+    }
+
+    // ---------- Rendering: atom canvas ----------
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const dpr = window.devicePixelRatio || 1;
+    const atomCanvas = $("atomCanvas");
+    const actx = atomCanvas.getContext("2d");
+    const SIZE = 440, CENTER = SIZE / 2;
+    atomCanvas.width = SIZE * dpr;
+    atomCanvas.height = SIZE * dpr;
+    const nucleusCanvas = document.createElement("canvas");
+    nucleusCanvas.width = SIZE * dpr;
+    nucleusCanvas.height = SIZE * dpr;
+    const nctx = nucleusCanvas.getContext("2d");
+    const ringCanvas = document.createElement("canvas");
+    ringCanvas.width = SIZE * dpr;
+    ringCanvas.height = SIZE * dpr;
+    const rctx = ringCanvas.getContext("2d");
+    let ringKey = "";
+    let electronSprites = new Map();
+    let nucleusExtent = 0;
+    let shellCounts = [];
+    const SHELL_LETTERS = "KLMNOPQRSTUVWXYZ";
+
+    // 64-bit pixel-art palette: five tones from light to dark, and an outline in each
+    // particle's own darkest color.
+    const PALETTE = {
+      p: { tones: ["#FFC0C0", "#FF6060", "#FF0000", "#C00000", "#800000"], outline: "#400000" },
+      n: { tones: ["#FFFFFF", "#E0E0E0", "#C0C0C0", "#909090", "#606060"], outline: "#303030" },
+      e: { tones: ["#C0C0FF", "#6060FF", "#0000FF", "#0000B0", "#000070"], outline: "#000030" }
+    };
+
+    function scramble(i) {
+      let x = Math.imul(i + 1, 2654435761) >>> 0;
+      x ^= x >>> 15;
+      x = Math.imul(x, 2246822519) >>> 0;
+      x ^= x >>> 13;
+      return x >>> 0;
+    }
+
+    // A 1 px pixel-art ball lit from the top left, dithered between tones, with a white
+    // highlight pixel.
+    function shadedBall(ctx, x, y, R, pal, mark) {
+      const cx = Math.floor(x), cy = Math.floor(y), tones = pal.tones;
+      const inside = function (dx, dy) { return dx * dx + dy * dy <= R * R + R; };
+      for (let dy = -R; dy <= R; dy++) {
+        for (let dx = -R; dx <= R; dx++) {
+          if (!inside(dx, dy)) continue;
+          const edge = !inside(dx + 1, dy) || !inside(dx - 1, dy) || !inside(dx, dy + 1) || !inside(dx, dy - 1);
+          if (edge) {
+            ctx.fillStyle = pal.outline;
+          } else {
+            const level = Math.hypot(dx / R + 0.5, dy / R + 0.5) / 1.6 * tones.length + ((dx + dy) & 1 ? 0.3 : -0.3);
+            ctx.fillStyle = tones[Math.max(0, Math.min(tones.length - 1, Math.floor(level)))];
+          }
+          ctx.fillRect(cx + dx, cy + dy, 1, 1);
+        }
+      }
+      if (R >= 4) {
+        const size = R >= 7 ? 2 : 1, off = Math.round(R * 0.5);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(cx - off, cy - off, size, size);
+      }
+      if (mark) {
+        const arm = Math.max(1, Math.round(R * 0.45)), th = Math.max(1, Math.round(R / 4)), back = Math.floor((th - 1) / 2);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(cx - arm, cy - back, 2 * arm + 1, th);
+        if (mark === "+") ctx.fillRect(cx - back, cy - arm, th, 2 * arm + 1);
+      }
+    }
+
+    // A square tile with a Win95-style bevel, for particles too small to draw as balls.
+    function bevelTile(ctx, x, y, size, pal) {
+      const t = pal.tones, n = t.length;
+      const x0 = Math.floor(x) - Math.floor((size - 1) / 2), y0 = Math.floor(y) - Math.floor((size - 1) / 2);
+      ctx.fillStyle = t[Math.floor(n / 2)];
+      ctx.fillRect(x0, y0, size, size);
+      if (size < 3) return;
+      ctx.fillStyle = t[0];
+      ctx.fillRect(x0, y0, size - 1, 1);
+      ctx.fillRect(x0, y0, 1, size - 1);
+      ctx.fillStyle = t[n - 1];
+      ctx.fillRect(x0 + 1, y0 + size - 1, size - 1, 1);
+      ctx.fillRect(x0 + size - 1, y0 + 1, 1, size - 1);
+      if (size >= 5) {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(x0 + 1, y0 + 1, 1, 1);
+      }
+    }
+
+    function drawNucleon(ctx, x, y, r, proton) {
+      const R = Math.floor(Math.round(2 * r) / 2);
+      if (R >= 2) shadedBall(ctx, x, y, R, proton ? PALETTE.p : PALETTE.n, proton && R >= 4 ? "+" : null);
+      else bevelTile(ctx, x, y, 3, proton ? PALETTE.p : PALETTE.n);
+    }
+
+    function drawElectron(ctx, x, y, r) {
+      const R = Math.floor(r);
+      if (R >= 2) shadedBall(ctx, x, y, R, PALETTE.e, R >= 4 ? "−" : null);
+      else bevelTile(ctx, x, y, 3, PALETTE.e);
+    }
+
+    function ringPoint(radius, t) {
+      return [CENTER + radius * Math.cos(t), CENTER + radius * Math.sin(t)];
+    }
+
+    // A two-tone 1 px ring, with a beveled shell letter on filled shells.
+    function drawOrbit(ctx, radius, j, filled) {
+      [[radius + 1, filled ? "#8080FF" : "#E0E0E0"], [radius, filled ? "#000080" : "#C0C0C0"]].forEach(function ([rr, color]) {
+        const steps = Math.ceil(2 * Math.PI * rr * 1.5);
+        ctx.fillStyle = color;
+        for (let k = 0; k < steps; k++) {
+          const [x, y] = ringPoint(rr, 2 * Math.PI * k / steps);
+          ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1);
+        }
+      });
+      if (!filled) return;
+      const [x, y] = ringPoint(radius, -Math.PI / 4);
+      const bx = Math.floor(x / 2) * 2 - 6, by = Math.floor(y / 2) * 2 - 6;
+      ctx.fillStyle = "#000080";
+      ctx.fillRect(bx, by, 12, 12);
+      ctx.fillStyle = "#6060FF";
+      ctx.fillRect(bx, by, 11, 1);
+      ctx.fillRect(bx, by, 1, 11);
+      ctx.fillStyle = "#000030";
+      ctx.fillRect(bx + 1, by + 11, 11, 1);
+      ctx.fillRect(bx + 11, by + 1, 1, 11);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "bold 11px 'Courier New', monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(SHELL_LETTERS[j], bx + 6, by + 6.5);
+    }
+
+    // Electrons are drawn pixel by pixel, so each size is drawn once and then stamped.
+    function electronSprite(dot) {
+      let sprite = electronSprites.get(dot);
+      if (!sprite) {
+        const pad = Math.ceil(dot + 3);
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 2 * pad * dpr;
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawElectron(ctx, pad, pad, dot);
+        sprite = { canvas: canvas, pad: pad };
+        electronSprites.set(dot, sprite);
+      }
+      return sprite;
+    }
+
+    function buildNucleus() {
+      const a = state.p + state.n;
+      nctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      nctx.clearRect(0, 0, SIZE, SIZE);
+      nucleusExtent = 0;
+      if (!a) return;
+
+      // Nucleons sit on a sunflower spiral; a fixed shuffle decides which spots are protons,
+      // so adding one particle changes only a little of the picture.
+      const spacing = Math.min(13, 68 / Math.sqrt(a));
+      const r = Math.max(1, spacing * 0.68);
+      const order = Array.from({ length: a }, function (_, i) { return i; })
+        .sort(function (x, y) { return scramble(x) - scramble(y); });
+      const isProton = new Uint8Array(a);
+      for (let k = 0; k < state.p; k++) isProton[order[k]] = 1;
+
+      for (let i = a - 1; i >= 0; i--) {
+        const dist = a === 1 ? 0 : spacing * Math.sqrt(i + 0.5);
+        const angle = i * 2.39996;
+        drawNucleon(nctx, CENTER + dist * Math.cos(angle), CENTER + dist * Math.sin(angle), r, isProton[i] === 1);
+      }
+      nucleusExtent = (a === 1 ? 0 : spacing * Math.sqrt(a)) + r;
+    }
+
+    function drawAtom(time) {
+      actx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      actx.fillStyle = "#FFFFFF";
+      actx.fillRect(0, 0, SIZE, SIZE);
+
+      const shells = shellCounts.length;
+      const inner = nucleusExtent + 16;
+      const step = shells ? Math.min(40, (208 - inner) / shells) : 0;
+      const radii = [];
+      for (let j = 0; j < shells; j++) radii.push(inner + step * (j + 1));
+
+      // Orbits only change with the atom, so they are drawn once and reused every frame.
+      const key = nucleusExtent + "|" + shellCounts.join(",");
+      if (key !== ringKey) {
+        ringKey = key;
+        electronSprites = new Map();
+        rctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        rctx.clearRect(0, 0, SIZE, SIZE);
+        radii.forEach(function (radius, j) { drawOrbit(rctx, radius, j, shellCounts[j] > 0); });
+      }
+
+      actx.setTransform(1, 0, 0, 1, 0, 0);
+      actx.drawImage(ringCanvas, 0, 0);
+      actx.drawImage(nucleusCanvas, 0, 0);
+      actx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const seconds = time / 1000;
+      for (let j = 0; j < shells; j++) {
+        const count = shellCounts[j];
+        if (!count) continue;
+        const radius = radii[j];
+        const dot = Math.min(7, step * 0.35, Math.max(1.2, 2 * Math.PI * radius / count * 0.35));
+        const sprite = electronSprite(dot);
+        const turn = j * 0.7 + seconds * 0.9 / (j + 1) * (j % 2 ? -1 : 1);
+        for (let k = 0; k < count; k++) {
+          const [x, y] = ringPoint(radius, turn + (2 * Math.PI * k) / count);
+          actx.drawImage(sprite.canvas, Math.floor(x) - sprite.pad, Math.floor(y) - sprite.pad, 2 * sprite.pad, 2 * sprite.pad);
+        }
+      }
+
+      if (state.p + state.n + state.e === 0) {
+        actx.fillStyle = "#FF0000";
+        actx.font = "bold 20px 'Courier New', monospace";
+        actx.textAlign = "center";
+        actx.textBaseline = "middle";
+        actx.fillText("Add some particles!", CENTER, CENTER);
+      }
+    }
+
+    function animate(time) {
+      drawAtom(time);
+      requestAnimationFrame(animate);
+    }
+
+    // ---------- Rendering: valley of stability chart ----------
+
+    const chartCanvas = $("chartCanvas");
+    const cctx = chartCanvas.getContext("2d");
+    const CW = 420, CHH = 280;
+    const CHART = { left: 38, right: 8, top: 8, bottom: 22, maxN: 180, maxZ: 120 };
+    chartCanvas.width = CW * dpr;
+    chartCanvas.height = CHH * dpr;
+    const chartX = function (n) { return CHART.left + n / CHART.maxN * (CW - CHART.left - CHART.right); };
+    const chartY = function (z) { return CHH - CHART.bottom - z / CHART.maxZ * (CHH - CHART.bottom - CHART.top); };
+
+    function drawChart() {
+      cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cctx.fillStyle = "#FFFFFF";
+      cctx.fillRect(0, 0, CW, CHH);
+
+      cctx.fillStyle = "#FFCCFF";
+      MAGIC.forEach(function (m) {
+        if (m <= CHART.maxN) cctx.fillRect(chartX(m) - 1, CHART.top, 2, CHH - CHART.top - CHART.bottom);
+        if (m <= CHART.maxZ) cctx.fillRect(CHART.left, chartY(m) - 1, CW - CHART.left - CHART.right, 2);
+      });
+
+      cctx.strokeStyle = "#C0C0C0";
+      cctx.setLineDash([4, 4]);
+      cctx.beginPath();
+      cctx.moveTo(chartX(0), chartY(0));
+      cctx.lineTo(chartX(CHART.maxZ), chartY(CHART.maxZ));
+      cctx.stroke();
+      cctx.setLineDash([]);
+      cctx.fillStyle = "#808080";
+      cctx.font = "10px Arial";
+      cctx.fillText("N = Z", chartX(92), chartY(100));
+
+      cctx.fillStyle = "#FF9900";
+      Object.keys(NOTABLE).forEach(function (key) {
+        const [z, a] = key.split("-").map(Number);
+        cctx.fillRect(chartX(a - z) - 1.5, chartY(z) - 1.5, 3, 3);
+      });
+      cctx.fillStyle = "#000080";
+      STABLE.forEach(function (list, z) {
+        list.forEach(function (a) { cctx.fillRect(chartX(a - z) - 1.5, chartY(z) - 1.5, 3, 3); });
+      });
+
+      cctx.strokeStyle = "#000000";
+      cctx.beginPath();
+      cctx.moveTo(CHART.left, CHART.top);
+      cctx.lineTo(CHART.left, CHH - CHART.bottom);
+      cctx.lineTo(CW - CHART.right, CHH - CHART.bottom);
+      cctx.stroke();
+      cctx.fillStyle = "#000000";
+      cctx.textAlign = "center";
+      for (let n = 0; n <= CHART.maxN; n += 20) cctx.fillText(n, chartX(n), CHH - CHART.bottom + 11);
+      cctx.textAlign = "right";
+      for (let z = 0; z <= CHART.maxZ; z += 20) cctx.fillText(z, CHART.left - 3, chartY(z) + 3);
+      cctx.font = "bold 10px Arial";
+      cctx.textAlign = "right";
+      cctx.fillText("NEUTRONS →", CW - CHART.right, CHH - 2);
+      cctx.save();
+      cctx.translate(9, CHART.top);
+      cctx.rotate(-Math.PI / 2);
+      cctx.fillText("PROTONS →", 0, 0);
+      cctx.restore();
+
+      if (state.p + state.n > 0) {
+        const offChart = state.n > CHART.maxN || state.p > CHART.maxZ;
+        const x = chartX(Math.min(state.n, CHART.maxN));
+        const y = chartY(Math.min(state.p, CHART.maxZ));
+        cctx.fillStyle = "#FF0000";
+        cctx.strokeStyle = "#FF0000";
+        cctx.lineWidth = 2;
+        cctx.beginPath();
+        cctx.arc(x, y, 4, 0, Math.PI * 2);
+        cctx.fill();
+        cctx.beginPath();
+        cctx.arc(x, y, 9, 0, Math.PI * 2);
+        cctx.stroke();
+        cctx.lineWidth = 1;
+        if (offChart) {
+          cctx.textAlign = "right";
+          cctx.font = "bold 11px Arial";
+          cctx.fillText("off the chart!", x - 12, y + 14);
+        }
+      }
+    }
+
+    chartCanvas.addEventListener("click", function (ev) {
+      const rect = chartCanvas.getBoundingClientRect();
+      const px = (ev.clientX - rect.left) * CW / rect.width;
+      const py = (ev.clientY - rect.top) * CHH / rect.height;
+      const n = Math.round((px - CHART.left) / (CW - CHART.left - CHART.right) * CHART.maxN);
+      const z = Math.round((CHH - CHART.bottom - py) / (CHH - CHART.bottom - CHART.top) * CHART.maxZ);
+      if (n < 0 || z < 0 || n > CHART.maxN || z > CHART.maxZ) return;
+      setAtom(z, n, z);
+    });
+
+    // ---------- Periodic table ----------
+
+    function tablePosition(z) {
+      if (z === 1) return [1, 1];
+      if (z === 2) return [1, 18];
+      if (z <= 10) return [2, z <= 4 ? z - 2 : z + 8];
+      if (z <= 18) return [3, z <= 12 ? z - 10 : z];
+      if (z <= 36) return [4, z - 18];
+      if (z <= 54) return [5, z - 36];
+      if (z <= 56) return [6, z - 54];
+      if (z <= 71) return [9, z - 54];
+      if (z <= 86) return [6, z - 68];
+      if (z <= 88) return [7, z - 86];
+      if (z <= 103) return [10, z - 86];
+      return [7, z - 100];
+    }
+
+    const ptableButtons = [];
+    (function buildTable() {
+      const table = $("ptable");
+      for (let z = 1; z <= 118; z++) {
+        const el = ELEMENTS[z];
+        const [row, col] = tablePosition(z);
+        const btn = document.createElement("button");
+        btn.style.gridRow = row;
+        btn.style.gridColumn = col;
+        btn.style.backgroundColor = CATEGORIES[el.cat][1];
+        btn.title = el.name;
+        btn.innerHTML = "<small>" + z + "</small>" + el.symbol;
+        btn.addEventListener("click", function () {
+          setAtom(z, commonNeutrons(z), z);
+          showMessage("Built " + nuclideName(z, commonNeutrons(z)) + ", the most common kind of " + el.name.toLowerCase() + " atom!");
+        });
+        table.appendChild(btn);
+        ptableButtons.push(btn);
+      }
+      [[6, "57–71"], [7, "89–103"]].forEach(function ([row, text]) {
+        const gap = document.createElement("div");
+        gap.className = "gap-label";
+        gap.style.gridRow = row;
+        gap.style.gridColumn = 3;
+        gap.textContent = text;
+        table.appendChild(gap);
+      });
+      $("legend").innerHTML = Object.keys(CATEGORIES).filter(function (k) { return k !== "new"; }).map(function (k) {
+        return "<span style=\"white-space:nowrap\"><span class=\"swatch\" style=\"background:" + CATEGORIES[k][1] + "\"></span>" + CATEGORIES[k][0] + "</span>";
+      }).join(" ");
+    })();
+
+    // ---------- Decay ----------
+
+    function decayStep() {
+      const info = analyze(state.p, state.n);
+      if (info.kind !== "radioactive" && info.kind !== "unbound") return null;
+      const mode = MODES[info.mode];
+      let p = state.p, n = state.n, e = state.e, extra = "";
+      if (info.mode === "sf") {
+        const fz = Math.floor(p * 0.4), fn = Math.floor(n * 0.4);
+        p -= fz;
+        n = Math.max(0, n - fn - 2);
+        extra = " + " + nuclideName(fz, fn) + " + 2 neutrons";
+      } else {
+        p += mode.dz;
+        n += mode.dn;
+        e = Math.max(0, e + (mode.de || 0));
+      }
+      const text = nuclideName(state.p, state.n) + " → " + nuclideName(p, n) + extra +
+        " (" + mode.label + (info.halfLife ? ", " + info.halfLife : "") + ")";
+      return { p: p, n: n, e: e, text: text };
+    }
+
+    function logDecay(text) {
+      const li = document.createElement("li");
+      li.textContent = text;
+      $("decayLog").appendChild(li);
+      $("decayLog").scrollTop = $("decayLog").scrollHeight;
+      $("emptyLog").style.display = "none";
+    }
+
+    function stopChain() {
+      if (!chainTimer) return;
+      clearInterval(chainTimer);
+      chainTimer = null;
+      $("chainBtn").textContent = "DECAY TO STABILITY";
+    }
+
+    function chargeHint() {
+      return state.p > 0 && state.e !== state.p ? " The atom is now an ion; press NEUTRALIZE to fix its electrons." : "";
+    }
+
+    $("decayBtn").addEventListener("click", function () {
+      const step = decayStep();
+      if (!step) return;
+      setAtom(step.p, step.n, step.e);
+      logDecay(step.text);
+      showMessage("☢ " + step.text + chargeHint());
+    });
+
+    $("chainBtn").addEventListener("click", function () {
+      if (chainTimer) {
+        stopChain();
+        return;
+      }
+      const start = analyze(state.p, state.n).kind;
+      if (start !== "radioactive" && start !== "unbound") {
+        showMessage(start === "stable" ? "This one is already stable!" : "Build a nucleus first!");
+        return;
+      }
+      const visited = new Set([state.p + "," + state.n]);
+      let steps = 0;
+      logDecay("--- chain from " + nuclideName(state.p, state.n) + " ---");
+      $("chainBtn").textContent = "STOP CHAIN";
+      chainTimer = setInterval(function () {
+        const step = decayStep();
+        if (!step) {
+          const end = analyze(state.p, state.n).kind;
+          stopChain();
+          if (end === "stable") {
+            showMessage("✔ Reached stable " + nuclideName(state.p, state.n) + " after " + steps + " step" + (steps === 1 ? "" : "s") + "!" + chargeHint());
+            if (steps >= 3) completeMission("chain");
+          } else {
+            showMessage("The chain ended with nothing left!");
+          }
+          return;
+        }
+        steps++;
+        setAtom(step.p, step.n, step.e, true);
+        logDecay(step.text);
+        const key = step.p + "," + step.n;
+        if (visited.has(key) || steps >= 300) {
+          stopChain();
+          showMessage("The chain went in circles, so we stopped it.");
+        }
+        visited.add(key);
+      }, reducedMotion ? 1200 : 600);
+    });
+
+    $("clearLogBtn").addEventListener("click", function () {
+      $("decayLog").innerHTML = "";
+      $("emptyLog").style.display = "";
+    });
+
+    // ---------- Missions ----------
+
+    const MISSIONS = [
+      { id: "h", text: "Build a neutral hydrogen atom", test: function (s) { return s.p === 1 && s.e === 1; } },
+      { id: "d", text: "Make deuterium (heavy hydrogen)", test: function (s) { return s.p === 1 && s.n === 1; } },
+      { id: "he4", text: "Build a neutral helium-4 atom", test: function (s) { return s.p === 2 && s.n === 2 && s.e === 2; } },
+      { id: "c12", text: "Build carbon-12, the basis of life", test: function (s) { return s.p === 6 && s.n === 6 && s.e === 6; } },
+      { id: "c14", text: "Build carbon-14 for radiocarbon dating", test: function (s) { return s.p === 6 && s.n === 8; } },
+      { id: "na", text: "Make a sodium ion, ²³Na⁺", test: function (s) { return s.p === 11 && s.n === 12 && s.e === 10; } },
+      { id: "cl", text: "Make a chloride ion, ³⁵Cl⁻", test: function (s) { return s.p === 17 && s.n === 18 && s.e === 18; } },
+      { id: "o2", text: "Make an oxide ion, ¹⁶O²⁻", test: function (s) { return s.p === 8 && s.n === 8 && s.e === 10; } },
+      { id: "fe", text: "Build iron-56, where stars stop fusing", test: function (s) { return s.p === 26 && s.n === 30; } },
+      { id: "gold", text: "Build a neutral gold atom", test: function (s, info) { return s.p === 79 && s.e === 79 && info.kind === "stable"; } },
+      { id: "u235", text: "Build uranium-235, nuclear fuel", test: function (s) { return s.p === 92 && s.n === 143; } },
+      { id: "magic", text: "Build a doubly magic nucleus", test: function (s, info) { return s.p > 0 && MAGIC.includes(s.p) && MAGIC.includes(s.n) && info.kind !== "unbound"; } },
+      { id: "boom", text: "Build a nucleus that falls apart instantly", test: function (s, info) { return info.kind === "unbound"; } },
+      { id: "chain", text: "Follow a decay chain of 3+ steps to stability", test: function () { return false; } },
+      { id: "new", text: "Invent an element nobody has made yet", test: function (s) { return s.p >= 119; } }
+    ];
+
+    function loadMissions() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem("vibeland-atom-missions") || "[]"));
+      } catch (err) {
+        return new Set();
+      }
+    }
+
+    function completeMission(id) {
+      if (missionsDone.has(id)) return;
+      missionsDone.add(id);
+      try {
+        localStorage.setItem("vibeland-atom-missions", JSON.stringify(Array.from(missionsDone)));
+      } catch (err) { }
+      const mission = MISSIONS.find(function (m) { return m.id === id; });
+      showMessage("<span class=\"blink\">★</span> MISSION COMPLETE: " + mission.text + "! <span class=\"blink\">★</span>");
+      renderMissions();
+    }
+
+    function renderMissions() {
+      $("missionList").innerHTML = MISSIONS.map(function (m) {
+        const done = missionsDone.has(m.id);
+        return "<li class=\"" + (done ? "done" : "") + "\">" + (done ? "☑ " : "☐ ") + m.text + "</li>";
+      }).join("");
+      $("missionCount").textContent = missionsDone.size + " / " + MISSIONS.length + " done";
+    }
+
+    function checkMissions(info) {
+      MISSIONS.forEach(function (m) {
+        if (!missionsDone.has(m.id) && m.test(state, info)) completeMission(m.id);
+      });
+    }
+
+    // ---------- Controls ----------
+
+    document.querySelectorAll(".particle-row").forEach(function (row) {
+      const kind = row.dataset.kind;
+      row.querySelectorAll("button").forEach(function (btn) {
+        btn.addEventListener("click", function () { change(kind, Number(btn.dataset.delta)); });
+      });
+      row.querySelector("input").addEventListener("change", function (ev) {
+        const next = Object.assign({}, state);
+        next[kind] = ev.target.value;
+        setAtom(next.p, next.n, next.e);
+      });
+    });
+
+    $("neutralizeBtn").addEventListener("click", function () { setAtom(state.p, state.n, state.p); });
+
+    $("stableBtn").addEventListener("click", function () {
+      const z = state.p;
+      const stableN = stableNeutrons(z);
+      if (stableN.length) {
+        let best = stableN[0];
+        stableN.forEach(function (s) { if (Math.abs(s - state.n) < Math.abs(best - state.n)) best = s; });
+        setAtom(z, best, state.e);
+        showMessage("✔ " + nuclideName(z, best) + " is stable!");
+      } else {
+        const n = commonNeutrons(z);
+        setAtom(z, n, state.e);
+        showMessage(ELEMENTS[z].name + " has no stable isotopes at all, so here is its longest-lasting one: " + nuclideName(z, n) + ".");
+      }
+    });
+
+    $("randomBtn").addEventListener("click", function () {
+      const candidates = [];
+      STABLE.forEach(function (list, z) { list.forEach(function (a) { candidates.push([z, a]); }); });
+      const [z, a] = candidates[Math.floor(Math.random() * candidates.length)];
+      setAtom(z, a - z, z);
+    });
+
+    $("resetBtn").addEventListener("click", function () { setAtom(0, 0, 0); });
+
+    document.addEventListener("keydown", function (ev) {
+      if (ev.target.tagName === "INPUT" || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+      const kind = { p: "p", n: "n", e: "e" }[ev.key.toLowerCase()];
+      if (kind) change(kind, ev.shiftKey ? -1 : 1);
+    });
+
+    renderMissions();
+    update();
+    if (!reducedMotion) requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
