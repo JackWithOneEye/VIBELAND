@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Mahjong Table - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <style>
+    .container {
+      width: 1080px;
+    }
+
+    .header h1 {
+      font-size: 40px;
+    }
+
+    .game {
+      display: grid;
+      grid-template-columns: 770px 250px;
+      grid-template-areas:
+        "table side"
+        "below side";
+      gap: 10px 12px;
+      align-items: start;
+      margin-top: 10px;
+    }
+
+    .below {
+      grid-area: below;
+      display: flex;
+      gap: 10px;
+    }
+
+    .below .panel {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .below .buttons {
+      width: 180px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Table */
+    .table {
+      grid-area: table;
+      display: grid;
+      grid-template-columns: 196px 1fr 196px;
+      grid-template-areas:
+        "top top top"
+        "left center right"
+        "bottom bottom bottom";
+      gap: 8px;
+      padding: 10px;
+      background: #2d6b3f;
+      border: 3px inset #C0C0C0;
+      color: #FFFFFF;
+    }
+
+    /* Every part of a seat has a fixed size, so tiles, sets and remarks never move the table. */
+    .seat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 6px;
+      background: rgba(0, 0, 0, 0.18);
+      border: 2px solid #1D4A2A;
+    }
+
+    .seat.active {
+      border-color: #FFFF00;
+      box-shadow: 0 0 0 1px #FFFF00;
+    }
+
+    #seat-0 {
+      grid-area: bottom;
+    }
+
+    #seat-1 {
+      grid-area: right;
+    }
+
+    #seat-2 {
+      grid-area: top;
+    }
+
+    #seat-3 {
+      grid-area: left;
+    }
+
+    .seat-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .seat-head .name {
+      flex: 1;
+      font-weight: bold;
+    }
+
+    .seat-head .score {
+      font-family: "Courier New", monospace;
+      font-weight: bold;
+      color: #FFFF66;
+    }
+
+    .wind {
+      width: 20px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #FFFDF6;
+      border: 1px solid #000000;
+      border-radius: 3px;
+      color: #000000;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .wind.dealer {
+      color: #C00000;
+      box-shadow: 0 0 0 2px #FF0000;
+    }
+
+    /* The players at the table, with their latest remarks in full. The panel fills the side column down to
+       the bottom of the history and scrolls inside, so longer remarks never move the rest of the page. */
+    #players-panel {
+      flex: 1;
+      min-height: 0;
+      contain: size; /* its remarks never make the page taller */
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .players {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .players li {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      align-content: flex-start;
+      gap: 4px 6px;
+      padding: 3px 4px;
+      border: 2px solid transparent;
+    }
+
+    .players li.active {
+      background: #FFFF99;
+      border-color: #FF00FF;
+    }
+
+    .players .name {
+      flex: 1;
+      font-weight: bold;
+    }
+
+    .players .score {
+      font-family: "Courier New", monospace;
+      font-weight: bold;
+    }
+
+    .say {
+      flex: 0 0 100%;
+      box-sizing: border-box;
+      line-height: 14px;
+      padding: 2px 4px;
+      background: #FFFFE0;
+      border: 1px solid #000000;
+      color: #800080;
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .say.to-you {
+      font-style: normal;
+      font-weight: bold;
+      color: #000000;
+      background: #FFFF99;
+      border-left: 3px solid #FF00FF;
+    }
+
+    /* Rows of 27px tiles: one row at the top and bottom seats, three at the side seats */
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 2px;
+      height: 27px;
+    }
+
+    #seat-1 .row,
+    #seat-3 .row {
+      height: 85px;
+    }
+
+    .row.discards {
+      box-sizing: content-box;
+      padding-top: 4px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.35);
+    }
+
+    .meld {
+      display: inline-flex;
+      gap: 1px;
+      margin-left: 4px;
+    }
+
+    .meld:first-child {
+      margin-left: 0;
+    }
+
+    /* Tiles: the design (assets/mahjong-themes.js) styles .tile-inner; sizes and backs are set here. */
+    .tile {
+      position: relative;
+      display: inline-block;
+      flex: none;
+    }
+
+    .tile.small {
+      width: 20px;
+      height: 27px;
+    }
+
+    .tile.big {
+      width: 42px;
+      height: 56px;
+    }
+
+    .tile-inner {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tile.small .tile-inner {
+      border-width: 1.5px;
+      border-radius: 4px;
+      box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.45);
+    }
+
+    .tile.big .tile-inner {
+      border-width: 2px;
+      border-radius: 5px;
+      box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.45);
+    }
+
+    svg.tile-face {
+      width: 90%;
+      height: 90%;
+    }
+
+    .tile.back {
+      background: linear-gradient(160deg, #3C9A5F, #1D6B3A);
+      border: 1px solid #0D3D20;
+      border-radius: 3px;
+      box-shadow: 1px 1px 0 #F3EAD3;
+    }
+
+    .tile.last .tile-inner {
+      box-shadow: 0 0 0 2px #FF00FF;
+    }
+
+    /* Center */
+    .center {
+      grid-area: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-align: center;
+    }
+
+    .center .round {
+      font-weight: bold;
+      color: #FFFF66;
+    }
+
+    .last-discard {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .last-discard .what {
+      height: 32px;
+    }
+
+    /* Your hand */
+    #hand {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin-top: 8px;
+      min-height: 60px;
+      padding: 4px;
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    #hand .gap {
+      width: 12px;
+    }
+
+    .tile-btn {
+      padding: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .tile-btn:hover:not(:disabled),
+    .tile-btn:focus-visible {
+      background: none;
+      transform: translateY(-6px);
+    }
+
+    .tile-btn:active:not(:disabled) {
+      border: none;
+      background: none;
+    }
+
+    .tile-btn:focus-visible {
+      outline: 2px dotted #FFFF00;
+    }
+
+    .tile-btn:disabled {
+      cursor: default;
+    }
+
+    #actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 32px;
+      margin-top: 8px;
+    }
+
+    #actions button {
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    #actions button.win {
+      color: #FFFFFF;
+      background: #C00000;
+      border-color: #FF6060;
+    }
+
+    #waits {
+      height: 18px;
+      margin-top: 6px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      color: #FFFF66;
+      font-weight: bold;
+    }
+
+    /* Side panel */
+    .side {
+      grid-area: side;
+      align-self: stretch;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .panel {
+      background: #FFFFFF;
+      border: 2px inset #C0C0C0;
+      padding: 8px;
+    }
+
+    .llm-setup {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .llm-setup input,
+    .llm-setup textarea,
+    .llm-setup select {
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 12px;
+    }
+
+    .llm-setup textarea {
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .llm-setup small {
+      color: #606060;
+    }
+
+    #key-status {
+      font-weight: bold;
+      color: #000080;
+    }
+
+    #key-status.failed {
+      color: #C00000;
+    }
+
+    #start,
+    #new-game,
+    #tile-theme {
+      width: 100%;
+      padding: 6px;
+      font-size: 14px;
+    }
+
+    #comment-row {
+      display: flex;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    #comment-row[hidden] {
+      display: none;
+    }
+
+    #comment {
+      flex: 1;
+      min-width: 0;
+      font-size: 12px;
+    }
+
+    #comment-to {
+      width: 92px;
+      font-size: 12px;
+    }
+
+    /* Four lines at most, so the log below never moves */
+    #status {
+      height: 72px;
+      overflow: hidden;
+      line-height: 18px;
+      color: #000080;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .panel-title {
+      font-weight: bold;
+      color: #000080;
+      margin-bottom: 6px;
+    }
+
+    #log {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      height: 170px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      font-size: 12px;
+    }
+
+    #log li {
+      margin: 0 0 3px 0;
+    }
+
+    #log li:last-child {
+      font-weight: bold;
+    }
+
+    #log .comment {
+      color: #800080;
+    }
+
+    #log .whisper {
+      color: #606060;
+      font-style: italic;
+    }
+
+    #log .thought {
+      color: #808080;
+      font-style: italic;
+    }
+
+    .rules {
+      text-align: left;
+      max-width: none;
+      margin: 12px 0 0 0;
+      line-height: 1.4;
+    }
+
+    .rules ul {
+      margin: 4px 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="outer-border">
+      <div class="header">
+        <h1>🀄 MAHJONG TABLE 🀄</h1>
+        <p>~*~ Four players, 136 tiles, one Friday evening ~*~</p>
+      </div>
+
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ PULL UP A CHAIR ★ PUNG! CHOW! KONG! ★ DON'T FEED UNCLE BAO HIS RED DRAGON ★</div>
+      </div>
+
+      <div class="content">
+        <div class="game">
+          <div class="table" id="table">
+            <div class="seat" id="seat-2"></div>
+            <div class="seat" id="seat-3"></div>
+            <div class="center" id="center"></div>
+            <div class="seat" id="seat-1"></div>
+            <div class="seat" id="seat-0">
+              <div id="seat-0-info"></div>
+              <div id="hand" aria-label="Your hand"></div>
+              <div id="actions"></div>
+              <div id="waits" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <div class="side">
+            <div class="panel" id="setup">
+              <div class="llm-setup">
+                <label for="player-name">Your name:</label>
+                <input type="text" id="player-name" maxlength="20" autocomplete="nickname">
+                <label for="player-role">Who you are to the others:</label>
+                <textarea id="player-role" rows="2" maxlength="120"></textarea>
+              </div>
+              <div class="llm-setup">
+                <label for="api-key">🤖 Play against Claude? Enter your <a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener">Claude API key</a>:</label>
+                <input type="password" id="api-key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+                <select id="llm-model" aria-label="Claude model">
+                  <option value="claude-haiku-5-5">Haiku 5.5 (fast)</option>
+                  <option value="claude-sonnet-5-5">Sonnet 5.5 (clever)</option>
+                </select>
+                <div id="key-status" aria-live="polite"></div>
+                <small>No key = the classic opponents. The key stays only in this tab's memory and goes directly to Anthropic.</small>
+              </div>
+              <button id="start">Sit down at the table!</button>
+            </div>
+
+            <div class="panel">
+              <div id="status" aria-live="polite">Pull up a chair and sit down to start.</div>
+              <div id="comment-row" hidden>
+                <input type="text" id="comment" maxlength="100" placeholder="💬 Say something (optional)" aria-label="Comment for your next move (optional)">
+                <select id="comment-to" aria-label="Who hears your comment"></select>
+              </div>
+            </div>
+
+            <div class="panel" id="players-panel" hidden>
+              <div class="panel-title">At the table</div>
+              <ul class="players" id="players"></ul>
+            </div>
+          </div>
+
+          <div class="below">
+            <div class="panel">
+              <div class="panel-title">What happened so far</div>
+              <ul id="log"></ul>
+            </div>
+            <div class="buttons">
+              <button id="tile-theme">Tiles</button>
+              <button id="new-game" hidden>New game</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="instructions rules">
+          <strong>The Rules (Hong Kong style, simplified):</strong>
+          <ul>
+            <li>Everyone holds 13 tiles. On your turn you draw one and discard one by clicking it.</li>
+            <li>Win (<b>Mahjong!</b>) with 14 tiles: four sets and a pair, or seven pairs. A set is a <b>pung</b> (three alike), a <b>kong</b> (four alike, you draw an extra tile) or a <b>chow</b> (three in a row of one suit).</li>
+            <li>Anyone may claim a discard for a pung, a kong or Mahjong; only the next player may claim it for a chow. Mahjong beats pung, pung beats chow.</li>
+            <li>Fan: Mahjong 1, self-drawn 1, concealed hand 1, each dragon pung 1, pung of your seat wind or of East 1, all pungs 3, seven pairs 3, half flush 3, full flush 6, all honours 8.</li>
+            <li>A hand is worth 8 points at 1 fan, doubling with every fan up to 256. Self-drawn: all three others pay. On a discard: the discarder pays double.</li>
+            <li>Four hands, the dealer (East) moves on each hand. Everyone starts with 500 points – the highest score wins.</li>
+          </ul>
+        </div>
+
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="sprite" xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden">
+    <defs></defs>
+  </svg>
+
+  <script src="../assets/mahjong-themes.js"></script>
+  <script src="../assets/llm.js"></script>
+  <script>
+    const ROUNDS = 4;
+    const START_SCORE = 500;
+    const WINDS = ["East", "South", "West", "North"];
+    const EAST = 27; // the round wind: every hand of the evening is in the East round
+    const SUITS = [["char", "Characters", "C"], ["circle", "Dots", "D"], ["bamboo", "Bamboo", "B"]];
+    const HONORS = [
+      ["wind-east", "East Wind", "E"], ["wind-south", "South Wind", "S"], ["wind-west", "West Wind", "W"], ["wind-north", "North Wind", "N"],
+      ["dragon-red", "Red Dragon", "Rd"], ["dragon-green", "Green Dragon", "Gd"], ["dragon-white", "White Dragon", "Wd"]
+    ];
+    // Tile kinds 0–33: 1–9 Characters, 1–9 Dots, 1–9 Bamboo, the four winds, the three dragons.
+    // The ids are the tile faces that assets/mahjong-themes.js draws.
+    const TILES = [];
+    SUITS.forEach(([id, name, code]) => {
+      for (let n = 1; n <= 9; n++) TILES.push({id: id + "-" + n, name: n + " " + name, code: n + code});
+    });
+    HONORS.forEach(([id, name, code]) => TILES.push({id: id, name: name, code: code}));
+    const SIDES = ["on your right", "across from you", "on your left"];
+
+    // The Friday table; see assets/llm.js for what each part is for.
+    const CAST = {
+      people: {
+        "Auntie Mei": "Auntie Mei, 68, retired seamstress, has played at this table every Friday for forty years. Quick hands, impatient with slow players, teases kindly. Likes to remind everyone of the big hands she won years ago.",
+        "Uncle Bao": "Uncle Bao, 59, runs the noodle shop downstairs. Loud and cheerful, superstitious about lucky tiles and seats, always chasing a big hand. Sulks for a moment when it goes wrong, then laughs it off.",
+        "Jenny Lam": "Jenny Lam, 45, accountant and Mei's niece. Quiet and precise, keeps track of every discard, dry humour. Rarely shows what she is thinking, but enjoys it when Bao's big plans fall apart."
+      },
+      ties: "Mei and Bao have been friendly rivals at this table for decades; Jenny is Mei's niece.",
+      guest: {nick: "Player", role: "the new neighbour, invited by Mei"},
+      occasion: "a friendly Friday mahjong evening",
+      whispers: "warn someone that a player is close to winning, tease your old rival, a quiet tip for the newcomer, " +
+        "grumble about someone's lucky streak",
+      example: {to: "\"Bao, you always do that\" or \"Nice hand, Mei\"", about: "\"Bao is being greedy\""},
+      language: "Speak English. An occasional Cantonese word fits, but don't spell out an accent."
+    };
+
+    const centerEl = document.getElementById("center");
+    const handEl = document.getElementById("hand");
+    const actionsEl = document.getElementById("actions");
+    const waitsEl = document.getElementById("waits");
+    const statusEl = document.getElementById("status");
+    const logEl = document.getElementById("log");
+    const playersEl = document.getElementById("players");
+    const playersPanelEl = document.getElementById("players-panel");
+    const setupEl = document.getElementById("setup");
+    const startBtn = document.getElementById("start");
+    const newGameBtn = document.getElementById("new-game");
+    const apiKeyEl = document.getElementById("api-key");
+    const modelEl = document.getElementById("llm-model");
+    const keyStatusEl = document.getElementById("key-status");
+    const playerNameEl = document.getElementById("player-name");
+    const playerRoleEl = document.getElementById("player-role");
+    const commentRowEl = document.getElementById("comment-row");
+    const talk = LLM.tableTalk({log: log, render: render, input: document.getElementById("comment"), recipient: document.getElementById("comment-to")});
+    const nameFor = LLM.nameFor;
+
+    let players = []; // by seat: 0 you (bottom), 1 right, 2 across, 3 left; play goes 0 → 1 → 2 → 3
+    let wall = [];
+    let handNo = 0;
+    let dealer = 0;
+    let current = 0;
+    let phase = "setup"; // setup | discard | claim | busy | handover | between | over
+    let drawn = null; // the tile the current player just drew
+    let turnDrew = false; // the current player drew this turn, so may win or declare a kong on it
+    let lastDiscard = null; // {p, k} while a discard lies on the table
+    let offer = null; // {opts, resolve} while you may claim a discard
+    let reveal = false; // every hand is shown once a hand is over
+    let timer = null;
+    let gameId = 0;
+    let llm = null; // {key, model, name} while Claude plays the opponents
+    let llmAbort = new AbortController();
+    let events = []; // what happened, for the "Since last" part of the prompts
+
+    // ---------- Tiles and hands ----------
+
+    function counts(tiles) {
+      const c = new Array(34).fill(0);
+      tiles.forEach(k => c[k]++);
+      return c;
+    }
+
+    function sorted(tiles) {
+      return tiles.slice().sort((a, b) => a - b);
+    }
+
+    // tiles without one copy of each tile in list
+    function without(tiles, list) {
+      const rest = tiles.slice();
+      list.forEach(k => rest.splice(rest.indexOf(k), 1));
+      return rest;
+    }
+
+    function codes(tiles) {
+      return sorted(tiles).map(k => TILES[k].code).join(" ");
+    }
+
+    // How many tiles a hand still needs before it is ready (0) or complete (-1). melds counts the
+    // sets already laid out; tiles are the concealed ones. Counts sets, pairs and partial sets.
+    function shanten(tiles, melds) {
+      const c = counts(tiles);
+      const need = 4 - melds;
+      let best = 8;
+      if (!melds) {
+        const pairs = c.filter(n => n >= 2).length;
+        const kinds = c.filter(n => n >= 1).length;
+        best = 6 - pairs + Math.max(0, 7 - kinds);
+      }
+      const scan = (i, sets, partial, pair) => {
+        while (i < 34 && !c[i]) i++;
+        if (i === 34) {
+          best = Math.min(best, 8 - 2 * (sets + melds) - Math.min(partial, need - sets) - pair);
+          return;
+        }
+        const suited = i < 27;
+        if (c[i] >= 3) {
+          c[i] -= 3;
+          scan(i, sets + 1, partial, pair);
+          c[i] += 3;
+        }
+        if (suited && i % 9 < 7 && c[i + 1] && c[i + 2]) {
+          c[i]--; c[i + 1]--; c[i + 2]--;
+          scan(i, sets + 1, partial, pair);
+          c[i]++; c[i + 1]++; c[i + 2]++;
+        }
+        if (c[i] >= 2) {
+          c[i] -= 2;
+          if (!pair) scan(i, sets, partial, 1);
+          scan(i, sets, partial + 1, pair);
+          c[i] += 2;
+        }
+        if (suited && i % 9 < 8 && c[i + 1]) {
+          c[i]--; c[i + 1]--;
+          scan(i, sets, partial + 1, pair);
+          c[i]++; c[i + 1]++;
+        }
+        if (suited && i % 9 < 7 && c[i + 2]) {
+          c[i]--; c[i + 2]--;
+          scan(i, sets, partial + 1, pair);
+          c[i]++; c[i + 2]++;
+        }
+        c[i]--;
+        scan(i, sets, partial, pair);
+        c[i]++;
+      };
+      scan(0, 0, 0, 0);
+      return best;
+    }
+
+    function isComplete(p) {
+      return shanten(p.hand, p.melds.length) === -1;
+    }
+
+    // Tiles p can see: own hand, every discard and every open set
+    function seenCounts(p) {
+      const c = counts(p.hand);
+      players.forEach(q => {
+        q.discards.forEach(k => c[k]++);
+        q.melds.forEach(m => m.tiles.forEach(k => c[k]++));
+      });
+      return c;
+    }
+
+    // For a 13-tile hand: how far from ready (s), which tile kinds bring it closer and how many of those are unseen (n)
+    function analyse(tiles, melds, seen) {
+      const s = shanten(tiles, melds);
+      const kinds = [];
+      let n = 0;
+      for (let k = 0; k < 34; k++) {
+        if (seen[k] >= 4) continue;
+        tiles.push(k);
+        if (shanten(tiles, melds) < s) {
+          kinds.push(k);
+          n += 4 - seen[k];
+        }
+        tiles.pop();
+      }
+      return {s: s, kinds: kinds, n: n};
+    }
+
+    function discardOptions(p) {
+      const seen = seenCounts(p);
+      return [...new Set(sorted(p.hand))].map(k => Object.assign({k: k}, analyse(without(p.hand, [k]), p.melds.length, seen)));
+    }
+
+    // Closest to ready first, then the most helpful tiles; on a tie, honours and terminals go first.
+    function bestDiscard(options) {
+      const edge = k => (k >= 27 ? 2 : k % 9 === 0 || k % 9 === 8 ? 1 : 0);
+      return options.slice().sort((a, b) => a.s - b.s || b.n - a.n || edge(b.k) - edge(a.k))[0];
+    }
+
+    function selfKongs(p) {
+      const c = counts(p.hand);
+      const kongs = [];
+      for (let k = 0; k < 34; k++) {
+        if (c[k] === 4) kongs.push({k: k, added: false});
+      }
+      p.melds.forEach(m => {
+        if (m.type === "pung" && c[m.tiles[0]]) kongs.push({k: m.tiles[0], added: true});
+      });
+      return kongs;
+    }
+
+    // What q could do with the discard k from player from: win, kong, pung, chow (only the next player)
+    function claimOptions(q, k, from) {
+      const opts = [];
+      const c = counts(q.hand);
+      if (shanten(q.hand.concat(k), q.melds.length) === -1) opts.push({type: "win", tiles: [k], k: k});
+      if (c[k] === 3 && wall.length) opts.push({type: "kong", tiles: [k, k, k, k], k: k});
+      if (c[k] >= 2) opts.push({type: "pung", tiles: [k, k, k], k: k});
+      if (k < 27 && (from.seat + 1) % 4 === q.seat) {
+        for (let a = k - 2; a <= k; a++) {
+          if (a < 0 || Math.floor(a / 9) !== Math.floor(k / 9) || a % 9 > 6) continue;
+          const run = [a, a + 1, a + 2];
+          if (run.every(t => t === k || c[t] > 0)) opts.push({type: "chow", tiles: run, k: k});
+        }
+      }
+      return opts;
+    }
+
+    // q's concealed tiles after making the set o with the discard
+    function restAfter(q, o) {
+      return without(q.hand, without(o.tiles, [o.k]));
+    }
+
+    // A bot claims to win, and makes a set only when it brings the hand closer to ready.
+    function classicClaim(q, opts) {
+      const base = shanten(q.hand, q.melds.length);
+      return opts.find(o => {
+        if (o.type === "win") return true;
+        const s = shanten(restAfter(q, o), q.melds.length + 1);
+        return o.type === "kong" ? s <= base : s < base;
+      }) || null;
+    }
+
+    function seatWind(p) {
+      return (p.seat - dealer + 4) % 4;
+    }
+
+    function fanOf(p, selfDrawn) {
+      const items = [["Mahjong", 1]];
+      const c = counts(p.hand);
+      if (selfDrawn) items.push(["Self-drawn", 1]);
+      if (p.melds.every(m => m.concealed)) items.push(["Concealed hand", 1]);
+      const sevenPairs = !p.melds.length && c.filter(n => n === 2).length === 7;
+      const pungs = p.melds.filter(m => m.type !== "chow").map(m => m.tiles[0]);
+      if (!sevenPairs) {
+        for (let k = 27; k < 34; k++) {
+          if (c[k] >= 3) pungs.push(k);
+        }
+      }
+      pungs.forEach(k => {
+        if (k >= 31) items.push([TILES[k].name + " pung", 1]);
+        if (k === 27 + seatWind(p)) items.push(["Seat wind pung", 1]);
+        if (k === EAST) items.push(["Round wind pung", 1]);
+      });
+      if (sevenPairs) {
+        items.push(["Seven pairs", 3]);
+      } else if (p.melds.every(m => m.type !== "chow") && c.every(n => n === 0 || n === 2 || n === 3) && c.filter(n => n === 2).length === 1) {
+        items.push(["All pungs", 3]);
+      }
+      const all = p.hand.concat(...p.melds.map(m => m.tiles));
+      const suits = new Set(all.filter(k => k < 27).map(k => Math.floor(k / 9)));
+      const honors = all.some(k => k >= 27);
+      if (!suits.size) items.push(["All honours", 8]);
+      else if (suits.size === 1) items.push(honors ? ["Half flush", 3] : ["Full flush", 6]);
+      const fan = items.reduce((sum, item) => sum + item[1], 0);
+      return {items: items, fan: fan, value: Math.min(256, 8 * 2 ** (fan - 1))};
+    }
+
+    // ---------- Claude opponents ----------
+
+    function who(viewer, q) {
+      return q === viewer ? "you" : nameFor(q);
+    }
+
+    function meldText(m) {
+      return m.type + " " + codes(m.tiles) + (m.concealed ? " (concealed)" : "");
+    }
+
+    function systemPrompt(p) {
+      const others = players.filter(q => q !== p);
+      const order = [0, 1, 2, 3].map(i => i ? nameFor(players[(p.seat + i) % 4]) : "you");
+      return [
+        "You are " + p.name + ", playing Hong Kong mahjong with friends at the Friday table.",
+        ...LLM.introPrompt(CAST, p, others, q => SIDES[(q.seat - p.seat + 3) % 4]),
+        "Order of play: " + order.join(" → ") + ", then around again. Only " + order[1] + " may chow your discards; you may chow " + order[3] + "'s.",
+        "",
+        "Rules (the game enforces them; you only choose among the options you are given):",
+        "- 136 tiles, four of each: 1–9 of Characters, Dots and Bamboo, the winds East, South, West, North and the Red, Green and White dragons.",
+        "- Tile codes: 5C = 5 of Characters, 5D = 5 of Dots, 5B = 5 of Bamboo; E S W N = winds; Rd Gd Wd = dragons.",
+        "- Everyone holds 13 tiles. On your turn you draw one and discard one. 14 tiles that make four sets and a pair, or seven pairs, win (mahjong). " +
+          "A set is a pung (three alike), a kong (four alike; you draw an extra tile) or a chow (three in a row of one suit).",
+        "- Anyone may claim a discard for a pung, a kong or mahjong; only the next player may claim it for a chow. Mahjong beats pung and kong, which beat chow. " +
+          "Claimed sets lie open, and after claiming you discard without drawing.",
+        "- Fan: mahjong 1, self-drawn 1, concealed hand (nothing claimed) 1, each dragon pung 1, a pung of your seat wind 1, a pung of East (the round wind) 1, " +
+          "all pungs 3, seven pairs 3, half flush (one suit plus honours) 3, full flush (one suit only) 6, all honours 8.",
+        "- A hand is worth 8 points at 1 fan, doubling with every fan, at most 256. Self-drawn: all three others pay. On a discard: the discarder pays double, the others nothing.",
+        "- 4 hands; the dealer (East seat) moves on every hand. Everyone starts with " + START_SCORE + " points; the highest score after 4 hands wins. When the wall runs out, nobody wins the hand.",
+        "- Mahjong and kongs from your own hand are declared for you whenever possible.",
+        "",
+        "You get three kinds of messages. All contain:",
+        "Since last: what happened since your last message: \"Name discarded 5D\", \"Name pung 5D 5D 5D from Name\", \"Name kong E\", quoted remarks. " +
+          "\"(to you privately: ...)\" is something only you heard.",
+        "Table: each player's seat wind, score, open sets and discards, and the tiles left in the wall. Your hand: your concealed tiles.",
+        "Notes on options: \"2 away\" = you need 2 more useful tiles before you are ready; \"ready\" = one tile from mahjong, with the tiles you would win on; " +
+          "\"18 help\" = 18 unseen tiles would bring you closer.",
+        "",
+        "1. \"Your turn\" adds Drew and Options: the tiles you can discard, with notes for your hand after that discard.",
+        "Reply with these lines:",
+        "T: your strategic thought (nobody hears it), max 15 words",
+        "M: option number",
+        "C: what you say to the table, or - to say nothing",
+        "",
+        "2. \"Claim?\" means someone discarded a tile you could take. Options are the sets you could make, with notes for your hand afterwards; 0 = let it go.",
+        "Reply with T, M (option number or 0) and C lines.",
+        "",
+        "3. \"React: ...\" tells you what just happened: the evening starts, a hand is over, or the evening is over. Reply with:",
+        "C: what you say to the table, or - to say nothing",
+        "",
+        ...LLM.talkPrompt(CAST)
+      ].join("\n");
+    }
+
+    function formatEvent(viewer, e) {
+      const own = e.p === viewer;
+      const name = !e.p ? "" : own ? "You" : nameFor(e.p); // "hand" and "draw" events have no player
+      // Private remarks only show up for their recipient.
+      const quote = (e.say && !own ? " \"" + e.say + "\"" : "") +
+        (e.whisper && e.whisper.to === viewer ? " (to you privately: \"" + e.whisper.text + "\")" : "");
+      if (e.type === "remark") return own || !quote ? "" : name + ":" + quote;
+      if (e.type === "hand") return "Hand " + e.no + " begins, " + who(viewer, e.dealer) + " deal" + (e.dealer === viewer ? "" : "s");
+      if (e.type === "discard") return name + " discarded " + TILES[e.k].code + quote;
+      if (e.type === "claim") return name + " " + e.meld + " " + codes(e.tiles) + " from " + who(viewer, e.from) + quote;
+      if (e.type === "kong") return name + " kong " + TILES[e.k].code + (e.added ? " (added to a pung)" : " (concealed)");
+      if (e.type === "win") return name + " won" + (e.from ? " on a discard by " + who(viewer, e.from) : ", self-drawn") + quote;
+      return "The wall ran out";
+    }
+
+    // Since last, Table and Your hand, from p's view
+    function situation(p) {
+      const since = events.slice(p.seen).map(e => formatEvent(p, e)).filter(Boolean);
+      const table = [0, 1, 2, 3].map(i => players[(p.seat + i) % 4]).map(q =>
+        (q === p ? "You" : nameFor(q)) + " (" + WINDS[seatWind(q)] + (q.seat === dealer ? ", dealer" : "") + ", " + q.score + " pts" +
+        (q === p ? "" : ", " + q.hand.length + " tiles in hand") + "): open " + (q.melds.map(meldText).join(", ") || "-") +
+        "; discards " + (q.discards.map(k => TILES[k].code).join(" ") || "-"));
+      return "Since last: " + (since.join("; ") || "-") + "\n" +
+        "Table (hand " + (handNo + 1) + " of " + ROUNDS + ", " + wall.length + " tiles left in the wall):\n" + table.join("\n") + "\n" +
+        "Your hand: " + codes(p.hand);
+    }
+
+    function note(a) {
+      if (a.s > 0) return a.s + " away, " + a.n + " help";
+      return a.n ? "ready, wins on " + a.kinds.map(k => TILES[k].code).join(" ") + " (" + a.n + " left)" : "ready, but no winning tile is left";
+    }
+
+    function turnPrompt(p, options) {
+      return "Your turn\n" + situation(p) + "\n" +
+        "Drew: " + (turnDrew ? TILES[drawn].code : "- (you just claimed a set)") + "\n" +
+        "Options:\n" + options.map((o, i) => (i + 1) + ") discard " + TILES[o.k].code + ": " + note(o)).join("\n");
+    }
+
+    function claimNote(q, o) {
+      const s = shanten(restAfter(q, o), q.melds.length + 1);
+      return (o.type === "kong" ? "extra draw, then " : "then ") + (s > 0 ? s + " away" : "ready") +
+        (q.melds.every(m => m.concealed) ? "; your hand is no longer concealed" : "");
+    }
+
+    function claimPrompt(q, opts, from) {
+      const now = shanten(q.hand, q.melds.length);
+      return "Claim? " + nameFor(from) + " discarded " + TILES[opts[0].k].code + "\n" + situation(q) + "\n" +
+        "Options:\n" + opts.map((o, i) => (i + 1) + ") " + o.type + " " + codes(o.tiles) + ": " + claimNote(q, o)).join("\n") + "\n" +
+        "0) let it go (you are " + (now > 0 ? now + " away" : "ready") + ")";
+    }
+
+    function reactPrompt(p, cause) {
+      return "React: " + cause + "\n" + situation(p);
+    }
+
+    async function chooseSeat() {
+      const key = apiKeyEl.value.trim();
+      keyStatusEl.className = "";
+      if (!key) {
+        keyStatusEl.textContent = "";
+        startGame(null);
+        return;
+      }
+      const controls = setupEl.querySelectorAll("button, input, select, textarea");
+      controls.forEach(el => el.disabled = true);
+      keyStatusEl.textContent = "Checking the key … one moment!";
+      try {
+        const model = modelEl.value;
+        const name = await LLM.checkKey(key, model);
+        keyStatusEl.textContent = "";
+        startGame({key: key, model: model, name: name});
+      } catch (err) {
+        keyStatusEl.className = "failed";
+        keyStatusEl.textContent = err.name === "SubscriptionTokenError"
+          ? "✗ This is a Claude Code subscription token, not an API key. Create an API key (sk-ant-api…) at platform.claude.com/settings/keys."
+          : "✗ The key does not work: " + (err.name === "TimeoutError" ? "no answer from Anthropic" : err.message) +
+            ". Fix it, or empty the field for the classic opponents.";
+      } finally {
+        controls.forEach(el => el.disabled = false);
+      }
+    }
+
+    async function askClaude(p, prompt) {
+      const text = await LLM.ask(llm, p, prompt, llmAbort.signal);
+      p.seen = events.length;
+      return text;
+    }
+
+    function readReply(p, text) {
+      return LLM.readReply(p, text, players.filter(q => q !== p));
+    }
+
+    function llmFailed(p, err, id) {
+      if (id !== gameId) return "";
+      if (LLM.isKeyError(err)) {
+        if (llm) log("The API key does not work (" + err.message + ") – the others play without Claude now.");
+        llm = null;
+        enableComments(false);
+      } else {
+        log(p.name + " lost the connection to Claude (" + (err.name === "TimeoutError" ? "timeout" : err.message) + ").");
+      }
+      return "";
+    }
+
+    function claudeDiscard(p) {
+      const options = discardOptions(p);
+      const id = gameId;
+      setStatus(p.name + " is thinking … 🤖");
+      askClaude(p, turnPrompt(p, options)).catch(err => llmFailed(p, err, id)).then(text => {
+        if (id !== gameId) return;
+        const reply = readReply(p, text);
+        talk.show(p, reply.say, reply.thought, reply.whisper);
+        let o = options[parseInt(reply.move, 10) - 1];
+        if (!o) {
+          if (text) log(p.name + " hesitates and plays by feel.");
+          o = bestDiscard(options);
+        }
+        later(() => discard(p, o.k, {say: reply.say, whisper: reply.whisper}), 300);
+      });
+    }
+
+    // Resolves to the set q makes with the discard, or null to let it go. Mahjong needs no question.
+    function claudeClaim(q, opts, from) {
+      const id = gameId;
+      return askClaude(q, claimPrompt(q, opts, from)).catch(err => llmFailed(q, err, id)).then(text => {
+        if (id !== gameId) return null;
+        if (!text) return classicClaim(q, opts);
+        const reply = readReply(q, text);
+        talk.show(q, reply.say, reply.thought, reply.whisper);
+        if (reply.say || reply.whisper) events.push({type: "remark", p: q, say: reply.say, whisper: reply.whisper});
+        return opts[parseInt(reply.move, 10) - 1] || null;
+      });
+    }
+
+    // Claude players react to what just happened, all at once. cause(q) says what, from q's view.
+    async function reactions(reactors, cause) {
+      reactors = reactors.filter(q => !q.human);
+      if (!llm || !reactors.length) return;
+      const id = gameId;
+      const status = statusEl.textContent;
+      setStatus(reactors.length > 1 ? "The others are talking …" : reactors[0].name + " has something to say …");
+      const texts = await Promise.all(reactors.map(q => askClaude(q, reactPrompt(q, cause(q))).catch(err => llmFailed(q, err, id))));
+      if (id !== gameId) return;
+      setStatus(status);
+      reactors.forEach((q, i) => {
+        const {say, whisper} = readReply(q, texts[i]);
+        if (!say && !whisper) return;
+        talk.show(q, say, "", whisper);
+        events.push({type: "remark", p: q, say: say, whisper: whisper});
+      });
+    }
+
+    // ---------- Rendering ----------
+
+    function esc(text) {
+      return String(text).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"})[c]);
+    }
+
+    function tileHtml(k, cls) {
+      return "<span class=\"tile " + cls + "\" title=\"" + TILES[k].name + "\"><span class=\"tile-inner\">" +
+        "<svg class=\"tile-face\" viewBox=\"0 0 100 120\" aria-hidden=\"true\"><use href=\"#" + TILES[k].id + "\"/></svg></span></span>";
+    }
+
+    function backHtml(cls) {
+      return "<span class=\"tile back " + cls + "\"></span>";
+    }
+
+    // A concealed kong shows its middle two tiles.
+    function meldHtml(m) {
+      return "<span class=\"meld\" title=\"" + m.type + "\">" +
+        m.tiles.map((k, i) => m.concealed && (i === 0 || i === 3) ? backHtml("small") : tileHtml(k, "small")).join("") + "</span>";
+    }
+
+    function render() {
+      players.forEach(renderSeat);
+      renderCenter();
+      renderHand();
+      renderActions();
+      renderPlayers();
+    }
+
+    function renderPlayers() {
+      const playing = phase !== "setup" && phase !== "over";
+      playersEl.innerHTML = "";
+      players.forEach(p => {
+        const li = document.createElement("li");
+        li.classList.toggle("active", playing && !reveal && p.seat === current);
+        li.innerHTML = "<span class=\"wind" + (p.seat === dealer ? " dealer" : "") + "\"></span><span class=\"name\"></span><span class=\"score\"></span>";
+        li.querySelector(".wind").textContent = WINDS[seatWind(p)][0];
+        li.querySelector(".name").textContent = p.human ? p.nick + " (you)" : p.name + (llm ? " 🤖" : "");
+        li.querySelector(".score").textContent = p.score;
+        [[p.say, "say", ""], [p.toYou, "say to-you", "🤫 to you: "]].forEach(([text, cls, prefix]) => {
+          if (!text) return;
+          const say = document.createElement("span");
+          say.className = cls;
+          say.textContent = prefix + "„" + text + "“";
+          li.appendChild(say);
+        });
+        playersEl.appendChild(li);
+      });
+    }
+
+    function renderSeat(p) {
+      const el = document.getElementById(p.human ? "seat-0-info" : "seat-" + p.seat);
+      const playing = phase !== "setup" && phase !== "over";
+      document.getElementById("seat-" + p.seat).classList.toggle("active", playing && !reveal && p.seat === current);
+      let html = "<div class=\"seat-head\">";
+      if (phase !== "setup") {
+        html += "<span class=\"wind" + (p.seat === dealer ? " dealer" : "") + "\" title=\"" + WINDS[seatWind(p)] + " seat" +
+          (p.seat === dealer ? ", dealer" : "") + "\">" + WINDS[seatWind(p)][0] + "</span>";
+      }
+      html += "<span class=\"name\">" + esc(p.human ? p.nick + " (you)" : p.name + (llm ? " 🤖" : "")) + "</span>" +
+        "<span class=\"score\">" + p.score + "</span></div>";
+      // The others' hands stand as tile backs of the same size as their faces, so revealing them moves nothing.
+      const hand = p.human ? "" : reveal ? sorted(p.hand).map(k => tileHtml(k, "small")).join("") : p.hand.map(() => backHtml("small")).join("");
+      html += "<div class=\"row\">" + hand + p.melds.map(meldHtml).join("") + "</div>";
+      html += "<div class=\"row discards\" aria-label=\"Discards\">" + p.discards.map((k, i) =>
+        tileHtml(k, "small" + (lastDiscard && lastDiscard.p === p && i === p.discards.length - 1 ? " last" : ""))).join("") + "</div>";
+      el.innerHTML = html;
+    }
+
+    function renderCenter() {
+      if (phase === "setup") {
+        centerEl.innerHTML = "<div class=\"round\">🀄 The Friday table 🀄</div><div>Sit down to start.</div>";
+        return;
+      }
+      let html = "<div class=\"round\">East round · hand " + (handNo + 1) + " of " + ROUNDS + "</div>" +
+        "<div>Wall: " + wall.length + " tiles</div>";
+      // The discard slot keeps its place while it is empty.
+      html += "<div class=\"last-discard\"" + (lastDiscard ? "" : " style=\"visibility: hidden\"") + ">" +
+        tileHtml(lastDiscard ? lastDiscard.k : 0, "big") + "<div class=\"what\">" +
+        (lastDiscard ? esc(lastDiscard.p.human ? "You" : lastDiscard.p.name) + " discarded " + TILES[lastDiscard.k].name : "") + "</div></div>";
+      centerEl.innerHTML = html;
+    }
+
+    function renderHand() {
+      const me = players[0];
+      if (!me || phase === "setup") {
+        handEl.innerHTML = "";
+        waitsEl.textContent = "";
+        return;
+      }
+      const mine = phase === "discard" && current === 0;
+      let tiles = sorted(me.hand);
+      let extra = null;
+      if (mine && turnDrew && !reveal) {
+        tiles = sorted(without(me.hand, [drawn]));
+        extra = drawn;
+      }
+      const button = k => "<button class=\"tile-btn\" data-k=\"" + k + "\"" + (mine ? "" : " disabled") +
+        " aria-label=\"" + (mine ? "Discard " : "") + TILES[k].name + "\">" + tileHtml(k, "big") + "</button>";
+      handEl.innerHTML = tiles.map(button).join("") + (extra === null ? "" : "<span class=\"gap\"></span>" + button(extra));
+      waitsEl.textContent = "";
+      if (me.hand.length % 3 === 1 && !reveal) {
+        const a = analyse(me.hand.slice(), me.melds.length, seenCounts(me));
+        if (a.s === 0) {
+          waitsEl.textContent = a.n ? "🀄 Ready! You win on: " + a.kinds.map(k => TILES[k].name).join(", ") + " (" + a.n + " left)"
+            : "🀄 Ready – but every tile you need is already out.";
+        }
+      }
+    }
+
+    function claimLabel(o) {
+      if (o.type === "win") return "🀄 Mahjong!";
+      if (o.type === "chow") return "Chow " + o.tiles.map(k => k % 9 + 1).join("-") + " " + SUITS[Math.floor(o.k / 9)][1];
+      return (o.type === "kong" ? "Kong " : "Pung ") + TILES[o.k].name;
+    }
+
+    function renderActions() {
+      const me = players[0];
+      const acts = [];
+      if (phase === "discard" && current === 0 && turnDrew) {
+        if (isComplete(me)) acts.push({label: "🀄 Mahjong!", cls: "win", run: () => humanSelf(() => win(me, null))});
+        if (wall.length) selfKongs(me).forEach(kc => acts.push({label: "Kong " + TILES[kc.k].name, run: () => humanSelf(() => declareKong(me, kc))}));
+      } else if (phase === "claim" && offer) {
+        offer.opts.forEach(o => acts.push({label: claimLabel(o), cls: o.type === "win" ? "win" : "", run: () => answerOffer(o)}));
+        acts.push({label: "Pass", run: () => answerOffer(null)});
+      } else if (phase === "between") {
+        acts.push({label: "Next hand ▶", run: nextHand});
+      }
+      actionsEl.innerHTML = "";
+      acts.forEach(a => {
+        const btn = document.createElement("button");
+        btn.textContent = a.label;
+        btn.className = a.cls || "";
+        btn.addEventListener("click", a.run);
+        actionsEl.appendChild(btn);
+      });
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function log(text, cls) {
+      const li = document.createElement("li");
+      li.textContent = text;
+      if (cls) li.className = cls;
+      const atEnd = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 8;
+      logEl.append(li);
+      if (atEnd) logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function msg(p, youText, otherText) {
+      return p.human ? youText : otherText.replace("{name}", p.name);
+    }
+
+    // ---------- Game flow ----------
+
+    function later(fn, ms) {
+      const id = gameId;
+      timer = setTimeout(() => {
+        if (id === gameId) fn();
+      }, ms);
+    }
+
+    function startGame(verifiedLlm) {
+      clearTimeout(timer);
+      gameId++;
+      llmAbort.abort();
+      llmAbort = new AbortController();
+      llm = verifiedLlm;
+      events = [];
+      const guest = LLM.guest(CAST, playerNameEl, playerRoleEl);
+      const names = Object.keys(CAST.people);
+      players = [0, 1, 2, 3].map(i => ({
+        seat: i,
+        human: i === 0,
+        name: i === 0 ? "You" : names[i - 1],
+        nick: guest.nick,
+        role: guest.role,
+        score: START_SCORE,
+        hand: [],
+        melds: [], // {type: chow | pung | kong, tiles, concealed}
+        discards: [], // still on the table; a claimed discard leaves
+        history: [], // the last few prompts and answers of this player's Claude conversation
+        seen: 0, // events already reported to this player
+        say: "",
+        toYou: "" // last private remark to the human
+      }));
+      players.forEach(p => {
+        if (!p.human) p.system = systemPrompt(p);
+      });
+      handNo = 0;
+      dealer = 0;
+      current = 0;
+      phase = "busy";
+      reveal = false;
+      lastDiscard = null;
+      offer = null;
+      logEl.innerHTML = "";
+      setupEl.hidden = true;
+      playersPanelEl.hidden = false;
+      newGameBtn.hidden = false;
+      log("A new evening at the Friday table! Four hands – you deal first.");
+      commentRowEl.hidden = !llm;
+      enableComments(true);
+      if (llm) log("✓ Key verified – " + llm.name + " plays " + names.join(", ") + ". Good luck!");
+      talk.seat(players.filter(p => !p.human));
+      render();
+      const id = gameId;
+      setStatus("Everybody sits down at the table …");
+      reactions(players, () => "The evening is about to start: " + ROUNDS + " hands, " + nameFor(players[0]) +
+        " deals first. Say something to the table before the tiles are dealt.").then(() => {
+        if (id === gameId) startHand();
+      });
+    }
+
+    function startHand() {
+      dealer = handNo % 4;
+      wall = [];
+      for (let k = 0; k < 34; k++) wall.push(k, k, k, k);
+      for (let i = wall.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [wall[i], wall[j]] = [wall[j], wall[i]];
+      }
+      players.forEach(p => {
+        p.hand = wall.splice(-13);
+        p.melds = [];
+        p.discards = [];
+      });
+      reveal = false;
+      lastDiscard = null;
+      current = dealer;
+      phase = "busy";
+      events.push({type: "hand", no: handNo + 1, dealer: players[dealer]});
+      log("Hand " + (handNo + 1) + " of " + ROUNDS + ": " + msg(players[dealer], "you deal.", "{name} deals."));
+      render();
+      later(() => draw(players[dealer]), 600);
+    }
+
+    function draw(p, replacement) {
+      if (!wall.length) {
+        wallEmpty();
+        return;
+      }
+      const k = wall.pop();
+      p.hand.push(k);
+      drawn = k;
+      turnDrew = true;
+      if (p.human) log("You draw " + TILES[k].name + (replacement ? " as your replacement tile." : "."));
+      beginDiscard(p);
+    }
+
+    // p holds one tile more than a waiting hand and must discard (or win, or declare a kong).
+    function beginDiscard(p) {
+      current = p.seat;
+      if (p.human) {
+        phase = "discard";
+        render();
+        setStatus(turnDrew && isComplete(p) ? "Mahjong! Click 🀄 Mahjong! to win – or discard a tile."
+          : turnDrew ? "Your turn – you drew " + TILES[drawn].name + ". Click a tile to discard it." : "Click a tile to discard it.");
+        const first = handEl.querySelector(".tile-btn:not(:disabled)");
+        if (first && document.activeElement === document.body) first.focus({preventScroll: true});
+        return;
+      }
+      phase = "busy";
+      render();
+      setStatus(p.name + " is thinking …");
+      later(() => botTurn(p), 500);
+    }
+
+    function botTurn(p) {
+      if (turnDrew && isComplete(p)) {
+        win(p, null);
+        return;
+      }
+      const kong = turnDrew && wall.length ? selfKongs(p)[0] : null;
+      if (kong) declareKong(p, kong);
+      else if (llm) claudeDiscard(p);
+      else discard(p, bestDiscard(discardOptions(p)).k);
+    }
+
+    function humanSelf(fn) {
+      if (phase !== "discard" || current !== 0) return;
+      phase = "busy";
+      fn();
+    }
+
+    function declareKong(p, kc) {
+      if (kc.added) {
+        p.hand.splice(p.hand.indexOf(kc.k), 1);
+        const m = p.melds.find(meld => meld.type === "pung" && meld.tiles[0] === kc.k);
+        m.type = "kong";
+        m.tiles.push(kc.k);
+      } else {
+        p.hand = without(p.hand, [kc.k, kc.k, kc.k, kc.k]);
+        p.melds.push({type: "kong", tiles: [kc.k, kc.k, kc.k, kc.k], concealed: true});
+      }
+      events.push({type: "kong", p: p, k: kc.k, added: kc.added});
+      log(msg(p, "You declare a kong of " + TILES[kc.k].name + ".", "{name} declares a kong of " + TILES[kc.k].name + "."));
+      phase = "busy";
+      drawn = null;
+      render();
+      later(() => draw(p, true), 500);
+    }
+
+    function discard(p, k, extra) {
+      p.hand.splice(p.hand.indexOf(k), 1);
+      p.discards.push(k);
+      drawn = null;
+      turnDrew = false;
+      phase = "busy";
+      lastDiscard = {p: p, k: k};
+      events.push(Object.assign({type: "discard", p: p, k: k}, extra));
+      log(msg(p, "You discard " + TILES[k].name + ".", "{name} discards " + TILES[k].name + "."));
+      render();
+      offerClaims(p, k);
+    }
+
+    // Everyone who can use the discard decides at once; then mahjong beats pung and kong, which beat chow,
+    // and among equals the next player in turn order goes first.
+    async function offerClaims(from, k) {
+      const id = gameId;
+      const offers = players.filter(q => q !== from).map(q => ({q: q, opts: claimOptions(q, k, from)})).filter(o => o.opts.length);
+      const nextPlayer = players[(from.seat + 1) % 4];
+      if (!offers.length) {
+        later(() => draw(nextPlayer), from.human ? 400 : 700);
+        return;
+      }
+      const picks = await Promise.all(offers.map(o => decideClaim(o.q, o.opts, from)));
+      if (id !== gameId) return;
+      const rank = {win: 0, kong: 1, pung: 1, chow: 2};
+      let best = null;
+      offers.forEach((o, i) => {
+        const pick = picks[i];
+        if (!pick) return;
+        const dist = (o.q.seat - from.seat + 4) % 4;
+        if (!best || rank[pick.type] < rank[best.pick.type] || (rank[pick.type] === rank[best.pick.type] && dist < best.dist)) {
+          best = {q: o.q, pick: pick, dist: dist};
+        }
+      });
+      if (best) takeClaim(best.q, best.pick, from);
+      else later(() => draw(nextPlayer), 300);
+    }
+
+    function decideClaim(q, opts, from) {
+      if (q.human) {
+        return new Promise(resolve => {
+          offer = {opts: opts, resolve: resolve};
+          phase = "claim";
+          render();
+          setStatus(nameFor(from) + " discards " + TILES[opts[0].k].name + ". Claim it, or pass?");
+        });
+      }
+      const win = opts.find(o => o.type === "win");
+      if (win) return Promise.resolve(win);
+      return llm ? claudeClaim(q, opts, from) : Promise.resolve(classicClaim(q, opts));
+    }
+
+    function answerOffer(o) {
+      if (phase !== "claim" || !offer) return;
+      const resolve = offer.resolve;
+      offer = null;
+      const comment = takeComment(players[0]);
+      if (comment.say || comment.whisper) events.push(Object.assign({type: "remark", p: players[0]}, comment));
+      phase = "busy";
+      render();
+      setStatus("Waiting for the others …");
+      resolve(o);
+    }
+
+    function takeClaim(q, o, from) {
+      from.discards.pop();
+      lastDiscard = null;
+      if (o.type === "win") {
+        q.hand.push(o.k);
+        win(q, from);
+        return;
+      }
+      q.hand = restAfter(q, o);
+      q.melds.push({type: o.type, tiles: o.tiles.slice(), concealed: false});
+      events.push({type: "claim", p: q, from: from, k: o.k, meld: o.type, tiles: o.tiles});
+      log(msg(q, o.type[0].toUpperCase() + o.type.slice(1) + "! You take " + TILES[o.k].name + " from " + from.name + ".",
+        "{name} calls " + o.type + " and takes " + TILES[o.k].name + " from " + (from.human ? "you" : from.name) + "."));
+      drawn = null;
+      turnDrew = false;
+      current = q.seat;
+      phase = "busy";
+      render();
+      if (o.type === "kong") later(() => draw(q, true), 500);
+      else later(() => beginDiscard(q), 400);
+    }
+
+    function win(p, from) {
+      const r = fanOf(p, !from);
+      const payers = from ? [[from, r.value * 2]] : players.filter(q => q !== p).map(q => [q, r.value]);
+      let total = 0;
+      payers.forEach(([q, v]) => {
+        q.score -= v;
+        total += v;
+      });
+      p.score += total;
+      events.push({type: "win", p: p, from: from});
+      const how = r.items.map(([name, fan]) => name + " " + fan).join(", ");
+      const text = msg(p, "🀄 Mahjong! You win", "🀄 {name} wins") +
+        (from ? " on " + (from.human ? "your" : from.name + "'s") + " discard" : " self-drawn") +
+        " with " + r.fan + " fan (" + how + ") – " + total + " points" +
+        (from ? ", paid by " + (from.human ? "you" : from.name) : "") + "!";
+      log(text);
+      setStatus(msg(p, "🀄 Mahjong! You win", "🀄 {name} wins") + " " + total + " points.");
+      endHand(viewer => who(viewer, p).replace(/^./, c => c.toUpperCase()) + " won " +
+        (from ? "on a discard by " + who(viewer, from) : "self-drawn") + " with " + r.fan + " fan (" + how + ") for " + total + " points, " +
+        (from ? "all paid by " + who(viewer, from) : "paid by the other three") + ".");
+    }
+
+    function wallEmpty() {
+      events.push({type: "draw"});
+      const text = "The wall is empty – nobody wins this hand.";
+      log(text);
+      setStatus(text);
+      endHand(() => "The wall ran out; nobody won this hand.");
+    }
+
+    function scores(viewer) {
+      return "Scores: " + players.slice().sort((a, b) => b.score - a.score).map(q => who(viewer, q) + " " + q.score).join(", ") + ".";
+    }
+
+    function endHand(cause) {
+      reveal = true;
+      lastDiscard = null;
+      phase = "handover";
+      offer = null;
+      render();
+      const last = handNo === ROUNDS - 1;
+      const id = gameId;
+      reactions(players, q => "Hand " + (handNo + 1) + " is over. " + cause(q) + " " + scores(q) +
+        (last ? " That was the last hand: the evening is over." : "")).then(() => {
+        if (id !== gameId) return;
+        if (last) {
+          endGame();
+          return;
+        }
+        phase = "between";
+        render();
+        setStatus(statusEl.textContent + " Click „Next hand“ to go on.");
+      });
+    }
+
+    function nextHand() {
+      if (phase !== "between") return;
+      handNo++;
+      startHand();
+    }
+
+    function endGame() {
+      phase = "over";
+      enableComments(false);
+      const ranking = players.slice().sort((a, b) => b.score - a.score);
+      const place = ranking.indexOf(players[0]) + 1;
+      const text = place === 1 ? "🏆 You win the evening with " + players[0].score + " points! Congratulations!"
+        : "The evening is over – you finish " + ["", "first", "second", "third", "fourth"][place] + " with " + players[0].score + " points.";
+      log("Final scores: " + ranking.map(q => (q.human ? q.nick : q.name) + " " + q.score).join(", "));
+      log(text);
+      setStatus(text);
+      render();
+    }
+
+    function enableComments(on) {
+      commentRowEl.querySelectorAll("input, select").forEach(el => el.disabled = !on);
+    }
+
+    // Your optional comment goes with your next discard or claim decision.
+    function takeComment(p) {
+      return llm ? talk.take(p) : {};
+    }
+
+    // ---------- Events ----------
+
+    startBtn.addEventListener("click", chooseSeat);
+
+    handEl.addEventListener("click", e => {
+      const btn = e.target.closest("button[data-k]");
+      if (!btn || phase !== "discard" || current !== 0) return;
+      discard(players[0], Number(btn.dataset.k), takeComment(players[0]));
+    });
+
+    newGameBtn.addEventListener("click", () => {
+      clearTimeout(timer);
+      gameId++;
+      llmAbort.abort();
+      llm = null;
+      commentRowEl.hidden = true;
+      phase = "setup";
+      offer = null;
+      lastDiscard = null;
+      setupEl.hidden = false;
+      playersPanelEl.hidden = true;
+      newGameBtn.hidden = true;
+      logEl.innerHTML = "";
+      setStatus("Pull up a chair and sit down to start.");
+      showPreview();
+    });
+
+    // Before you sit down, the others wait at the empty table.
+    function showPreview() {
+      const names = Object.keys(CAST.people);
+      players = [0, 1, 2, 3].map(i => ({seat: i, human: i === 0, name: names[i - 1], nick: playerNameEl.value.trim() || CAST.guest.nick,
+        score: START_SCORE, hand: [], melds: [], discards: [], say: "", toYou: ""}));
+      render();
+    }
+
+    playerNameEl.placeholder = CAST.guest.nick;
+    playerRoleEl.placeholder = CAST.guest.role;
+    showPreview();
+  </script>
+</body>
+
+</html>
