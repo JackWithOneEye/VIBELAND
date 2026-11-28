@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Hearts - VIBELAND</title>
+  <link rel="stylesheet" type="text/css" href="../assets/styles.css">
+  <link rel="stylesheet" type="text/css" href="../assets/cards.css">
+  <style type="text/css">
+    .table {
+      position: relative;
+      width: 940px;
+      height: 630px;
+      margin: 0 auto;
+      background: radial-gradient(ellipse at center, #128a2e 0%, #0a5a0a 75%);
+      border: 6px ridge #8b5a2b;
+      box-sizing: border-box;
+      overflow: hidden;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .card {
+      width: 70px;
+      height: 100px;
+      position: absolute;
+      border: 1px solid #000;
+      border-radius: 8px;
+      box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+      user-select: none;
+      background: white;
+      overflow: hidden;
+      box-sizing: border-box;
+      transition: top 120ms ease, filter 120ms ease;
+    }
+
+    /* Card back: same lattice as Solitaire */
+    .card.face-down {
+      background:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.22) 0 1.5px, transparent 1.5px 6px),
+        repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 1.5px, transparent 1.5px 6px),
+        #1e4fa0;
+      box-shadow: inset 0 0 0 4px #fff, inset 0 0 0 5px #1e4fa0, 3px 3px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .card.small {
+      width: 50px;
+      height: 72px;
+      border-radius: 6px;
+      box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 4px #1e4fa0, 2px 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    /* A card in flight between two places on the table (see fly()) */
+    .card.flyer {
+      left: 0;
+      top: 0;
+      z-index: 100;
+      transform-origin: 0 0;
+      pointer-events: none;
+      transition: none;
+    }
+
+    .hand {
+      position: absolute;
+    }
+
+    .hand.south {
+      left: 0;
+      right: 0;
+      top: 498px;
+      height: 120px;
+    }
+
+    .hand.south .card {
+      top: 0;
+    }
+
+    .hand.south .card.playable {
+      cursor: pointer;
+    }
+
+    .hand.south .card.playable:hover {
+      top: -10px;
+    }
+
+    .hand.south .card.blocked {
+      filter: brightness(0.6);
+      cursor: not-allowed;
+    }
+
+    .hand.south .card.selected,
+    .hand.south .card.selected:hover {
+      top: -22px;
+      box-shadow: 0 0 0 3px #ffd54f, 3px 3px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .hand.south .card.received {
+      box-shadow: 0 0 0 3px #4fc3f7, 3px 3px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .label {
+      position: absolute;
+      background: #000080;
+      color: #fff;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 3px 8px;
+      border: 2px outset #c0c0c0;
+      white-space: nowrap;
+    }
+
+    .label.turn {
+      background: #ffd54f;
+      color: #000;
+    }
+
+    .label small {
+      font-weight: normal;
+    }
+
+    .trick-slot {
+      position: absolute;
+    }
+
+    /* Lights up once hearts are broken and stays lit for the rest of the hand */
+    .hearts-badge {
+      position: absolute;
+      left: 12px;
+      top: 10px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #8a8a8a;
+      background: #3a3a3a;
+      border: 2px inset #808080;
+      white-space: nowrap;
+    }
+
+    .hearts-badge.lit {
+      color: #fff;
+      background: #c8102e;
+      border: 2px outset #ff8a8a;
+      box-shadow: 0 0 10px 2px rgba(255, 60, 60, 0.8);
+      text-shadow: 1px 1px 0 #600;
+    }
+
+    /* Q♠ "dunce" card next to whoever took the queen this hand */
+    .dunce {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 0 3px;
+      background: #fff;
+      color: #111;
+      border: 1px solid #4a148c;
+      border-radius: 3px;
+      box-shadow: 0 0 6px 1px #9c27b0;
+      font-family: Georgia, 'Times New Roman', serif;
+    }
+
+    /* One-off effects drawn over the table (see crackHeart() and floatText()) */
+    .fx {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    .fx svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .fx-text {
+      font-size: 22px;
+      font-weight: bold;
+      color: #ff5252;
+      text-shadow: 2px 2px 0 #000;
+      white-space: nowrap;
+    }
+
+    .trick-slot .card.winner {
+      box-shadow: 0 0 0 4px #ffd54f, 3px 3px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .status {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 452px;
+      text-align: center;
+      color: #ffff66;
+      font-weight: bold;
+      font-size: 15px;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    .pass-btn {
+      position: absolute;
+      left: 50%;
+      top: 270px;
+      transform: translateX(-50%);
+      padding: 10px 18px;
+      font-size: 16px;
+      font-weight: bold;
+      background: #ffd54f;
+      border: 3px outset #fff3b0;
+      cursor: pointer;
+      display: none;
+    }
+
+    .pass-btn:disabled {
+      background: #c0c0c0;
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    .below {
+      display: flex;
+      gap: 16px;
+      width: 940px;
+      margin: 12px auto 0;
+      align-items: flex-start;
+    }
+
+    .scores {
+      border-collapse: collapse;
+      background: #fff;
+      font-size: 13px;
+      flex: 1;
+    }
+
+    .scores th,
+    .scores td {
+      border: 1px solid #808080;
+      padding: 3px 8px;
+      text-align: center;
+    }
+
+    .scores th {
+      background: #000080;
+      color: #fff;
+    }
+
+    .scores tr.total td {
+      font-weight: bold;
+      background: #ffff99;
+    }
+
+    .rules {
+      flex: 1;
+      background: #fff;
+      border: 2px inset #fff;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .rules h3 {
+      margin: 0 0 4px;
+    }
+
+    .rules ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .controls-row {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    .controls-row button {
+      padding: 6px 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .modal {
+      background: #fffbea;
+      border: 3px solid #333;
+      padding: 20px 24px;
+      min-width: 320px;
+      text-align: center;
+      box-shadow: 6px 6px 0 #333;
+      font-family: 'Times New Roman', serif;
+    }
+
+    .modal h2 {
+      margin-top: 0;
+    }
+
+    .modal table {
+      margin: 0 auto 14px;
+      border-collapse: collapse;
+    }
+
+    .modal td,
+    .modal th {
+      border: 1px solid #999;
+      padding: 3px 10px;
+    }
+
+    .modal button {
+      width: 100%;
+      padding: 10px 0;
+      font-size: 1rem;
+      cursor: pointer;
+      background: #ffd54f;
+      border: 2px solid #333;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container extra-wide">
+    <div class="outer-border">
+      <div class="header">
+        <h1>♥️ HEARTS ♥️</h1>
+        <p>~*~ You vs. three card sharks ~*~</p>
+      </div>
+
+      <div class="ticker" aria-label="site news">
+        <div class="marquee">★ WELCOME TO VIBELAND ★ DODGE THE HEARTS ★ BEWARE THE QUEEN OF SPADES ★ SHOOT THE MOON ★</div>
+      </div>
+
+      <div class="content">
+        <div class="table" id="table">
+          <div class="label" id="label2" style="left:50%;top:10px;transform:translateX(-50%)"></div>
+          <div class="hand" id="hand2" style="top:36px;left:0;right:0;height:72px"></div>
+          <div class="label" id="label1" style="left:12px;top:118px"></div>
+          <div class="hand" id="hand1" style="left:24px;top:146px;width:50px;height:300px"></div>
+          <div class="label" id="label3" style="right:12px;top:118px"></div>
+          <div class="hand" id="hand3" style="right:24px;top:146px;width:50px;height:300px"></div>
+
+          <div class="trick-slot" id="slot2" style="left:435px;top:150px"></div>
+          <div class="trick-slot" id="slot1" style="left:345px;top:225px"></div>
+          <div class="trick-slot" id="slot3" style="left:525px;top:225px"></div>
+          <div class="trick-slot" id="slot0" style="left:435px;top:300px"></div>
+
+          <div class="hearts-badge" id="heartsBadge">♥ BROKEN</div>
+          <button class="pass-btn" id="passBtn">Pass</button>
+          <div class="status" id="status"></div>
+          <div class="label" id="label0" style="left:50%;top:474px;transform:translateX(-50%)"></div>
+          <div class="hand south" id="hand0"></div>
+        </div>
+
+        <div class="controls-row">
+          <button id="newGameBtn">New Game</button>
+          &nbsp; Deal #<span id="seedText"></span> &middot; first to 100 points ends the game, lowest score wins
+        </div>
+
+        <div class="below">
+          <table class="scores">
+            <thead>
+              <tr><th>Hand</th><th>You</th><th>West</th><th>North</th><th>East</th></tr>
+            </thead>
+            <tbody id="scoreBody"></tbody>
+          </table>
+          <div class="rules">
+            <h3>How to play</h3>
+            <ul>
+              <li>Pass 3 cards: left, right, across, then keep. Click cards to pick them.</li>
+              <li>The 2♣ leads the first trick. Follow suit if you can.</li>
+              <li>No ♥ or Q♠ on the first trick (unless that's all you have).</li>
+              <li>Hearts can't be led until one has been played.</li>
+              <li>Each ♥ costs 1 point, the Q♠ costs 13.</li>
+              <li>Take all 26 points to shoot the moon: everyone else gets 26.</li>
+            </ul>
+          </div>
+        </div>
+
+        <hr class="thick">
+
+        <div class="footer">
+          <div><a href="../home">← Back to VIBELAND</a></div>
+          <div>© 1999 VIBELAND - All Rights Reserved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h2 id="modalTitle"></h2>
+      <p id="modalText"></p>
+      <table id="modalTable"></table>
+      <button id="modalBtn"></button>
+    </div>
+  </div>
+
+  <script src="../assets/cards.js"></script>
+  <script>
+    // Players sit clockwise and play passes to the left: You (south) → West → North → East.
+    const NAMES = ["You", "West", "North", "East"];
+    const SUITS = ["♣", "♦", "♠", "♥"];
+    const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+    const PASS_NAMES = ["left", "right", "across"];
+
+    // ?seed=N deals the same game again; ?delay=MS sets how long each bot thinks.
+    const params = new URLSearchParams(location.search);
+    const seedParam = parseInt(params.get("seed"), 10);
+    const delayParam = parseInt(params.get("delay"), 10);
+    const BOT_DELAY = delayParam >= 0 ? delayParam : 650;
+    const TRICK_PAUSE = delayParam >= 0 ? delayParam * 2 : 1100;
+    // How long one card takes to fly; ?delay=0 turns animations off.
+    const ANIM_MS = delayParam >= 0 ? Math.min(420, delayParam) : 420;
+
+    let seed = 0;
+    let random = Math.random;
+
+    let hands = [[], [], [], []];
+    let handPoints = [0, 0, 0, 0];
+    let totals = [0, 0, 0, 0];
+    let scoreRows = [];
+    let handNumber = 0;
+    let phase = "pass";
+    let trick = [];
+    let trickNumber = 0;
+    let turn = 0;
+    let heartsBroken = false;
+    let queenPlayed = false;
+    let queenHolder = -1;
+    let selected = [];
+    let received = [];
+    let trickWinner = -1;
+    let timer = 0;
+    // Clicks are ignored while cards fly; gen tells a finished animation whether a new hand started meanwhile.
+    let animating = false;
+    let gen = 0;
+
+    function mulberry32(s) {
+      return function () {
+        s = (s + 0x6D2B79F5) | 0;
+        let t = Math.imul(s ^ (s >>> 15), 1 | s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function points(card) {
+      if (card.suit === "♥") return 1;
+      if (card.id === "Q♠") return 13;
+      return 0;
+    }
+
+    function sortHand(hand) {
+      hand.sort((a, b) => SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit) || a.value - b.value);
+    }
+
+    function passTarget(p) {
+      const dir = handNumber % 4;
+      if (dir === 0) return (p + 1) % 4;
+      if (dir === 1) return (p + 3) % 4;
+      return (p + 2) % 4;
+    }
+
+    function newGame(newSeed) {
+      seed = newSeed;
+      random = mulberry32(seed);
+      totals = [0, 0, 0, 0];
+      scoreRows = [];
+      handNumber = 0;
+      document.getElementById("seedText").textContent = seed;
+      startHand();
+    }
+
+    async function startHand() {
+      clearTimeout(timer);
+      const g = ++gen;
+      document.querySelectorAll(".flyer, .fx").forEach(f => f.remove());
+      const deck = [];
+      SUITS.forEach(suit => RANKS.forEach((rank, i) => deck.push({ suit, rank, value: i + 2, id: rank + suit })));
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      hands = [0, 1, 2, 3].map(p => deck.slice(p * 13, p * 13 + 13));
+      hands.forEach(sortHand);
+      handPoints = [0, 0, 0, 0];
+      trick = [];
+      trickNumber = 0;
+      heartsBroken = false;
+      queenPlayed = false;
+      queenHolder = -1;
+      selected = [];
+      received = [];
+      trickWinner = -1;
+      hideModal();
+      phase = "deal";
+      render();
+      animating = true;
+      await dealCards();
+      if (g !== gen) return;
+      animating = false;
+      if (handNumber % 4 === 3) {
+        startPlay();
+      } else {
+        phase = "pass";
+        render();
+      }
+    }
+
+    function toggleSelect(card) {
+      const i = selected.indexOf(card);
+      if (i >= 0) selected.splice(i, 1);
+      else if (selected.length < 3) selected.push(card);
+      render();
+    }
+
+    async function doPass() {
+      if (phase !== "pass" || selected.length !== 3 || animating) return;
+      const g = gen;
+      const outgoing = [selected, botPass(1), botPass(2), botPass(3)];
+      const from = outgoing.map((cards, p) => cards.map((c, k) => rel(p === 0 ? southEl(c) : botPassEls(p)[k])));
+      const southBefore = handRects(0);
+      outgoing.forEach((cards, p) => {
+        hands[p] = hands[p].filter(c => !cards.includes(c));
+      });
+      outgoing.forEach((cards, p) => {
+        hands[passTarget(p)].push(...cards);
+      });
+      hands.forEach(sortHand);
+      received = outgoing.find((cards, p) => passTarget(p) === 0);
+      selected = [];
+      phase = "passing";
+      render();
+      slideHand(0, southBefore);
+      const flights = [];
+      outgoing.forEach((cards, p) => {
+        const t = passTarget(p);
+        cards.forEach((c, k) => {
+          const to = t === 0 ? southEl(c) : botPassEls(t)[k];
+          flights.push(fly(c, from[p][k], p === 0, to, t === 0, (p * 0.25 + k * 0.12) * ANIM_MS, ANIM_MS * 1.6));
+        });
+      });
+      animating = true;
+      await Promise.all(flights);
+      if (g !== gen) return;
+      animating = false;
+      startPlay();
+    }
+
+    function startPlay() {
+      phase = "play";
+      turn = hands.findIndex(h => h.some(c => c.id === "2♣"));
+      render();
+      scheduleBot();
+    }
+
+    // The cards player p may play right now.
+    function legalCards(p) {
+      const hand = hands[p];
+      if (trick.length === 0) {
+        if (trickNumber === 0) return hand.filter(c => c.id === "2♣");
+        if (!heartsBroken) {
+          const nonHearts = hand.filter(c => c.suit !== "♥");
+          if (nonHearts.length) return nonHearts;
+        }
+        return hand.slice();
+      }
+      const follow = hand.filter(c => c.suit === trick[0].card.suit);
+      if (follow.length) return follow;
+      if (trickNumber === 0) {
+        const clean = hand.filter(c => points(c) === 0);
+        if (clean.length) return clean;
+      }
+      return hand.slice();
+    }
+
+    function winningPlay() {
+      const led = trick[0].card.suit;
+      return trick.filter(t => t.card.suit === led).reduce((a, b) => (b.card.value > a.card.value ? b : a));
+    }
+
+    async function playCard(p, card) {
+      const g = gen;
+      // Bots play from the middle of their face-down fan.
+      const els = [...document.querySelectorAll(`#hand${p} .card`)];
+      const removed = p === 0 ? els.findIndex(e => e.dataset.card === card.id) : els.length >> 1;
+      const from = rel(els[removed]);
+      const before = handRects(p);
+      hands[p] = hands[p].filter(c => c !== card);
+      trick.push({ player: p, card });
+      // Hearts count as broken once the heart lands, so the badge lights with the crack.
+      const breaks = card.suit === "♥" && !heartsBroken;
+      if (card.id === "Q♠") queenPlayed = true;
+      if (p === 0) received = [];
+      const full = trick.length === 4;
+      if (full) phase = "collect";
+      else turn = (p + 1) % 4;
+      render();
+      slideHand(p, before, removed);
+      animating = true;
+      await fly(card, from, p === 0, document.querySelector(`#slot${p} .card`), true, 0, ANIM_MS);
+      if (g !== gen) return;
+      animating = false;
+      if (breaks) {
+        heartsBroken = true;
+        heartsBrokenFx(p);
+      }
+      if (full) {
+        trickWinner = winningPlay().player;
+        render();
+        timer = setTimeout(collectTrick, TRICK_PAUSE);
+        return;
+      }
+      scheduleBot();
+    }
+
+    async function collectTrick() {
+      const g = gen;
+      animating = true;
+      await sweepTrick();
+      if (g !== gen) return;
+      animating = false;
+      handPoints[trickWinner] += trick.reduce((sum, t) => sum + points(t.card), 0);
+      const queenTaken = trick.some(t => t.card.id === "Q♠");
+      if (queenTaken) queenHolder = trickWinner;
+      turn = trickWinner;
+      trick = [];
+      trickWinner = -1;
+      trickNumber++;
+      if (trickNumber === 13) {
+        endHand();
+        if (queenTaken) queenTakenFx(queenHolder);
+        return;
+      }
+      phase = "play";
+      render();
+      if (queenTaken) queenTakenFx(queenHolder);
+      scheduleBot();
+    }
+
+    function scheduleBot() {
+      if (phase === "play" && turn !== 0) {
+        timer = setTimeout(() => playCard(turn, botPlay(turn)), BOT_DELAY);
+      }
+    }
+
+    function endHand() {
+      const moon = handPoints.indexOf(26);
+      const scored = moon >= 0 ? handPoints.map((_, p) => (p === moon ? 0 : 26)) : handPoints.slice();
+      totals = totals.map((t, p) => t + scored[p]);
+      scoreRows.push(scored);
+      handNumber++;
+      const over = Math.max(...totals) >= 100;
+      phase = over ? "gameover" : "handover";
+      render();
+
+      let rows = "<tr><th></th><th>This hand</th><th>Total</th></tr>";
+      NAMES.forEach((name, p) => { rows += `<tr><td>${name}</td><td>${scored[p]}</td><td>${totals[p]}</td></tr>`; });
+      let text = moon < 0 ? "" : moon === 0 ? "You shot the moon! Everyone else takes 26." : `${NAMES[moon]} shot the moon! Everyone else takes 26.`;
+      if (over) {
+        const best = Math.min(...totals);
+        const winners = NAMES.filter((_, p) => totals[p] === best);
+        const youWon = totals[0] === best;
+        showModal(youWon ? "You win!" : "Game over", `${text} ${winners.join(" and ")} ${winners.length > 1 ? "share the win" : winners[0] === "You" ? "win" : "wins"} with ${best} points.`, rows, "Play Again", () => newGame(randomSeed()));
+      } else {
+        showModal(`Hand ${handNumber} done`, text, rows, "Deal Next Hand", startHand);
+      }
+    }
+
+    // ---- Bots ----
+
+    function maxBy(cards, f) {
+      return cards.reduce((a, b) => (f(b) > f(a) ? b : a));
+    }
+
+    function minBy(cards, f) {
+      return cards.reduce((a, b) => (f(b) < f(a) ? b : a));
+    }
+
+    function botPass(p) {
+      const hand = hands[p];
+      const spades = hand.filter(c => c.suit === "♠").length;
+      const danger = c => {
+        if (c.id === "Q♠") return 100;
+        if (c.suit === "♠" && c.value > 12) return spades < 4 ? 90 : 0;
+        if (c.suit === "♥") return 20 + c.value;
+        return c.value;
+      };
+      return hand.slice().sort((a, b) => danger(b) - danger(a)).slice(0, 3);
+    }
+
+    function botPlay(p) {
+      const legal = legalCards(p);
+      if (legal.length === 1) return legal[0];
+      const queen = legal.find(c => c.id === "Q♠");
+
+      if (trick.length === 0) {
+        // Lead low, keep hearts back, and don't lead the A♠/K♠ while the Q♠ is out.
+        return minBy(legal, c => c.value + (c.suit === "♥" ? 6 : 0) + (c.suit === "♠" && c.value > 12 && !queenPlayed ? 20 : 0));
+      }
+
+      const led = trick[0].card.suit;
+      const best = winningPlay().card;
+      if (legal[0].suit === led) {
+        if (queen && best.value > 12) return queen;
+        const under = legal.filter(c => c.value < best.value);
+        if (under.length) return maxBy(under, c => c.value);
+        const safe = legal.filter(c => c !== queen);
+        if (trick.length === 3) return maxBy(safe, c => c.value);
+        return minBy(safe, c => c.value);
+      }
+
+      // Void in the led suit: dump the worst card.
+      if (queen) return queen;
+      const bigSpades = legal.filter(c => c.suit === "♠" && c.value > 12);
+      if (bigSpades.length && !queenPlayed) return maxBy(bigSpades, c => c.value);
+      const hearts = legal.filter(c => c.suit === "♥");
+      if (hearts.length) return maxBy(hearts, c => c.value);
+      return maxBy(legal, c => c.value);
+    }
+
+    // ---- Animation ----
+    // Moves are FLIP-style: the game state changes and render() draws the end position at once,
+    // then a "flyer" card travels from where the card was to where it now is, while the real card stays hidden.
+
+    const table = document.getElementById("table");
+
+    // An element's rect relative to the table's inside edge.
+    function rel(el) {
+      const r = el.getBoundingClientRect();
+      const t = table.getBoundingClientRect();
+      return { left: r.left - t.left - table.clientLeft, top: r.top - t.top - table.clientTop, width: r.width, height: r.height };
+    }
+
+    function southEl(card) {
+      return document.querySelector(`#hand0 .card[data-card="${card.id}"]`);
+    }
+
+    // Where a bot's three passed cards leave from and land: spread across its fan.
+    function botPassEls(p) {
+      const els = document.querySelectorAll(`#hand${p} .card`);
+      return [3, 6, 9].map(i => els[i]);
+    }
+
+    function setFace(el, card, up) {
+      el.className = `card flyer${up ? "" : " face-down"}`;
+      el.innerHTML = up ? cardFaceHTML(card.rank, card.suit, "classic") : "";
+    }
+
+    // Flies a card from rect `from` to element `toEl`, lifting it mid-way, or turning it over when its face changes.
+    function fly(card, from, fromUp, toEl, toUp, delay, duration) {
+      if (!ANIM_MS || !toEl) return Promise.resolve();
+      const to = rel(toEl);
+      toEl.style.visibility = "hidden";
+      const f = document.createElement("div");
+      setFace(f, card, fromUp);
+      table.appendChild(f);
+      const flip = fromUp !== toUp;
+      const lerp = k => (from[k] + to[k]) / 2;
+      const w = lerp("width") * (flip ? 0.02 : 1.15);
+      const h = lerp("height") * 1.15;
+      const mid = { left: lerp("left") + (lerp("width") - w) / 2, top: lerp("top") + (lerp("height") - h) / 2, width: w, height: h };
+      const at = r => ({ transform: `translate(${r.left}px, ${r.top}px) scale(${r.width / 70}, ${r.height / 100})` });
+      const anim = f.animate([at(from), { ...at(mid), offset: 0.5 }, at(to)], { duration, delay, easing: "ease-in-out", fill: "backwards" });
+      if (flip) setTimeout(() => setFace(f, card, toUp), delay + duration / 2);
+      return anim.finished.then(() => {
+        f.remove();
+        toEl.style.visibility = "";
+      });
+    }
+
+    function handRects(p) {
+      return [...document.querySelectorAll(`#hand${p} .card`)].map(el => ({ key: el.dataset.card, rect: el.getBoundingClientRect() }));
+    }
+
+    // Slides the cards left in a hand from their old spots to the re-centred fan.
+    // Your cards are matched by name; a bot's identical backs by position, skipping the one played.
+    function slideHand(p, before, removed) {
+      if (!ANIM_MS) return;
+      document.querySelectorAll(`#hand${p} .card`).forEach((el, i) => {
+        const old = p === 0 ? before.find(b => b.key === el.dataset.card) : before[i >= removed ? i + 1 : i];
+        if (!old || el.style.visibility === "hidden") return;
+        const now = el.getBoundingClientRect();
+        const dx = old.rect.left - now.left;
+        const dy = old.rect.top - now.top;
+        if (dx || dy) el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: ANIM_MS, easing: "ease-out" });
+      });
+    }
+
+    // Deals all 52 cards one at a time from a deck in the middle, clockwise starting with West.
+    function dealCards() {
+      if (!ANIM_MS) return Promise.resolve();
+      const deck = { left: (table.clientWidth - 70) / 2, top: (table.clientHeight - 100) / 2 - 20, width: 70, height: 100 };
+      const flights = [];
+      for (let p = 0; p < 4; p++) {
+        document.querySelectorAll(`#hand${p} .card`).forEach((el, i) => {
+          const order = i * 4 + (p + 3) % 4;
+          flights.push(fly(p === 0 ? hands[0][i] : null, deck, false, el, p === 0, order * ANIM_MS * 0.045, ANIM_MS));
+        });
+      }
+      return Promise.all(flights);
+    }
+
+    // Gathers the trick onto the winning card, then sweeps it off to the winner's side.
+    // The Q♠ leaves on her own: she grows and glows purple in place, then flies to the winner's name.
+    function sweepTrick() {
+      if (!ANIM_MS) return Promise.resolve();
+      const win = rel(document.querySelector(`#slot${trickWinner} .card`));
+      const box = rel(document.getElementById(`hand${trickWinner}`));
+      const end = { left: box.left + box.width / 2 - 35, top: box.top + box.height / 2 - 50 };
+      const label = rel(document.getElementById(`label${trickWinner}`));
+      return Promise.all([...document.querySelectorAll(".trick-slot .card")].map(el => {
+        const r = rel(el);
+        if (el.dataset.card === "Q♠") {
+          const dx = label.left + label.width / 2 - 35 - r.left;
+          const dy = label.top + label.height / 2 - 50 - r.top;
+          const glow = "0 0 0 3px #4a148c, 0 0 24px 10px #9c27b0";
+          el.style.zIndex = 150;
+          return el.animate([
+            { transform: "none", boxShadow: "3px 3px 6px rgba(0, 0, 0, 0.4)" },
+            { transform: "scale(1.6) rotate(-6deg)", boxShadow: glow, offset: 0.35 },
+            { transform: "scale(1.6) rotate(6deg)", boxShadow: glow, offset: 0.5 },
+            { transform: `translate(${dx}px, ${dy}px) scale(0.3)`, boxShadow: glow, opacity: 0.6 },
+          ], { duration: ANIM_MS * 4, easing: "ease-in-out", fill: "forwards" }).finished;
+        }
+        return el.animate([
+          { transform: "none", opacity: 1 },
+          { transform: `translate(${win.left - r.left}px, ${win.top - r.top}px)`, opacity: 1, offset: 0.4 },
+          { transform: `translate(${end.left - r.left}px, ${end.top - r.top}px) scale(0.5)`, opacity: 0 },
+        ], { duration: ANIM_MS * 1.5, easing: "ease-in-out", fill: "forwards" }).finished;
+      }));
+    }
+
+    // Adds a one-off effect element over the table, placed at rect r (relative to the table).
+    function fxEl(html, r, cls) {
+      const el = document.createElement("div");
+      el.className = `fx ${cls || ""}`;
+      el.innerHTML = html;
+      el.style.left = `${r.left}px`;
+      el.style.top = `${r.top}px`;
+      if (r.width) el.style.width = `${r.width}px`;
+      if (r.height) el.style.height = `${r.height}px`;
+      table.appendChild(el);
+      return el;
+    }
+
+    // The heart that broke hearts cracks: a big heart splits along a zigzag, its halves fall apart,
+    // and small hearts burst outward. The badge pulses as it lights up.
+    function heartsBrokenFx(p) {
+      if (!ANIM_MS) return;
+      const card = document.querySelector(`#slot${p} .card`);
+      if (!card) return;
+      const c = rel(card);
+      const size = 64;
+      const at = { left: c.left + (c.width - size) / 2, top: c.top + (c.height - size) / 2, width: size, height: size };
+      const crack = "50,0 42,22 56,40 44,58 54,76 50,100";
+      [["0,0 " + crack + " 0,100", -1], [crack + " 100,100 100,0", 1]].forEach(([poly, side], i) => {
+        const half = fxEl(`<svg viewBox="0 0 100 100"><defs><clipPath id="crack${i}"><polygon points="${poly}"/></clipPath></defs>
+          <path d="${CARD_SUIT_PATHS["♥"]}" fill="#e0102e" stroke="#600" stroke-width="3" clip-path="url(#crack${i})"/></svg>`, at);
+        half.animate([
+          { transform: "scale(0.3)", opacity: 0 },
+          { transform: "scale(1.2)", opacity: 1, offset: 0.2 },
+          { transform: "scale(1)", opacity: 1, offset: 0.4 },
+          { transform: `translate(${side * 26}px, 40px) rotate(${side * 28}deg)`, opacity: 0 },
+        ], { duration: ANIM_MS * 3, easing: "ease-in" }).finished.then(() => half.remove());
+      });
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const bit = fxEl(`<svg viewBox="0 0 100 100"><path d="${CARD_SUIT_PATHS["♥"]}" fill="#ff4d6d"/></svg>`,
+          { left: c.left + c.width / 2 - 8, top: c.top + c.height / 2 - 8, width: 16, height: 16 });
+        bit.animate([
+          { transform: "scale(0.4)", opacity: 1 },
+          { transform: `translate(${Math.cos(a) * 85}px, ${Math.sin(a) * 85}px) scale(1) rotate(${i * 45}deg)`, opacity: 0 },
+        ], { duration: ANIM_MS * 2.2, delay: ANIM_MS * 0.4, easing: "ease-out", fill: "backwards" }).finished.then(() => bit.remove());
+      }
+      const badge = document.getElementById("heartsBadge");
+      badge.classList.add("lit");
+      badge.animate([
+        { transform: "scale(1)" }, { transform: "scale(1.35)" }, { transform: "scale(1)" }, { transform: "scale(1.2)" }, { transform: "scale(1)" },
+      ], { duration: ANIM_MS * 3 });
+    }
+
+    // The winner's name label shakes and "+13" floats up beside it (on the inner side for East).
+    function queenTakenFx(p) {
+      if (!ANIM_MS) return;
+      const label = document.getElementById(`label${p}`);
+      label.animate([0, -7, 7, -5, 5, -2, 0].map(x => ({ translate: `${x}px 0` })), { duration: ANIM_MS * 1.5 });
+      const r = rel(label);
+      const plus = fxEl("+13", { left: p === 3 ? r.left - 50 : r.left + r.width + 8, top: r.top - 4 }, "fx-text");
+      plus.animate([
+        { transform: "translateY(0) scale(0.6)", opacity: 0 },
+        { transform: "translateY(-10px) scale(1.3)", opacity: 1, offset: 0.25 },
+        { transform: "translateY(-40px) scale(1)", opacity: 0 },
+      ], { duration: ANIM_MS * 4, easing: "ease-out" }).finished.then(() => plus.remove());
+    }
+
+    // ---- Rendering ----
+
+    function cardEl(card, faceUp, extra) {
+      const el = document.createElement("div");
+      el.className = `card ${faceUp ? "" : "face-down"} ${extra || ""}`;
+      if (faceUp) {
+        el.innerHTML = cardFaceHTML(card.rank, card.suit, "classic");
+        el.dataset.card = card.id;
+      }
+      return el;
+    }
+
+    function render() {
+      // Your hand, fanned along the bottom
+      const south = document.getElementById("hand0");
+      south.innerHTML = "";
+      const legal = phase === "play" && turn === 0 ? legalCards(0) : [];
+      const step = 48;
+      const left = (940 - 12 - (hands[0].length - 1) * step - 70) / 2;
+      hands[0].forEach((card, i) => {
+        let cls = "";
+        if (phase === "pass") cls = "playable" + (selected.includes(card) ? " selected" : "");
+        else if (phase === "play" && turn === 0) cls = legal.includes(card) ? "playable" : "blocked";
+        if (received.includes(card)) cls += " received";
+        const el = cardEl(card, true, cls);
+        el.style.left = `${left + i * step}px`;
+        el.style.zIndex = i;
+        el.addEventListener("click", () => clickCard(card));
+        south.appendChild(el);
+      });
+
+      // Bots' hands, face down
+      const north = document.getElementById("hand2");
+      north.innerHTML = "";
+      const nLeft = (940 - 12 - (hands[2].length - 1) * 18 - 50) / 2;
+      hands[2].forEach((_, i) => {
+        const el = cardEl(null, false, "small");
+        el.style.left = `${nLeft + i * 18}px`;
+        north.appendChild(el);
+      });
+      [1, 3].forEach(p => {
+        const box = document.getElementById(`hand${p}`);
+        box.innerHTML = "";
+        const top = (300 - (hands[p].length - 1) * 18 - 72) / 2;
+        hands[p].forEach((_, i) => {
+          const el = cardEl(null, false, "small");
+          el.style.top = `${top + i * 18}px`;
+          box.appendChild(el);
+        });
+      });
+
+      // Current trick
+      for (let p = 0; p < 4; p++) document.getElementById(`slot${p}`).innerHTML = "";
+      trick.forEach(t => {
+        document.getElementById(`slot${t.player}`).appendChild(cardEl(t.card, true, t.player === trickWinner ? "winner" : ""));
+      });
+
+      // Labels
+      NAMES.forEach((name, p) => {
+        const label = document.getElementById(`label${p}`);
+        label.innerHTML = `${name} <small>· ${handPoints[p]} this hand · ${totals[p]} total</small>${queenHolder === p ? '<span class="dunce" title="Took the Queen of Spades">Q♠</span>' : ""}`;
+        label.classList.toggle("turn", phase === "play" && turn === p);
+      });
+
+      document.getElementById("heartsBadge").classList.toggle("lit", heartsBroken);
+
+      // Pass button and status line
+      const passBtn = document.getElementById("passBtn");
+      passBtn.style.display = phase === "pass" ? "block" : "none";
+      passBtn.disabled = selected.length !== 3;
+      passBtn.textContent = `Pass ${selected.length}/3 cards ${PASS_NAMES[handNumber % 4]} to ${NAMES[passTarget(0)]}`;
+      document.getElementById("status").textContent = statusText();
+
+      // Score sheet
+      const body = document.getElementById("scoreBody");
+      body.innerHTML = scoreRows.map((row, i) => `<tr><td>${i + 1}</td>${row.map(s => `<td>${s}</td>`).join("")}</tr>`).join("") +
+        `<tr class="total"><td>Total</td>${totals.map(t => `<td>${t}</td>`).join("")}</tr>`;
+    }
+
+    function statusText() {
+      if (phase === "pass") return `Hand ${handNumber + 1}: pick 3 cards to pass ${PASS_NAMES[handNumber % 4]} to ${NAMES[passTarget(0)]}`;
+      if (phase === "deal") return "Dealing…";
+      if (phase === "passing") return "Passing cards…";
+      if (phase === "collect") {
+        if (trickWinner < 0) return "";
+        const pts = trick.reduce((sum, t) => sum + points(t.card), 0);
+        return `${trickWinner === 0 ? "You take" : NAMES[trickWinner] + " takes"} the trick${pts ? ` (+${pts})` : ""}`;
+      }
+      if (phase !== "play") return "";
+      if (turn !== 0) return `${NAMES[turn]} is thinking…`;
+      if (trickNumber === 0 && trick.length === 0) return "Your lead: you must open with the 2♣";
+      if (trick.length === 0) return heartsBroken ? "Your lead" : "Your lead (hearts not broken yet)";
+      const led = trick[0].card.suit;
+      return hands[0].some(c => c.suit === led) ? `Your turn: follow ${led}` : `Your turn: no ${led}, play anything${trickNumber === 0 ? " except points" : ""}`;
+    }
+
+    function clickCard(card) {
+      if (animating) return;
+      if (phase === "pass") toggleSelect(card);
+      else if (phase === "play" && turn === 0 && legalCards(0).includes(card)) playCard(0, card);
+    }
+
+    function showModal(title, text, rows, button, action) {
+      document.getElementById("modalTitle").textContent = title;
+      document.getElementById("modalText").textContent = text;
+      document.getElementById("modalTable").innerHTML = rows;
+      const btn = document.getElementById("modalBtn");
+      btn.textContent = button;
+      btn.onclick = action;
+      document.getElementById("overlay").style.display = "flex";
+    }
+
+    function hideModal() {
+      document.getElementById("overlay").style.display = "none";
+    }
+
+    function randomSeed() {
+      return Math.floor(Math.random() * 1000000) + 1;
+    }
+
+    document.getElementById("passBtn").addEventListener("click", doPass);
+    document.getElementById("newGameBtn").addEventListener("click", () => newGame(randomSeed()));
+    newGame(seedParam > 0 ? seedParam : randomSeed());
+  </script>
+</body>
+
+</html>

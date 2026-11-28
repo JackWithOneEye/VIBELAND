@@ -15,6 +15,7 @@ Bun.serve({
     "/crying-boy": Bun.file("./pages/crying-boy.html"),
     "/freecell": Bun.file("./pages/freecell.html"),
     "/graph-calculator": Bun.file("./pages/graph-calculator.html"),
+    "/hearts": Bun.file("./pages/hearts.html"),
     "/mahjong": Bun.file("./pages/mahjong.html"),
     "/memory": Bun.file("./pages/memory.html"),
     "/mensch-aergere-dich-nicht": Bun.file("./pages/mensch-aergere-dich-nicht.html"),

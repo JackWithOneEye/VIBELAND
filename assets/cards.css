@@ -1,4 +1,4 @@
-/* Real playing card faces, shared by Solitaire and FreeCell (see cards.js) */
+/* Real playing card faces, shared by Solitaire, FreeCell and Hearts (see cards.js) */
 .card-face {
   position: absolute;
   inset: 0;

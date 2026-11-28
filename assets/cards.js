@@ -1,4 +1,4 @@
-// Real playing card faces, shared by Solitaire and FreeCell.
+// Real playing card faces, shared by Solitaire, FreeCell and Hearts.
 // cardFaceHTML(rank, suit, courtStyle) returns the inner HTML for a face-up card:
 // rank is "A", "2" … "10", "J", "Q" or "K"; suit is one of "♠", "♥", "♦", "♣";
 // courtStyle picks the J, Q and K artwork: "classic" (Solitaire) or "pixel" (FreeCell).
