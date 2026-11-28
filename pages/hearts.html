@@ -319,6 +319,156 @@
       background: #ffd54f;
       border: 2px solid #333;
     }
+
+    .modal button:disabled {
+      background: #c0c0c0;
+      cursor: wait;
+    }
+
+    /* Setup: your name and role, and the optional Claude key */
+    .modal.setup {
+      width: 380px;
+      text-align: left;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+    }
+
+    .modal.setup h2,
+    .modal.setup p {
+      text-align: center;
+      font-family: 'Times New Roman', serif;
+    }
+
+    .llm-setup {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+
+    .llm-setup input,
+    .llm-setup textarea,
+    .llm-setup select {
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 12px;
+    }
+
+    .llm-setup textarea {
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .llm-setup small {
+      color: #606060;
+    }
+
+    #key-status {
+      font-weight: bold;
+      color: #000080;
+    }
+
+    #key-status.failed {
+      color: #c00000;
+    }
+
+    /* What a player last said, next to their seat */
+    .bubble {
+      position: absolute;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      pointer-events: none;
+    }
+
+    .bubble[hidden] {
+      display: none;
+    }
+
+    .say {
+      padding: 4px 7px;
+      background: #ffffe0;
+      border: 2px solid #000;
+      border-radius: 10px;
+      color: #800080;
+      font-size: 12px;
+      font-style: italic;
+      line-height: 15px;
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+    }
+
+    .say.to-you,
+    .say.private {
+      font-style: normal;
+      font-weight: bold;
+      color: #000;
+      background: #ffff99;
+      border-color: #ff00ff;
+    }
+
+    #comment-row {
+      display: flex;
+      gap: 4px;
+      width: 560px;
+      margin: 8px auto 0;
+    }
+
+    #comment-row[hidden] {
+      display: none;
+    }
+
+    #comment {
+      flex: 1;
+      min-width: 0;
+      font-size: 13px;
+    }
+
+    #comment-to {
+      width: 110px;
+      font-size: 13px;
+    }
+
+    .log-panel {
+      flex: 1.3;
+      min-width: 0;
+      background: #fff;
+      border: 2px inset #fff;
+      padding: 6px 10px;
+    }
+
+    .log-panel h3 {
+      margin: 0 0 4px;
+      font-size: 14px;
+    }
+
+    #log {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      height: 170px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      font-size: 12px;
+    }
+
+    #log li {
+      margin: 0 0 3px 0;
+    }
+
+    #log li:last-child {
+      font-weight: bold;
+    }
+
+    #log .comment {
+      color: #800080;
+    }
+
+    #log .whisper,
+    #log .thought {
+      color: #707070;
+      font-style: italic;
+    }
   </style>
 </head>
 
@@ -348,6 +498,11 @@
           <div class="trick-slot" id="slot3" style="left:525px;top:225px"></div>
           <div class="trick-slot" id="slot0" style="left:435px;top:300px"></div>
 
+          <div class="bubble" id="bubble0" style="right:84px;bottom:178px;width:240px" hidden></div>
+          <div class="bubble" id="bubble1" style="left:84px;top:146px;width:240px" hidden></div>
+          <div class="bubble" id="bubble2" style="left:616px;top:36px;width:290px" hidden></div>
+          <div class="bubble" id="bubble3" style="right:84px;top:190px;width:240px" hidden></div>
+
           <div class="hearts-badge" id="heartsBadge">♥ BROKEN</div>
           <button class="pass-btn" id="passBtn">Pass</button>
           <div class="status" id="status"></div>
@@ -358,15 +513,21 @@
         <div class="controls-row">
           <button id="newGameBtn">New Game</button>
           &nbsp; Deal #<span id="seedText"></span> &middot; first to 100 points ends the game, lowest score wins
+          <div id="comment-row" hidden>
+            <input type="text" id="comment" maxlength="100" placeholder="💬 Say something with your next card (optional)" aria-label="Comment for your next move (optional)">
+            <select id="comment-to" aria-label="Who hears your comment"></select>
+          </div>
         </div>
 
         <div class="below">
           <table class="scores">
-            <thead>
-              <tr><th>Hand</th><th>You</th><th>West</th><th>North</th><th>East</th></tr>
-            </thead>
+            <thead id="scoreHead"></thead>
             <tbody id="scoreBody"></tbody>
           </table>
+          <div class="log-panel">
+            <h3>Break room chatter</h3>
+            <ul id="log"></ul>
+          </div>
           <div class="rules">
             <h3>How to play</h3>
             <ul>
@@ -390,6 +551,30 @@
     </div>
   </div>
 
+  <div class="overlay" id="setup" style="display:flex">
+    <div class="modal setup">
+      <h2>♥ Lunch-break Hearts ♥</h2>
+      <p>Doris, Gary and Priya have saved you a chair in the break room.</p>
+      <div class="llm-setup">
+        <label for="player-name">Your name:</label>
+        <input type="text" id="player-name" maxlength="20" autocomplete="nickname">
+        <label for="player-role">Who you are to the others:</label>
+        <textarea id="player-role" rows="2" maxlength="120"></textarea>
+      </div>
+      <div class="llm-setup">
+        <label for="api-key">🤖 Play against Claude? Enter your <a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener">Claude API key</a>:</label>
+        <input type="password" id="api-key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+        <select id="llm-model" aria-label="Claude model">
+          <option value="claude-haiku-5-5">Haiku 5.5 (fast)</option>
+          <option value="claude-sonnet-5-5">Sonnet 5.5 (clever)</option>
+        </select>
+        <div id="key-status" aria-live="polite"></div>
+        <small>No key = the classic opponents. The key stays only in this tab's memory and goes directly to Anthropic.</small>
+      </div>
+      <button id="startBtn">Sit down and deal!</button>
+    </div>
+  </div>
+
   <div class="overlay" id="overlay">
     <div class="modal">
       <h2 id="modalTitle"></h2>
@@ -400,12 +585,36 @@
   </div>
 
   <script src="../assets/cards.js"></script>
+  <script src="../assets/llm.js"></script>
   <script>
-    // Players sit clockwise and play passes to the left: You (south) → West → North → East.
-    const NAMES = ["You", "West", "North", "East"];
+    // Seats go clockwise, and so do play and passes to the left: 0 you (south) → 1 West → 2 North → 3 East.
     const SUITS = ["♣", "♦", "♠", "♥"];
     const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
     const PASS_NAMES = ["left", "right", "across"];
+    const DECK = [];
+    SUITS.forEach(suit => RANKS.forEach((rank, i) => DECK.push({ suit, rank, value: i + 2, id: rank + suit })));
+    // Where q sits as seen from p, by (q - p + 3) % 4
+    const SIDES = ["on your left", "across from you", "on your right"];
+
+    // The lunch-break table; see assets/llm.js for what each part is for. The classic bots use these names too.
+    const CAST = {
+      people: {
+        "Doris": "Doris Kowalski, 62, office manager at Pruitt & Sons Insurance since 1974. Has run the lunchtime Hearts game in the break room for twenty years " +
+          "and keeps the score sheet in pen. Sharp-tongued but motherly to newcomers, and merciless with the Queen of Spades, especially when Gary can get her.",
+        "Gary": "Gary Pruitt, 46, sales manager and the founder's son. Loud and overconfident, talks in sales slogans, always \"going for the moon\" and rarely making it. " +
+          "Takes a bad trick personally for about ten seconds, then blames the shuffle.",
+        "Priya": "Priya Raman, 27, the IT department, busy patching every computer for Y2K. Quiet, counts every card, dry deadpan humour. " +
+          "Enjoys proving Gary wrong with numbers."
+      },
+      ties: "Doris and Gary have bickered over this table for years; Gary is technically the boss, but Doris runs the office. " +
+        "Priya keeps Doris's computer alive and quietly sides with her.",
+      guest: { nick: "Temp", role: "the new temp who started on Monday" },
+      occasion: "a lunch-break card game in an office break room in 1999",
+      whispers: "warn someone that the Queen is coming their way, suggest teaming up against whoever is ahead, tease your rival, " +
+        "a quiet tip for the newcomer, say you think someone is shooting the moon",
+      example: { to: "\"Gary, you always do that\" or \"Nice duck, Priya\"", about: "\"Gary is being reckless\"" },
+      language: "Speak English."
+    };
 
     // ?seed=N deals the same game again; ?delay=MS sets how long each bot thinks.
     const params = new URLSearchParams(location.search);
@@ -435,9 +644,51 @@
     let received = [];
     let trickWinner = -1;
     let timer = 0;
-    // Clicks are ignored while cards fly; gen tells a finished animation whether a new hand started meanwhile.
+    // Clicks are ignored while cards fly; gen tells a finished animation or Claude reply whether a new hand started meanwhile.
     let animating = false;
     let gen = 0;
+    let players = []; // by seat, see newPlayers()
+    let voids = []; // by seat: suits the player has shown they lack this hand
+    let playedIds = new Set(); // cards played this hand
+    let events = []; // what happened, for the "Since last" part of the prompts
+    let llm = null; // {key, model, name} while Claude plays the opponents
+    let llmAbort = new AbortController();
+    let passPicks = null; // resolves to the cards seats 1–3 pass this hand
+    let talking = ""; // status line while Claude players react
+    let nextSeed = seedParam > 0 ? seedParam : 0;
+
+    const logEl = document.getElementById("log");
+    const setupEl = document.getElementById("setup");
+    const startBtn = document.getElementById("startBtn");
+    const apiKeyEl = document.getElementById("api-key");
+    const modelEl = document.getElementById("llm-model");
+    const keyStatusEl = document.getElementById("key-status");
+    const playerNameEl = document.getElementById("player-name");
+    const playerRoleEl = document.getElementById("player-role");
+    const commentRowEl = document.getElementById("comment-row");
+    const talk = LLM.tableTalk({ log, render, input: document.getElementById("comment"), recipient: document.getElementById("comment-to") });
+
+    function newPlayers(guest) {
+      const names = Object.keys(CAST.people);
+      return [0, 1, 2, 3].map(seat => ({
+        seat,
+        human: seat === 0,
+        name: seat ? names[seat - 1] : "You",
+        nick: guest.nick,
+        role: guest.role,
+        history: [], // the last few prompts and answers of this player's Claude conversation
+        seen: 0, // events already reported to this player
+        passed: null, // {cards, to} this hand
+        got: null, // {cards, from} this hand
+        say: "",
+        toYou: "" // last private remark to the human
+      }));
+    }
+
+    // How a seat is shown on the page
+    function nameOf(p) {
+      return players[p].name;
+    }
 
     function mulberry32(s) {
       return function () {
@@ -472,6 +723,8 @@
       scoreRows = [];
       handNumber = 0;
       document.getElementById("seedText").textContent = seed;
+      enableComments(true);
+      events.push({ type: "game" });
       startHand();
     }
 
@@ -479,8 +732,7 @@
       clearTimeout(timer);
       const g = ++gen;
       document.querySelectorAll(".flyer, .fx").forEach(f => f.remove());
-      const deck = [];
-      SUITS.forEach(suit => RANKS.forEach((rank, i) => deck.push({ suit, rank, value: i + 2, id: rank + suit })));
+      const deck = DECK.map(c => ({ ...c }));
       for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(random() * (i + 1));
         [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -496,6 +748,10 @@
       selected = [];
       received = [];
       trickWinner = -1;
+      voids = [0, 1, 2, 3].map(() => new Set());
+      playedIds = new Set();
+      players.forEach(P => Object.assign(P, { passed: null, got: null, say: "", toYou: "", whisper: null }));
+      events.push({ type: "hand", no: handNumber + 1 });
       hideModal();
       phase = "deal";
       render();
@@ -507,6 +763,8 @@
         startPlay();
       } else {
         phase = "pass";
+        // The others choose while you do.
+        passPicks = pickPasses();
         render();
       }
     }
@@ -521,7 +779,23 @@
     async function doPass() {
       if (phase !== "pass" || selected.length !== 3 || animating) return;
       const g = gen;
-      const outgoing = [selected, botPass(1), botPass(2), botPass(3)];
+      const comment = takeComment();
+      if (comment.say || comment.whisper) events.push({ type: "remark", p: 0, ...comment });
+      phase = "passing";
+      if (llm) talking = "Waiting for the others to pick their cards…";
+      render();
+      const picks = await passPicks;
+      if (g !== gen) return;
+      talking = "";
+      picks.forEach(({ reply }, i) => {
+        talk.show(players[i + 1], reply.say, reply.thought, reply.whisper);
+        if (reply.say || reply.whisper) events.push({ type: "remark", p: i + 1, say: reply.say, whisper: reply.whisper });
+      });
+      const outgoing = [selected, ...picks.map(pick => pick.cards)];
+      outgoing.forEach((cards, p) => {
+        players[p].passed = { cards, to: passTarget(p) };
+        players[passTarget(p)].got = { cards, from: p };
+      });
       const from = outgoing.map((cards, p) => cards.map((c, k) => rel(p === 0 ? southEl(c) : botPassEls(p)[k])));
       const southBefore = handRects(0);
       outgoing.forEach((cards, p) => {
@@ -551,9 +825,13 @@
       startPlay();
     }
 
-    function startPlay() {
-      phase = "play";
+    // Before the first card, everyone says something about the hand they now hold.
+    async function startPlay() {
+      const g = gen;
       turn = hands.findIndex(h => h.some(c => c.id === "2♣"));
+      await reactions([1, 2, 3], openingCause);
+      if (g !== gen) return;
+      phase = "play";
       render();
       scheduleBot();
     }
@@ -583,8 +861,12 @@
       return trick.filter(t => t.card.suit === led).reduce((a, b) => (b.card.value > a.card.value ? b : a));
     }
 
-    async function playCard(p, card) {
+    // extra is the player's remark with the card: {say, whisper}
+    async function playCard(p, card, extra) {
       const g = gen;
+      if (trick.length && card.suit !== trick[0].card.suit) voids[p].add(trick[0].card.suit);
+      playedIds.add(card.id);
+      events.push({ type: "play", p, card, ...extra });
       // Bots play from the middle of their face-down fan.
       const els = [...document.querySelectorAll(`#hand${p} .card`)];
       const removed = p === 0 ? els.findIndex(e => e.dataset.card === card.id) : els.length >> 1;
@@ -624,31 +906,43 @@
       await sweepTrick();
       if (g !== gen) return;
       animating = false;
-      handPoints[trickWinner] += trick.reduce((sum, t) => sum + points(t.card), 0);
-      const queenTaken = trick.some(t => t.card.id === "Q♠");
-      if (queenTaken) queenHolder = trickWinner;
-      turn = trickWinner;
+      const winner = trickWinner;
+      const pts = trick.reduce((sum, t) => sum + points(t.card), 0);
+      handPoints[winner] += pts;
+      const queen = trick.find(t => t.card.id === "Q♠");
+      if (queen) queenHolder = winner;
+      events.push({ type: "trick", no: trickNumber + 1, p: winner, pts });
+      if (queen) log(`👸 ${winner === 0 ? "You take" : nameOf(winner) + " takes"} the Q♠! (+${pts})`);
+      else if (pts) log(`${winner === 0 ? "You take" : nameOf(winner) + " takes"} trick ${trickNumber + 1} (+${pts})`);
+      turn = winner;
       trick = [];
       trickWinner = -1;
       trickNumber++;
+      // The last trick's points come up in everyone's comment on the hand.
       if (trickNumber === 13) {
         endHand();
-        if (queenTaken) queenTakenFx(queenHolder);
+        if (queen) queenTakenFx(queenHolder);
         return;
       }
+      render();
+      if (queen) queenTakenFx(queenHolder);
+      // Everyone has something to say about the queen; other points only the taker comments on.
+      if (queen) await reactions([1, 2, 3], q => queenCause(q, winner, queen.player, pts));
+      else if (pts) await reactions([winner], q => `You took trick ${trickNumber} with ${pts} heart${pts > 1 ? "s" : ""}: +${pts}, ${handPoints[q]} this hand.`);
+      if (g !== gen) return;
       phase = "play";
       render();
-      if (queenTaken) queenTakenFx(queenHolder);
       scheduleBot();
     }
 
     function scheduleBot() {
-      if (phase === "play" && turn !== 0) {
-        timer = setTimeout(() => playCard(turn, botPlay(turn)), BOT_DELAY);
-      }
+      if (phase !== "play" || turn === 0) return;
+      // A forced card needs no question to Claude.
+      if (llm && legalCards(turn).length > 1) claudePlay(turn);
+      else timer = setTimeout(() => playCard(turn, botPlay(turn)), BOT_DELAY);
     }
 
-    function endHand() {
+    async function endHand() {
       const moon = handPoints.indexOf(26);
       const scored = moon >= 0 ? handPoints.map((_, p) => (p === moon ? 0 : 26)) : handPoints.slice();
       totals = totals.map((t, p) => t + scored[p]);
@@ -657,14 +951,20 @@
       const over = Math.max(...totals) >= 100;
       phase = over ? "gameover" : "handover";
       render();
+      const names = players.map(P => P.name);
+      let text = moon < 0 ? "" : moon === 0 ? "You shot the moon! Everyone else takes 26." : `${names[moon]} shot the moon! Everyone else takes 26.`;
+      if (text) log("🌙 " + text);
+      const g = gen;
+      await reactions([1, 2, 3], q => endCause(q, scored, moon, over));
+      if (g !== gen) return;
 
       let rows = "<tr><th></th><th>This hand</th><th>Total</th></tr>";
-      NAMES.forEach((name, p) => { rows += `<tr><td>${name}</td><td>${scored[p]}</td><td>${totals[p]}</td></tr>`; });
-      let text = moon < 0 ? "" : moon === 0 ? "You shot the moon! Everyone else takes 26." : `${NAMES[moon]} shot the moon! Everyone else takes 26.`;
+      names.forEach((name, p) => { rows += `<tr><td>${esc(name)}</td><td>${scored[p]}</td><td>${totals[p]}</td></tr>`; });
       if (over) {
         const best = Math.min(...totals);
-        const winners = NAMES.filter((_, p) => totals[p] === best);
+        const winners = names.filter((_, p) => totals[p] === best);
         const youWon = totals[0] === best;
+        enableComments(false);
         showModal(youWon ? "You win!" : "Game over", `${text} ${winners.join(" and ")} ${winners.length > 1 ? "share the win" : winners[0] === "You" ? "win" : "wins"} with ${best} points.`, rows, "Play Again", () => newGame(randomSeed()));
       } else {
         showModal(`Hand ${handNumber} done`, text, rows, "Deal Next Hand", startHand);
@@ -721,6 +1021,247 @@
       const hearts = legal.filter(c => c.suit === "♥");
       if (hearts.length) return maxBy(hearts, c => c.value);
       return maxBy(legal, c => c.value);
+    }
+
+    // ---- Claude players ----
+    // Prompts write cards as rank + suit letter (Qs, 10h) and hands grouped by suit (s:2 Q A), which costs few tokens.
+
+    const SUIT_CODES = { "♣": "c", "♦": "d", "♠": "s", "♥": "h" };
+
+    function code(card) {
+      return card.rank + SUIT_CODES[card.suit];
+    }
+
+    function codes(cards) {
+      return cards.map(code).join(" ");
+    }
+
+    function handText(cards) {
+      return SUITS.map(s => cards.filter(c => c.suit === s)).filter(cs => cs.length)
+        .map(cs => SUIT_CODES[cs[0].suit] + ":" + cs.map(c => c.rank).join(" ")).join(" ") || "-";
+    }
+
+    // The card ids in a reply such as "Qs, 10h and A♥", in order
+    function cardsIn(text) {
+      const suits = { c: "♣", d: "♦", s: "♠", h: "♥", "♣": "♣", "♦": "♦", "♠": "♠", "♥": "♥" };
+      return [...(text || "").matchAll(/\b(10|[2-9JQKA])\s*([cdsh♣♦♠♥])/gi)].map(m => m[1].toUpperCase() + suits[m[2].toLowerCase()]);
+    }
+
+    // q as seen from viewer: "you" or their name
+    function who(viewer, q) {
+      return q === viewer ? "you" : LLM.nameFor(players[q]);
+    }
+
+    function cap(text) {
+      return text[0].toUpperCase() + text.slice(1);
+    }
+
+    // The seats from p's own one in playing order
+    function around(p) {
+      return [0, 1, 2, 3].map(i => (p + i) % 4);
+    }
+
+    function passText(p) {
+      const dir = handNumber % 4;
+      return dir === 3 ? "keep" : PASS_NAMES[dir] + " to " + who(p, passTarget(p));
+    }
+
+    function systemPrompt(p) {
+      const P = players[p];
+      const order = around(p).map(q => who(p, q));
+      return [
+        "You are " + P.name + ", playing Hearts in the office break room at lunch.",
+        ...LLM.introPrompt(CAST, P, players.filter(Q => Q !== P), Q => SIDES[(Q.seat - p + 3) % 4]),
+        "Play goes clockwise: " + order.join(" → ") + " → you. Passing left means to " + order[1] + ", right to " + order[3] + ", across to " + order[2] + ".",
+        "",
+        "Rules (the game enforces them; you only choose among the options you are given):",
+        "- 52 cards, 13 each. Cards are rank + suit: 2–10 J Q K A of c (clubs), d (diamonds), s (spades), h (hearts); Qs = Queen of spades. " +
+          "Hands are grouped by suit: \"s:2 Q A\" = 2s Qs As.",
+        "- Before each hand everyone passes 3 cards: left, right, across, then a hand without passing, and around again.",
+        "- The 2c leads the first trick. Follow the led suit if you can, otherwise play any card. The highest card of the led suit takes the trick and leads the next one.",
+        "- No hearts or Qs on the first trick unless you have nothing else. Hearts can't be led until a heart has been played, unless you hold only hearts.",
+        "- Every heart you take costs 1 point, the Qs 13. Taking all 26 points shoots the moon: you get 0 and everyone else 26.",
+        "- The game ends after the hand in which someone reaches 100 points. The lowest total wins.",
+        "",
+        "You get three kinds of messages. They contain:",
+        "Since last: what happened since your last message, in order: \"Gary 4c\" = Gary played the 4c, \"→ Doris took trick 3 (+2)\", quoted remarks. " +
+          "\"(to you privately: ...)\" is something only you heard.",
+        "Points: this hand/total for everyone. Out: the cards the others still hold between them. Voids: suits a player has shown they no longer have.",
+        "",
+        "1. \"Pass 3 ...\": choose the three cards to pass. Reply with these lines:",
+        "T: your strategic thought (nobody hears it), max 15 words",
+        "M: the three cards, e.g. M: Qs Ah 9h",
+        "C: what you say to the table, or - to say nothing",
+        "",
+        "2. \"Your turn\": Trick shows the cards played so far. Options are the cards you may play, with notes: \"ducks\" = loses to a card already played, " +
+          "\"highest so far\" = winning for now but others still play, \"takes it\" = you play last and take the trick, with its points.",
+        "Reply with T, M (option number) and C lines.",
+        "",
+        "3. \"React: ...\" tells you what just happened. Reply with:",
+        "C: what you say to the table, or - to say nothing",
+        "",
+        ...LLM.talkPrompt(CAST)
+      ].join("\n");
+    }
+
+    function formatEvent(viewer, e) {
+      const own = e.p === viewer;
+      const name = e.p === undefined ? "" : cap(who(viewer, e.p));
+      // Private remarks only show up for their recipient.
+      const quote = (e.say && !own ? ` "${e.say}"` : "") +
+        (e.whisper && e.whisper.to === players[viewer] ? ` (to you privately: "${e.whisper.text}")` : "");
+      if (e.type === "remark") return own || !quote ? "" : name + ":" + quote;
+      if (e.type === "game") return "A new game starts";
+      if (e.type === "hand") return "Hand " + e.no + " dealt";
+      if (e.type === "play") return name + " " + code(e.card) + quote;
+      return "→ " + name + " took trick " + e.no + (e.pts ? ` (+${e.pts})` : "");
+    }
+
+    function sinceLast(p) {
+      return events.slice(players[p].seen).map(e => formatEvent(p, e)).filter(Boolean).join("; ") || "-";
+    }
+
+    function pointsLine(p) {
+      return "Points: " + around(p).map(q => who(p, q) + " " + handPoints[q] + "/" + totals[q]).join(", ");
+    }
+
+    // Since last, Points, what p knows about the others' cards, and p's hand
+    function situation(p) {
+      const mine = new Set(hands[p].map(c => c.id));
+      const out = DECK.filter(c => !mine.has(c.id) && !playedIds.has(c.id));
+      const known = [];
+      const passed = players[p].passed;
+      const still = passed ? passed.cards.filter(c => !playedIds.has(c.id)) : [];
+      if (still.length) known.push(`${who(p, passed.to)} has your passed ${codes(still)}`);
+      const shown = around(p).slice(1).filter(q => voids[q].size).map(q => who(p, q) + " " + [...voids[q]].map(s => SUIT_CODES[s]).join(""));
+      if (shown.length) known.push("Voids: " + shown.join(", "));
+      return "Since last: " + sinceLast(p) + "\n" + pointsLine(p) + "\n" +
+        "Hearts " + (heartsBroken ? "broken" : "not broken") + (queenHolder >= 0 ? `; ${who(p, queenHolder)} took the Qs` : "") +
+        (known.length ? "; " + known.join("; ") : "") + "\n" +
+        "Out: " + handText(out) + "\n" +
+        "Your hand: " + handText(hands[p]);
+    }
+
+    function passPrompt(p) {
+      return `Pass 3 ${passText(p)} (hand ${handNumber + 1})\n` + situation(p);
+    }
+
+    function playNote(card) {
+      if (!trick.length) return "";
+      const best = winningPlay().card;
+      if (card.suit !== best.suit || card.value < best.value) return "ducks";
+      if (trick.length < 3) return "highest so far";
+      return "takes it (+" + (trick.reduce((sum, t) => sum + points(t.card), 0) + points(card)) + ")";
+    }
+
+    function turnPrompt(p, legal) {
+      const now = trick.length ? trick.map(t => who(p, t.player) + " " + code(t.card)).join(", ") : "you lead";
+      return `Your turn, trick ${trickNumber + 1}/13\n` + situation(p) + "\n" +
+        "Trick: " + now + "\n" +
+        "Options: " + legal.map((c, i) => `${i + 1}) ${code(c)}` + (playNote(c) ? " " + playNote(c) : "")).join(", ");
+    }
+
+    function openingCause(q) {
+      const P = players[q];
+      const pass = P.passed ? `You passed ${codes(P.passed.cards)} to ${who(q, P.passed.to)} and got ${codes(P.got.cards)} from ${who(q, P.got.from)}.`
+        : "No passing this hand.";
+      return `Hand ${handNumber + 1} begins. ${pass} ${cap(who(q, turn))} lead${turn === q ? "" : "s"} the 2c. ` +
+        `Your hand: ${handText(hands[q])}. Say something to the table before the first card.`;
+    }
+
+    function queenCause(q, winner, from, pts) {
+      const how = from === winner ? `${cap(who(q, from))} played her and took the trick` : `${cap(who(q, from))} played her and ${who(q, winner)} took her`;
+      return `The Qs! ${how} (trick ${trickNumber}): +${pts}, ${handPoints[winner]} this hand for ${who(q, winner)}.`;
+    }
+
+    function endCause(q, scored, moon, over) {
+      const list = vals => around(q).map(r => who(q, r) + " " + vals[r]).join(", ");
+      let text = `Hand ${handNumber} is over.` + (moon >= 0 ? ` ${cap(who(q, moon))} shot the moon!` : "") +
+        ` Scored this hand: ${list(scored)}. Totals: ${list(totals)}.`;
+      if (over) {
+        const best = Math.min(...totals);
+        const winners = around(q).filter(r => totals[r] === best).map(r => who(q, r));
+        text += ` Someone reached 100: the game is over. ${cap(winners.join(" and "))} won with ${best}. Say something to close the game.`;
+      } else {
+        text += ` Next hand: ${handNumber % 4 === 3 ? "no passing" : "pass " + PASS_NAMES[handNumber % 4]}.`;
+      }
+      return text;
+    }
+
+    async function askClaude(p, prompt) {
+      if (!llm) return "";
+      const seen = events.length;
+      const text = await LLM.ask(llm, players[p], prompt, llmAbort.signal);
+      players[p].seen = seen;
+      return text;
+    }
+
+    function readReply(p, text) {
+      return LLM.readReply(players[p], text, players.filter(Q => Q.seat !== p));
+    }
+
+    function llmFailed(p, err, g) {
+      if (g !== gen) return "";
+      if (LLM.isKeyError(err)) {
+        if (llm) log(`The API key does not work (${err.message}) – the others play without Claude now.`);
+        llm = null;
+        commentRowEl.hidden = true;
+        render();
+      } else {
+        log(`${nameOf(p)} lost the connection to Claude (${err.name === "TimeoutError" ? "timeout" : err.message}).`);
+      }
+      return "";
+    }
+
+    // Resolves to [{cards, reply}] for seats 1–3; doPass shows the replies once you have passed too.
+    async function pickPasses() {
+      const g = gen;
+      const texts = await Promise.all([1, 2, 3].map(p => llm ? askClaude(p, passPrompt(p)).catch(err => llmFailed(p, err, g)) : ""));
+      return [1, 2, 3].map((p, i) => {
+        const reply = readReply(p, texts[i]);
+        const ids = [...new Set(cardsIn(reply.move))];
+        const cards = ids.map(id => hands[p].find(c => c.id === id)).filter(Boolean);
+        if (cards.length === 3) return { cards, reply };
+        if (texts[i] && g === gen) log(`${nameOf(p)} hesitates and passes by feel.`);
+        return { cards: botPass(p), reply };
+      });
+    }
+
+    function claudePlay(p) {
+      const g = gen;
+      const legal = legalCards(p);
+      render();
+      askClaude(p, turnPrompt(p, legal)).catch(err => llmFailed(p, err, g)).then(text => {
+        if (g !== gen) return;
+        const reply = readReply(p, text);
+        talk.show(players[p], reply.say, reply.thought, reply.whisper);
+        const id = cardsIn(reply.move)[0];
+        let card = legal[parseInt(reply.move, 10) - 1] || legal.find(c => c.id === id);
+        if (!card) {
+          if (text) log(`${nameOf(p)} hesitates and plays by feel.`);
+          card = botPlay(p);
+        }
+        timer = setTimeout(() => playCard(p, card, { say: reply.say, whisper: reply.whisper }), 300);
+      });
+    }
+
+    // Claude players among seats react to what just happened, all at once. cause(q) says what, from q's view.
+    async function reactions(seats, cause) {
+      seats = seats.filter(q => q !== 0);
+      if (!llm || !seats.length) return;
+      const g = gen;
+      talking = seats.length > 1 ? "The others are talking…" : `${nameOf(seats[0])} has something to say…`;
+      render();
+      const texts = await Promise.all(seats.map(q => askClaude(q, `React: ${cause(q)}\nSince last: ${sinceLast(q)}`).catch(err => llmFailed(q, err, g))));
+      if (g !== gen) return;
+      talking = "";
+      seats.forEach((q, i) => {
+        const { say, whisper } = readReply(q, texts[i]);
+        if (!say && !whisper) return;
+        talk.show(players[q], say, "", whisper);
+        events.push({ type: "remark", p: q, say, whisper });
+      });
+      render();
     }
 
     // ---- Animation ----
@@ -955,11 +1496,25 @@
         document.getElementById(`slot${t.player}`).appendChild(cardEl(t.card, true, t.player === trickWinner ? "winner" : ""));
       });
 
-      // Labels
-      NAMES.forEach((name, p) => {
+      // Labels and what the others last said
+      players.forEach((P, p) => {
         const label = document.getElementById(`label${p}`);
+        const name = P.human ? `${esc(P.nick)} (you)` : esc(P.name) + (llm ? " 🤖" : "");
         label.innerHTML = `${name} <small>· ${handPoints[p]} this hand · ${totals[p]} total</small>${queenHolder === p ? '<span class="dunce" title="Took the Queen of Spades">Q♠</span>' : ""}`;
         label.classList.toggle("turn", phase === "play" && turn === p);
+        const bubble = document.getElementById(`bubble${p}`);
+        bubble.innerHTML = "";
+        // Your own private remark shows whom it went to.
+        const lines = P.human ? [[P.say, "say", ""], [P.whisper && P.whisper.text, "say private", P.whisper && `🤫 to ${P.whisper.to.name}: `]]
+          : [[P.say, "say", ""], [P.toYou, "say to-you", "🤫 to you: "]];
+        lines.forEach(([text, cls, prefix]) => {
+          if (!text) return;
+          const say = document.createElement("div");
+          say.className = cls;
+          say.textContent = `${prefix}„${text}“`;
+          bubble.appendChild(say);
+        });
+        bubble.hidden = !bubble.children.length;
       });
 
       document.getElementById("heartsBadge").classList.toggle("lit", heartsBroken);
@@ -968,26 +1523,28 @@
       const passBtn = document.getElementById("passBtn");
       passBtn.style.display = phase === "pass" ? "block" : "none";
       passBtn.disabled = selected.length !== 3;
-      passBtn.textContent = `Pass ${selected.length}/3 cards ${PASS_NAMES[handNumber % 4]} to ${NAMES[passTarget(0)]}`;
+      passBtn.textContent = `Pass ${selected.length}/3 cards ${PASS_NAMES[handNumber % 4]} to ${nameOf(passTarget(0))}`;
       document.getElementById("status").textContent = statusText();
 
       // Score sheet
+      document.getElementById("scoreHead").innerHTML = `<tr><th>Hand</th>${players.map(P => `<th>${esc(P.name)}</th>`).join("")}</tr>`;
       const body = document.getElementById("scoreBody");
       body.innerHTML = scoreRows.map((row, i) => `<tr><td>${i + 1}</td>${row.map(s => `<td>${s}</td>`).join("")}</tr>`).join("") +
         `<tr class="total"><td>Total</td>${totals.map(t => `<td>${t}</td>`).join("")}</tr>`;
     }
 
     function statusText() {
-      if (phase === "pass") return `Hand ${handNumber + 1}: pick 3 cards to pass ${PASS_NAMES[handNumber % 4]} to ${NAMES[passTarget(0)]}`;
+      if (talking) return talking;
+      if (phase === "pass") return `Hand ${handNumber + 1}: pick 3 cards to pass ${PASS_NAMES[handNumber % 4]} to ${nameOf(passTarget(0))}`;
       if (phase === "deal") return "Dealing…";
       if (phase === "passing") return "Passing cards…";
       if (phase === "collect") {
         if (trickWinner < 0) return "";
         const pts = trick.reduce((sum, t) => sum + points(t.card), 0);
-        return `${trickWinner === 0 ? "You take" : NAMES[trickWinner] + " takes"} the trick${pts ? ` (+${pts})` : ""}`;
+        return `${trickWinner === 0 ? "You take" : nameOf(trickWinner) + " takes"} the trick${pts ? ` (+${pts})` : ""}`;
       }
       if (phase !== "play") return "";
-      if (turn !== 0) return `${NAMES[turn]} is thinking…`;
+      if (turn !== 0) return `${nameOf(turn)} is thinking…${llm ? " 🤖" : ""}`;
       if (trickNumber === 0 && trick.length === 0) return "Your lead: you must open with the 2♣";
       if (trick.length === 0) return heartsBroken ? "Your lead" : "Your lead (hearts not broken yet)";
       const led = trick[0].card.suit;
@@ -997,7 +1554,7 @@
     function clickCard(card) {
       if (animating) return;
       if (phase === "pass") toggleSelect(card);
-      else if (phase === "play" && turn === 0 && legalCards(0).includes(card)) playCard(0, card);
+      else if (phase === "play" && turn === 0 && legalCards(0).includes(card)) playCard(0, card, takeComment());
     }
 
     function showModal(title, text, rows, button, action) {
@@ -1018,9 +1575,107 @@
       return Math.floor(Math.random() * 1000000) + 1;
     }
 
+    function esc(text) {
+      return String(text).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[c]);
+    }
+
+    function log(text, cls) {
+      const li = document.createElement("li");
+      li.textContent = text;
+      if (cls) li.className = cls;
+      const atEnd = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 8;
+      logEl.append(li);
+      if (atEnd) logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // ---- Setup ----
+
+    async function chooseSeat() {
+      const key = apiKeyEl.value.trim();
+      keyStatusEl.className = "";
+      if (!key) {
+        keyStatusEl.textContent = "";
+        startGame(null);
+        return;
+      }
+      const controls = setupEl.querySelectorAll("button, input, select, textarea");
+      controls.forEach(el => el.disabled = true);
+      keyStatusEl.textContent = "Checking the key … one moment!";
+      try {
+        const model = modelEl.value;
+        const name = await LLM.checkKey(key, model);
+        keyStatusEl.textContent = "";
+        startGame({ key, model, name });
+      } catch (err) {
+        keyStatusEl.className = "failed";
+        keyStatusEl.textContent = err.name === "SubscriptionTokenError"
+          ? "✗ This is a Claude Code subscription token, not an API key. Create an API key (sk-ant-api…) at platform.claude.com/settings/keys."
+          : "✗ The key does not work: " + (err.name === "TimeoutError" ? "no answer from Anthropic" : err.message) +
+            ". Fix it, or empty the field for the classic opponents.";
+      } finally {
+        controls.forEach(el => el.disabled = false);
+      }
+    }
+
+    function startGame(verifiedLlm) {
+      stopGame();
+      llmAbort = new AbortController();
+      llm = verifiedLlm;
+      events = [];
+      players = newPlayers(LLM.guest(CAST, playerNameEl, playerRoleEl));
+      if (llm) players.forEach(P => { if (!P.human) P.system = systemPrompt(P.seat); });
+      logEl.innerHTML = "";
+      setupEl.style.display = "none";
+      commentRowEl.hidden = !llm;
+      enableComments(true);
+      talk.seat(players.filter(P => !P.human));
+      log("Lunch break! Doris deals – the game ends when someone reaches 100 points, lowest score wins.");
+      if (llm) log(`✓ Key verified – ${llm.name} plays ${players.slice(1).map(P => P.name).join(", ")}. Good luck!`);
+      newGame(nextSeed || randomSeed());
+      nextSeed = 0;
+    }
+
+    // Stops everything in flight: timers, animations and Claude requests.
+    function stopGame() {
+      clearTimeout(timer);
+      gen++;
+      llmAbort.abort();
+      talking = "";
+    }
+
+    function enableComments(on) {
+      commentRowEl.querySelectorAll("input, select").forEach(el => el.disabled = !on);
+    }
+
+    // Your optional comment goes with your next pass or card.
+    function takeComment() {
+      if (!llm) return {};
+      const comment = talk.take(players[0]);
+      if (comment.say || comment.whisper) {
+        players[0].whisper = comment.whisper || null;
+        render();
+      }
+      return comment;
+    }
+
     document.getElementById("passBtn").addEventListener("click", doPass);
-    document.getElementById("newGameBtn").addEventListener("click", () => newGame(randomSeed()));
-    newGame(seedParam > 0 ? seedParam : randomSeed());
+    startBtn.addEventListener("click", chooseSeat);
+    document.getElementById("newGameBtn").addEventListener("click", () => {
+      stopGame();
+      llm = null;
+      commentRowEl.hidden = true;
+      hideModal();
+      phase = "setup";
+      render();
+      setupEl.style.display = "flex";
+    });
+
+    // Before you sit down, the others wait at the empty table.
+    playerNameEl.placeholder = CAST.guest.nick;
+    playerRoleEl.placeholder = CAST.guest.role;
+    players = newPlayers(CAST.guest);
+    phase = "setup";
+    render();
   </script>
 </body>
 
